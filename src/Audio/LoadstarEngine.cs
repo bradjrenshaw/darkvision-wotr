@@ -49,6 +49,7 @@ namespace WrathAccess.Audio
         private readonly Dictionary<ulong, LoadstarVoice> _voices = new Dictionary<ulong, LoadstarVoice>();
         private readonly Dictionary<ulong, uint> _speechBuffers = new Dictionary<ulong, uint>(); // fired speech → buffer to free
         private ulong _nextId = 1;
+        private Finished[] _finished = new Finished[64]; // reused every frame: one native call, no allocation
         private EffectFlags _cueFlags;
         private float _nextSettingsPoll;
         private bool _disposed;
@@ -122,10 +123,10 @@ namespace WrathAccess.Audio
             try
             {
                 // Finished sequences: drop tracked voices (and their sources), free speech buffers.
-                var done = _dev.TakeFinished();
-                for (int i = 0; i < done.Length; i++)
+                int n = _dev.TakeFinished(ref _finished);
+                for (int i = 0; i < n; i++)
                 {
-                    ulong id = done[i].Id;
+                    ulong id = _finished[i].Id;
                     if (_voices.TryGetValue(id, out var v))
                     {
                         v.Finished = true;
