@@ -69,6 +69,9 @@ namespace WrathAccess.Speech
                 p.Voice = SpeechOutputs.VoiceFor(OutputId, ChoiceId("voice"));
                 p.Rate = (Int("rate", 2) + 10) / 20f;
                 p.Volume = Int("volume", 100) / 100f;
+                // Rendered (positional) speech: SAPI voices lead with ~100 ms of silence and trail
+                // with more; the library trims both so the first word lands with the event.
+                p.Flags = ProfileFlags.TrimSilence;
                 return p;
             }
         }
