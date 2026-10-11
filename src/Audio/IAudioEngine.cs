@@ -21,7 +21,6 @@ namespace WrathAccess.Audio
         IWallTones CreateWallTones(string toneSet);
         void Play2D(string file, float volume);
         void PlayOneShot(string stem, string file, Vector3 worldPos, float volume, float pan);
-        void PlayPcm(WrathAccess.Speech.SpeechAudio audio, float volume, float pan);
         ISpatialVoice PlaySpatial(string file, float volume, float dxEast, float dzNorth, float panWidth);
         /// <summary>Per frame from the module tick (device watchdogs, finished polls).</summary>
         void Tick();

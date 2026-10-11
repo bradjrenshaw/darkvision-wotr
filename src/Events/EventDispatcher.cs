@@ -8,8 +8,9 @@ namespace WrathAccess.Events
     /// Collects <see cref="ModEvent"/>s and flushes them once per frame (so a burst is read in arrival
     /// order, and we never speak mid-game-frame). PROTOTYPE: no consolidation/dedup — every event reads
     /// individually; never interrupts (the mod's speech rule). Each event resolves its (per-source)
-    /// settings via <see cref="EventRegistry"/> and reads through the chosen <see cref="SpeechConfig"/>.
-    /// Positional playback isn't wired yet (next increment); everything reads non-positionally for now.
+    /// settings via <see cref="EventRegistry"/> and reads through the chosen <see cref="SpeechConfig"/>
+    /// on the EVENTS queue: positioned at the unit when the event opts in (the library renders off the
+    /// game thread and fires into the audio space), otherwise flat but overlapping on synthesizer voices.
     /// </summary>
     internal static class EventDispatcher
     {
@@ -41,20 +42,10 @@ namespace WrathAccess.Events
                 SpeechManager.Tap(text); // dev speech log: events speak through a config, not Tts.Speak
                 var config = SpeechConfigRegistry.Get(EventRegistry.ConfigId(e));
 
-                // Render-capable configs (SAPI) read through the mod's mixer so utterances OVERLAP (combat
-                // bursts) instead of queuing — positioned at the unit when the event opts in. Screen-reader
-                // configs (Prism) can't render: fall back to live speech (which queues).
-                if (config.SupportsPositional)
-                {
-                    var audio = config.RenderToAudio(text);
-                    if (audio != null)
-                    {
-                        bool positional = EventRegistry.Positional(e) && e.Source != EventSources.None;
-                        WrathAccess.Audio.PositionalSpeech.Play(audio, positional ? e.Position : (UnityEngine.Vector3?)null);
-                        return;
-                    }
-                }
-                config.Output(text, interrupt: false);
+                bool positional = EventRegistry.Positional(e) && e.Source != EventSources.None && e.Position != UnityEngine.Vector3.zero;
+                if (positional && SpeechManager.SpeakEventAt(config, text, e.Position)) return;
+                if (SpeechManager.SpeakEvent(config, text)) return;
+                config.Output(text, interrupt: false); // no context yet: the UI queue is better than silence
             }
             catch (Exception ex) { Main.Log?.Error("[events] dispatch failed: " + ex.Message); }
         }

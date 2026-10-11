@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using Loadstar;
 using Loadstar.Audio;
+using Loadstar.Speech;
 using NAudio.Wave;
 using UnityEngine;
 using WrathAccess.Settings;
-using WrathAccess.Speech; // SpeechAudio
 using Vec3 = Loadstar.Vec3;
 using Bounds = Loadstar.Bounds;
 using Vector3 = UnityEngine.Vector3;
@@ -47,8 +47,10 @@ namespace WrathAccess.Audio
         private readonly uint _busWalls, _busCues, _busSpeech, _busUi;
         private readonly Dictionary<string, uint> _buffers = new Dictionary<string, uint>();
         private readonly Dictionary<ulong, LoadstarVoice> _voices = new Dictionary<ulong, LoadstarVoice>();
-        private readonly Dictionary<ulong, uint> _speechBuffers = new Dictionary<ulong, uint>(); // fired speech → buffer to free
         private ulong _nextId = 1;
+
+        /// <summary>The live Loadstar engine, or null when the active audio engine is something else.</summary>
+        internal static LoadstarEngine Current => AudioEngines.Current as LoadstarEngine;
         private Finished[] _finished = new Finished[64]; // reused every frame: one native call, no allocation
         private EffectFlags _cueFlags;
         private float _nextSettingsPoll;
@@ -133,11 +135,6 @@ namespace WrathAccess.Audio
                         _voices.Remove(id);
                         try { _dev.Remove(_space, id); } catch { }
                     }
-                    if (_speechBuffers.TryGetValue(id, out uint buf))
-                    {
-                        _speechBuffers.Remove(id);
-                        try { _dev.FreeBuffer(buf); } catch { }
-                    }
                 }
                 // Cue toggles are settings; re-apply the space's spatializer node when they change.
                 float now = Time.unscaledTime;
@@ -172,22 +169,41 @@ namespace WrathAccess.Audio
             catch (Exception e) { Main.Log?.Error("[loadstar] one-shot " + file + " — " + e.Message); }
         }
 
-        public void PlayPcm(SpeechAudio audio, float volume, float pan)
+        // ---- positional speech (the library renders and fires; we only place it) ----
+
+        private const float SpeechRefDistFeet = 10f;  // distance at which the voice is ~half
+        private const float SpeechPanWidthFeet = 10f; // lateral crossover (matches the sonar)
+        private const float SpeechMinVol = 0.2f;
+
+        /// <summary>Speak <paramref name="text"/> at a world position through the Loadstar speech context:
+        /// the library renders off the game thread and fires a one-shot on the speech bus placed at the
+        /// listener-relative offset (same frame as every other source here), with the sonar's distance
+        /// curve as gain. A voice that cannot render speaks the line flat (<see cref="SpeakFlags.SpeakFlat"/>).</summary>
+        internal bool TrySpeakAt(SpeechContext ctx, uint queue, in Profile profile, string text, Vector3 worldPos, float gainMul)
         {
-            if (_disposed || audio?.Pcm == null || audio.Pcm.Length == 0) return;
+            if (_disposed || ctx == null) return false;
             try
             {
-                var samples = DecodePcm(audio, out int channels);
-                if (samples == null || samples.Length == 0) return;
-                uint buf = _dev.CreateBuffer(samples, (uint)channels, (uint)audio.SampleRate);
-                ulong id = _nextId++;
-                _speechBuffers[id] = buf; // freed when the finished poll reports this id
-                var d = SourceDesc.Buffer_(id, buf, Bounds.Point(new Vec3(0, 0, 0)))
-                    .Relative(Mathf.Clamp(pan, -1f, 1f)).OnBus(_busSpeech).WithGain(Mathf.Max(0f, volume * audio.Gain));
-                _dev.Fire(_space, d);
+                var from = SpeechListener();
+                float dx = worldPos.x - from.x, dz = worldPos.z - from.z;
+                float dist = Mathf.Sqrt(dx * dx + dz * dz);
+                WrathAccess.Exploration.ListenerFrame.ToEar(ref dx, ref dz); // place in the facing's frame
+                float refDist = SpeechRefDistFeet * WrathAccess.Exploration.Geo.MetresPerFoot;
+                float vol = Mathf.Clamp(refDist / (refDist + dist), SpeechMinVol, 1f) * Mathf.Max(0f, gainMul);
+                var d = SourceDesc.Buffer_(0, 0, Bounds.Point(At(dx, dz))).OnBus(_busSpeech).WithGain(vol);
+                d.PanWidth = SpeechPanWidthFeet * WrathAccess.Exploration.Geo.MetresPerFoot;
+                var st = ctx.SpeakAt(queue, profile, text, SpeakFlags.SpeakFlat, _dev, _space, d, out _, out _);
+                if (st != Status.Ok) Main.Log?.Warning("[loadstar] speak-at refused: " + st);
+                return st == Status.Ok;
             }
-            catch (Exception e) { Main.Log?.Error("[loadstar] speech — " + e.Message); }
+            catch (Exception e) { Main.Log?.Error("[loadstar] speak-at — " + e.Message); return false; }
         }
+
+        // The listener "ears" — the same reference the scanner/cursor work from (cursor if placed, else player).
+        private static Vector3 SpeechListener()
+            => WrathAccess.Exploration.Cursor.Has
+                ? WrathAccess.Exploration.Cursor.Position.Value
+                : WrathAccess.Exploration.Overlays.Cursor.PlayerPosition;
 
         public ISpatialVoice PlaySpatial(string file, float volume, float dxEast, float dzNorth, float panWidth)
         {
@@ -346,23 +362,6 @@ namespace WrathAccess.Audio
                 var tmp = new float[rate * channels];
                 int n;
                 while ((n = reader.Read(tmp, 0, tmp.Length)) > 0)
-                    for (int i = 0; i < n; i++) all.Add(tmp[i]);
-                return all.ToArray();
-            }
-        }
-
-        private static float[] DecodePcm(SpeechAudio audio, out int channels)
-        {
-            channels = Math.Max(1, audio.Channels);
-            var fmt = new WaveFormat(audio.SampleRate, audio.BitsPerSample, channels);
-            using (var ms = new MemoryStream(audio.Pcm))
-            using (var raw = new RawSourceWaveStream(ms, fmt))
-            {
-                var sp = raw.ToSampleProvider();
-                var all = new List<float>(audio.Pcm.Length / 2 + 16);
-                var tmp = new float[audio.SampleRate * channels];
-                int n;
-                while ((n = sp.Read(tmp, 0, tmp.Length)) > 0)
                     for (int i = 0; i < n; i++) all.Add(tmp[i]);
                 return all.ToArray();
             }
