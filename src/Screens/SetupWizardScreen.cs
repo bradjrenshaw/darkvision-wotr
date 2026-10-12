@@ -135,7 +135,7 @@ namespace WrathAccess.Screens
             b.BeginStop(k + "options"); // the voice tree is its own Tab-stop after the help text
             var voice = VoiceSetting();
             if (voice != null)
-                WrathAccess.Speech.SpeechVoicePicker.Emit(b, k, SpeechManager.Default, voice, false, SelectedVoice, expandAll: true);
+                WrathAccess.Speech.SpeechVoicePicker.Emit(b, k, SpeechManager.Default, voice, false, SelectedVoice);
         }
 
         private static void SelectedVoice(string id)
