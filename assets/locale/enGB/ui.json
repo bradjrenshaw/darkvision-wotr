@@ -437,7 +437,7 @@
   "turn.cant_delay": "Can't delay the turn right now",
   "turn.delay_self": "That's the acting unit",
   "turn.delayed": "Turn delayed until after {name}",
-  "speech.handler_changed": "Speech handler changed to {handler}",
+  "speech.voice_changed": "Voice changed to {voice}",
   "speech.reset_prism": "Speech reset to {handler}",
   "overlay.default_name": "Default",
   "bind.option_add": "Add binding",

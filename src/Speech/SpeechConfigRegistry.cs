@@ -95,7 +95,7 @@ namespace WrathAccess.Speech
             cat.LabelProvider = () => name.Get(); // the menu node reads the live name
             // The shared config schema (output choice + the SAPI params), inherit-aware: every setting
             // follows the default config (SpeechManager.Default) until the user overrides it.
-            if (cat.Get<ChoiceSetting>("output") == null && cat.Get<NullableChoiceSetting>("output") == null)
+            if (cat.Get<StringSetting>("voice") == null)
                 SpeechManager.BuildConfigSchema(cat, SpeechManager.Default?.Tree);
         }
 

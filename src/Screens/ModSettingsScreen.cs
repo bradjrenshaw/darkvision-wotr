@@ -185,6 +185,7 @@ namespace WrathAccess.Screens
                     foreach (var s in speech.Children)
                     {
                         if (s is CategorySetting cs && cs.Key == "additional") continue; // rendered specially below
+                        if (WrathAccess.Speech.SpeechVoicePicker.TryEmit(b, s, WrathAccess.Speech.SpeechManager.Default, k)) continue;
                         if (EmitParamsInline(b, s, resolved, k)) continue;
                         ModSettingNodes.Emit(b, s, k);
                     }
@@ -620,11 +621,13 @@ namespace WrathAccess.Screens
         private static void EmitSpeechConfig(GraphBuilder b, CategorySetting cc, string id, string k)
         {
             string ck = k + "cfg." + id + ".";
-            var resolved = WrathAccess.Speech.SpeechConfigRegistry.Get(id)?.ResolvedHandlerKey;
+            var config = WrathAccess.Speech.SpeechConfigRegistry.Get(id);
+            var resolved = config?.ResolvedHandlerKey;
             b.BeginGroup(ControlId.Structural(ck + "group"), GraphNodes.Group(
                 () => WrathAccess.Speech.SpeechConfigRegistry.Name(id)));
             foreach (var s in cc.Children)
             {
+                if (WrathAccess.Speech.SpeechVoicePicker.TryEmit(b, s, config, ck)) continue;
                 if (EmitParamsInline(b, s, resolved, ck)) continue;
                 ModSettingNodes.Emit(b, s, ck); // the hidden "name" is skipped
             }

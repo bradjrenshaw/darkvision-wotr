@@ -55,7 +55,8 @@ namespace WrathAccess.Screens
                 foreach (var s in speech.Children)
                 {
                     if (s is CategorySetting cs && cs.Key == "additional") continue; // advanced-only
-                    // Applicable params render flat beside the output dropdown (inapplicable ones hide).
+                    // The voice picker (a tree over the library's categories), then the params that apply.
+                    if (WrathAccess.Speech.SpeechVoicePicker.TryEmit(b, s, WrathAccess.Speech.SpeechManager.Default, k + "speech.")) continue;
                     if (ModSettingsScreen.EmitParamsInline(b, s, resolved, k + "speech.")) continue;
                     ModSettingNodes.Emit(b, s, k + "speech.");
                 }

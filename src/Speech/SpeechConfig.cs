@@ -5,16 +5,17 @@ using WrathAccess.Settings;
 namespace WrathAccess.Speech
 {
     /// <summary>
-    /// A named, reusable way to speak — an output choice plus the SAPI params (rate, volume, boost,
-    /// voice), held in a settings subtree and turned into a Loadstar <see cref="Profile"/> on every
-    /// call (profiles are flat values; the library resolves them against its voice tree). The DEFAULT
-    /// config is the root Speech settings (drives all UI/announcement/dialogue speech); the user can add
-    /// more (advanced) for the events system to speak specific things through — e.g. enemy damage in a
-    /// different voice. An inheriting config's settings follow the default's until overridden.
+    /// A named, reusable way to speak — a voice pick (<see cref="SpeechVoices"/>) plus the synthesizer
+    /// params (rate, volume, boost), held in a settings subtree and turned into a Loadstar
+    /// <see cref="Profile"/> on every call (profiles are flat values; the library resolves them against
+    /// its voice tree). The DEFAULT config is the root Speech settings (drives all UI/announcement/
+    /// dialogue speech); the user can add more (advanced) for the events system to speak specific things
+    /// through — e.g. enemy damage in a different voice. An inheriting config's settings follow the
+    /// default's until overridden (an empty voice pick = inherit).
     /// </summary>
     public sealed class SpeechConfig
     {
-        /// <summary>The config's settings subtree: an "output" choice + the "sapi" params subnode.</summary>
+        /// <summary>The config's settings subtree: a hidden "voice" pick + the "sapi" params subnode.</summary>
         public CategorySetting Tree { get; }
 
         // The config this one inherits from (the default config) — null for the default itself.
@@ -22,19 +23,27 @@ namespace WrathAccess.Speech
 
         public SpeechConfig(CategorySetting tree, SpeechConfig baseConfig = null) { Tree = tree; _base = baseConfig; }
 
-        /// <summary>The chosen OUTPUT id ("auto" / a screen-reader name / "sapi" / "clipboard").</summary>
-        public string OutputId
+        /// <summary>An additional config (follows the default until overridden).</summary>
+        public bool InheritsFromDefault => _base != null;
+
+        /// <summary>This config's own pick as saved ("" = inherit / automatic).</summary>
+        public string RawVoiceId => Tree?.Get<StringSetting>("voice")?.Get() ?? "";
+
+        /// <summary>The effective pick: the default config's when this one inherits; "auto" when unset.</summary>
+        public string VoiceId
         {
             get
             {
-                var plain = Tree?.Get<ChoiceSetting>("output");
-                if (plain != null) return plain.Current?.Id ?? SpeechOutputs.Auto;
-                var nullable = Tree?.Get<NullableChoiceSetting>("output");
-                return nullable?.EffectiveId ?? SpeechOutputs.Auto;
+                var mine = RawVoiceId;
+                if (_base != null && SpeechVoices.IsInherit(mine)) return _base.VoiceId;
+                return SpeechVoices.IsInherit(mine) ? SpeechVoices.Auto : mine;
             }
         }
 
-        // ---- the SAPI params, inherit-aware ----
+        /// <summary>What the pick reads as in the UI ("Same as the default configuration" when inheriting).</summary>
+        public string VoiceLabel => SpeechVoices.Label(RawVoiceId, InheritsFromDefault);
+
+        // ---- the synthesizer params, inherit-aware ----
 
         private int Int(string key, int fallback)
         {
@@ -43,15 +52,6 @@ namespace WrathAccess.Speech
             var ni = mine?.Get<NullableIntSetting>(key);
             if (ni != null && ni.IsOverridden && ni.LocalValue.HasValue) return ni.LocalValue.Value;
             return _base.Int(key, fallback);
-        }
-
-        private string ChoiceId(string key)
-        {
-            var mine = Tree?.Get<CategorySetting>("sapi");
-            if (_base == null) return mine?.Get<ChoiceSetting>(key)?.ValueId;
-            var nc = mine?.Get<NullableChoiceSetting>(key);
-            if (nc != null && nc.IsOverridden) return nc.LocalValue;
-            return _base.ChoiceId(key);
         }
 
         /// <summary>Playback gain multiplier for POSITIONAL speech mixed through the mod's audio (SAPI's
@@ -66,7 +66,7 @@ namespace WrathAccess.Speech
             get
             {
                 var p = Profile.Default;
-                p.Voice = SpeechOutputs.VoiceFor(OutputId, ChoiceId("voice"));
+                p.Voice = SpeechVoices.Resolve(VoiceId);
                 p.Rate = (Int("rate", 2) + 10) / 20f;
                 p.Volume = Int("volume", 100) / 100f;
                 // Rendered (positional) speech: SAPI voices lead with ~100 ms of silence and trail
@@ -76,22 +76,28 @@ namespace WrathAccess.Speech
             }
         }
 
-        /// <summary>The settings-UI kind the profile resolves to right now ("prism" for a screen reader,
-        /// "sapi", "clipboard") — shows only the params that apply (Auto resolving to SAPI on a
-        /// screen-reader-less machine correctly reveals the SAPI settings).</summary>
-        public string ResolvedHandlerKey
+        /// <summary>The voice id the profile resolves to right now (after the library's fallback), 0 if none.</summary>
+        public ulong ResolvedVoice
         {
             get
             {
                 var ctx = SpeechManager.Context;
-                if (ctx == null) return null;
+                if (ctx == null) return 0;
                 ctx.Resolve(Profile, SpeechFeature.Speak, out var voice, out _, out _);
-                return SpeechOutputs.KindOfVoice(voice);
+                return voice;
             }
         }
 
+        /// <summary>The resolved voice's name, for announcements ("Voice changed to NVDA").</summary>
+        public string ResolvedVoiceName => SpeechManager.Context?.GetVoice(ResolvedVoice)?.Name ?? "";
+
+        /// <summary>The settings-UI kind the profile resolves to right now ("sapi" = takes rate/volume,
+        /// "prism" = a screen reader, "clipboard") — shows only the params that apply (Automatic
+        /// resolving to SAPI on a screen-reader-less machine correctly reveals the synthesizer knobs).</summary>
+        public string ResolvedHandlerKey => SpeechVoices.KindOfVoice(ResolvedVoice);
+
         /// <summary>Can speech through this config be positioned in the world (the voice renders to
-        /// PCM)? SAPI yes; screen readers no. The "use positional" CHOICE is a separate, event-side option.</summary>
+        /// PCM)? Synthesizers yes; screen readers no. The "use positional" CHOICE is a separate, event-side option.</summary>
         public bool SupportsPositional
         {
             get

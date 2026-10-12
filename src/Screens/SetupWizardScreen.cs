@@ -132,25 +132,18 @@ namespace WrathAccess.Screens
         private static void BuildBackendStep(GraphBuilder b, string k)
         {
             b.AddItem(ControlId.Structural(k + "help"), GraphNodes.Text(() => Loc.T("wizard.speech.backend_help")));
-            b.BeginStop(k + "options"); // the output list is its own Tab-stop after the help text
-            foreach (var choice in WrathAccess.Speech.SpeechOutputs.Choices())
-            {
-                var c = choice; // capture for the live closures
-                b.AddItem(ControlId.Structural(k + "engine:" + c.Id),
-                    GraphNodes.ChoiceOption(
-                        () => c.Label,
-                        () => OutputChoice()?.ValueId == c.Id,
-                        () => SelectOutput(c)));
-            }
+            b.BeginStop(k + "options"); // the voice tree is its own Tab-stop after the help text
+            var voice = VoiceSetting();
+            if (voice != null)
+                WrathAccess.Speech.SpeechVoicePicker.Emit(b, k, SpeechManager.Default, voice, false, SelectedVoice, expandAll: true);
         }
 
-        private static void SelectOutput(WrathAccess.Settings.Choice c)
+        private static void SelectedVoice(string id)
         {
-            OutputChoice()?.Set(c.Id); // selects "like normal" — writes the default config's output
-            // The sample IS the feedback: interrupt purges the generic output-changed confirm (and any
-            // backlog from rapid switching), so you hear THIS output demonstrate itself right where you
+            // The sample IS the feedback: interrupt purges the generic voice-changed confirm (and any
+            // backlog from rapid switching), so you hear THIS voice demonstrate itself right where you
             // chose it. (Clipboard has no audio — its "sample" lands on the clipboard, which is its nature.)
-            Tts.Speak(Loc.T("wizard.speech.sample", new { name = c.Label }), interrupt: true);
+            Tts.Speak(Loc.T("wizard.speech.sample", new { name = SelectedHandlerLabel() }), interrupt: true);
         }
 
         // ---- Step 2: that engine's own settings (the real controls) ----
@@ -265,10 +258,10 @@ namespace WrathAccess.Screens
                     if (existing == id) return id;
             id = SpeechConfigRegistry.Add();
             SpeechConfigRegistry.SetName(id, Loc.T(nameKey));
-            // An additional config's output is a NullableChoiceSetting (inherits the default config).
-            // SAPI: the positional voices need render-to-audio, which only SAPI supports.
-            SpeechConfigRegistry.Get(id)?.Tree?.Get<NullableChoiceSetting>("output")?.SetExplicit(
-                WrathAccess.Speech.SpeechOutputs.Sapi);
+            // An additional config inherits the default's voice until it picks one. The positional voices
+            // need render-to-audio, which only a synthesizer does: pick the SAPI 5 category's default.
+            SpeechConfigRegistry.Get(id)?.Tree?.Get<StringSetting>("voice")?.Set(
+                WrathAccess.Speech.SpeechVoices.CategoryAuto(WrathAccess.Speech.SpeechVoices.Sapi5Key));
             slot?.Set(id);
             return id;
         }
@@ -352,19 +345,20 @@ namespace WrathAccess.Screens
 
         // ---- helpers ----
 
-        private static ChoiceSetting OutputChoice() => SpeechManager.Default?.Tree?.Get<ChoiceSetting>("output");
+        private static StringSetting VoiceSetting() => SpeechManager.Default?.Tree?.Get<StringSetting>("voice");
 
-        // The chosen output's display label (the output list is already availability-filtered).
-        private static string SelectedHandlerLabel() => OutputChoice()?.Current?.Label ?? "";
-
-        // The chosen output's params subtree (SAPI's voice/rate/volume; screen-reader outputs have
-        // none, so the settings step drops out for them).
-        private static CategorySetting SelectedHandlerParams()
+        // The chosen voice's display label (what it resolved to, else the pick itself).
+        private static string SelectedHandlerLabel()
         {
-            var output = SpeechManager.Default?.OutputId;
-            return output == WrathAccess.Speech.SpeechOutputs.Sapi
-                ? SpeechManager.Default?.Tree?.Get<CategorySetting>("sapi") : null;
+            var name = SpeechManager.Default?.ResolvedVoiceName;
+            return string.IsNullOrEmpty(name) ? (SpeechManager.Default?.VoiceLabel ?? "") : name;
         }
+
+        // The chosen voice's params subtree (rate/volume/boost for a synthesizer; a screen reader has
+        // none, so the settings step drops out for it).
+        private static CategorySetting SelectedHandlerParams()
+            => SpeechManager.Default?.ResolvedHandlerKey == "sapi"
+                ? SpeechManager.Default?.Tree?.Get<CategorySetting>("sapi") : null;
 
         private static bool HasHandlerSettings()
         {

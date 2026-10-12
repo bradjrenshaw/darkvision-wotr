@@ -18,7 +18,7 @@ namespace WrathAccess.Speech
     public static class SpeechManager
     {
         private static bool _initialized;
-        private static ChoiceSetting _outputSetting; // the DEFAULT config's output choice
+        private static StringSetting _voiceSetting; // the DEFAULT config's voice pick
         private static List<SpeechCategory> _tree;
         private static ulong _treeGeneration;
 
@@ -35,9 +35,8 @@ namespace WrathAccess.Speech
         /// <summary>The default speech config — the root Speech settings; everything speaks through it.</summary>
         public static SpeechConfig Default { get; private set; }
 
-        /// <summary>Open the library context once (settings-build time, so the output choices can be
-        /// listed from the voice tree). Waits briefly for the first probe — tens of milliseconds; the
-        /// library never blocks after that.</summary>
+        /// <summary>Open the library context once (settings-build time, so the voice tree can be shown).
+        /// Waits briefly for the first probe — tens of milliseconds; the library never blocks after that.</summary>
         public static void EnsureContext()
         {
             if (Context != null) return;
@@ -72,47 +71,40 @@ namespace WrathAccess.Speech
             return _tree;
         }
 
-        /// <summary>Build the DEFAULT config into the Speech category (output dropdown + the SAPI
-        /// params), and adopt it as <see cref="Default"/>.</summary>
+        /// <summary>Build the DEFAULT config into the Speech category (voice pick + synthesizer params),
+        /// and adopt it as <see cref="Default"/>.</summary>
         public static void RegisterSettings(CategorySetting speechCategory)
         {
             EnsureContext();
             BuildConfigSchema(speechCategory);
-            _outputSetting = speechCategory.Get<ChoiceSetting>("output");
-            if (_outputSetting != null) _outputSetting.Changed += OnDefaultOutputChanged;
+            _voiceSetting = speechCategory.Get<StringSetting>("voice");
+            if (_voiceSetting != null) _voiceSetting.Changed += OnDefaultVoiceChanged;
             Default = new SpeechConfig(speechCategory);
         }
 
-        /// <summary>The schema every speech config shares: a "Speech output" choice — who speaks: Auto /
-        /// each screen reader / SAPI / Clipboard (<see cref="SpeechOutputs"/>) — plus the SAPI params
-        /// subtree (screen-reader outputs have no params; the reader owns its voice). The default config
-        /// (<paramref name="inheritFrom"/> null) gets plain settings; an additional config gets
-        /// INHERIT-aware ones. Hidden legacy carriers capture pre-refactor saved values for
+        /// <summary>The schema every speech config shares: a hidden "voice" pick (rendered by
+        /// <see cref="SpeechVoicePicker"/> as a tree over the library's categories) plus the synthesizer
+        /// params subtree (rate/volume/boost; screen readers have no params — the reader owns its voice).
+        /// The default config (<paramref name="inheritFrom"/> null) gets plain settings; an additional
+        /// config gets INHERIT-aware ones (an empty voice = the default's). Hidden carriers absorb the
+        /// pre-2026-10 saved values ("output", "sapi.voice", "handler", "prism.backend") for
         /// <see cref="MigrateLegacy"/>.</summary>
         public static void BuildConfigSchema(CategorySetting into, CategorySetting inheritFrom = null)
         {
             bool inherit = inheritFrom != null;
 
-            var outputChoices = SpeechOutputs.Choices();
-            if (inherit)
-            {
-                var nc = new NullableChoiceSetting("output", "Speech output", outputChoices, localizationKey: "speech.output");
-                nc.ResolveInherited = () => inheritFrom.Get<ChoiceSetting>("output")?.ValueId ?? SpeechOutputs.Auto;
-                into.Add(nc);
-            }
-            else
-            {
-                into.Add(new ChoiceSetting("output", "Speech output", outputChoices, SpeechOutputs.Auto, "speech.output"));
-            }
+            into.Add(new StringSetting("voice", "Voice", "", "speech.voice") { Hidden = true });
 
-            // The only output with params is SAPI (subtree key unchanged from the handler era, so
-            // existing voice/rate/volume/boost settings carry over untouched).
+            // The synthesizer params (subtree key unchanged from the handler era, so existing rate/
+            // volume/boost settings carry over untouched).
             var sapi = new CategorySetting("sapi", "SAPI", localizationKey: "speech.sapi");
             if (inherit) BuildInheritParams(sapi, inheritFrom.Get<CategorySetting>("sapi"));
             else BuildSapiParams(sapi);
+            sapi.Add(new StringSetting("voice", "Legacy SAPI voice", "") { Hidden = true }); // carrier
             into.Add(sapi);
 
-            // Legacy migration carriers: the pre-refactor file stored "handler" (+ "prism.backend").
+            // Legacy migration carriers (StringSettings absorb any saved value; MigrateLegacy converts once).
+            into.Add(new StringSetting("output", "Legacy speech output", "") { Hidden = true });
             into.Add(new StringSetting("handler", "Legacy handler", "") { Hidden = true });
             into.Add(new StringSetting("prism.backend", "Legacy prism backend", "") { Hidden = true });
         }
@@ -124,54 +116,53 @@ namespace WrathAccess.Speech
             // Playback gain above SAPI's 100 ceiling, applied only to POSITIONAL speech mixed through
             // the mod's own audio — which is otherwise quiet. 100 = no boost.
             into.Add(new IntSetting("boost", "Volume boost", 100, 100, 400, 10, "speech.sapi.boost"));
-            var voices = SpeechOutputs.SapiVoiceChoices();
-            into.Add(new ChoiceSetting("voice", "Voice", voices, voices[0].Id, "speech.sapi.voice"));
         }
 
-        // Inherit-aware mirror of the SAPI params: each int becomes a NullableIntSetting that follows
-        // the default config's same int; the voice choice gains an "Inherit" option (default).
+        // Inherit-aware mirror of the synthesizer params: each int becomes a NullableIntSetting that
+        // follows the default config's same int.
         private static void BuildInheritParams(CategorySetting into, CategorySetting defaultSub)
         {
             var scratch = new CategorySetting("sapi", "SAPI");
             BuildSapiParams(scratch);
             foreach (var child in scratch.Children)
             {
-                switch (child)
-                {
-                    case IntSetting i:
-                        into.Add(new NullableIntSetting(i.Key, i.Label, defaultSub?.Get<IntSetting>(i.Key), i.Min, i.Max, i.Step, i.LocalizationKey));
-                        break;
-                    case ChoiceSetting c:
-                        var cs = new NullableChoiceSetting(c.Key, c.Label, c.Choices, localizationKey: c.LocalizationKey);
-                        var defChoice = defaultSub?.Get<ChoiceSetting>(c.Key);
-                        cs.ResolveInherited = () => defChoice?.ValueId;
-                        into.Add(cs);
-                        break;
-                    default:
-                        into.Add(child);
-                        break;
-                }
+                if (child is IntSetting i)
+                    into.Add(new NullableIntSetting(i.Key, i.Label, defaultSub?.Get<IntSetting>(i.Key), i.Min, i.Max, i.Step, i.LocalizationKey));
+                else
+                    into.Add(child);
             }
         }
 
-        /// <summary>Convert a config's pre-refactor saved handler/backend into an output pick (run once
-        /// per config after settings load; no-op when no legacy value was in the file).</summary>
+        /// <summary>Convert a config's pre-refactor saved pick into a voice id (run once per config after
+        /// settings load; no-op when nothing legacy was in the file and a voice is already chosen).</summary>
         public static void MigrateLegacy(CategorySetting tree)
         {
-            var legacyHandler = tree?.Get<StringSetting>("handler");
-            var legacyBackend = tree?.Get<StringSetting>("prism.backend");
+            var voice = tree?.Get<StringSetting>("voice");
+            if (voice == null) return;
+            var legacyHandler = tree.Get<StringSetting>("handler");
+            var legacyBackend = tree.Get<StringSetting>("prism.backend");
+            var legacyOutput = tree.Get<StringSetting>("output");
+            var legacySapiVoice = tree.Get<CategorySetting>("sapi")?.Get<StringSetting>("voice");
             string handler = legacyHandler?.Get();
-            if (string.IsNullOrEmpty(handler)) return;
-            string output = SpeechOutputs.FromLegacy(handler, legacyBackend?.Get());
-            var plain = tree.Get<ChoiceSetting>("output");
-            if (plain != null) plain.Set(output);
-            else tree.Get<NullableChoiceSetting>("output")?.SetExplicit(output);
-            legacyHandler.Set("");
+            string output = legacyOutput?.Get();
+            string sapiVoice = legacySapiVoice?.Get();
+            if (string.IsNullOrEmpty(handler) && string.IsNullOrEmpty(output)) return;
+
+            if (SpeechVoices.IsInherit(voice.Get()))
+            {
+                string id = !string.IsNullOrEmpty(handler)
+                    ? SpeechVoices.FromLegacyHandler(handler, legacyBackend?.Get(), sapiVoice)
+                    : SpeechVoices.FromLegacyOutput(output, sapiVoice);
+                voice.Set(id);
+                Main.Log?.Log("[speech] migrated legacy pick (handler '" + handler + "', output '" + output + "', sapi voice '" + sapiVoice + "') -> voice '" + id + "'.");
+            }
+            legacyHandler?.Set("");
             legacyBackend?.Set("");
-            Main.Log?.Log("[speech] migrated legacy handler '" + handler + "' -> output '" + output + "'.");
+            legacyOutput?.Set("");
+            legacySapiVoice?.Set("");
         }
 
-        /// <summary>Arm speech after settings load (the persisted output applies from the first word).</summary>
+        /// <summary>Arm speech after settings load (the persisted pick applies from the first word).</summary>
         public static void Initialize()
         {
             if (Default?.Tree != null) MigrateLegacy(Default.Tree);
@@ -179,7 +170,7 @@ namespace WrathAccess.Speech
             if (Context != null && Default != null)
             {
                 var st = Context.Resolve(Default.Profile, SpeechFeature.Speak, out var voice, out var fellBack, out _);
-                Main.Log?.Log("[speech] default output = " + Default.OutputId + " -> voice " + voice.ToString("x")
+                Main.Log?.Log("[speech] default voice pick '" + Default.VoiceId + "' -> " + voice.ToString("x")
                     + " (" + (Context.GetVoice(voice)?.Name ?? "?") + ")" + (fellBack ? " [fell back]" : "") + " " + st);
             }
         }
@@ -194,7 +185,6 @@ namespace WrathAccess.Speech
             try { Context?.Dispose(); } catch (Exception e) { Main.Log?.Error("[speech] dispose: " + e.Message); }
             Context = null;
             _tree = null;
-            SpeechOutputs.Reset();
         }
 
         // ---- the default-config speak API (UI / announcements / dialogue) ----
@@ -234,30 +224,32 @@ namespace WrathAccess.Speech
             return engine.TrySpeakAt(Context, EventQueue, config.Profile, text, worldPos, config.Boost);
         }
 
-        private static void OnDefaultOutputChanged(string outputId)
+        private static void OnDefaultVoiceChanged(string voiceId)
         {
             if (!_initialized || !Ready) return; // pre-init writes are just the settings file loading
-            var label = _outputSetting?.Current?.Label ?? outputId;
-            Default.Output(Message.Localized("ui", "speech.handler_changed", new { handler = label }).Resolve());
+            var name = Default.ResolvedVoiceName;
+            if (string.IsNullOrEmpty(name)) name = Default.VoiceLabel;
+            var line = Message.Localized("ui", "speech.voice_changed", new { voice = name }).Resolve();
+            Tap(line);
+            Default.Output(line);
         }
 
-        /// <summary>Panic recovery (bound to a global hotkey): force the default speech config back to the
-        /// Auto output (your screen reader, best available) and ask the library to re-probe, so a reader
-        /// started after boot — or a stuck pick — can't keep us silent. Safe to call any time.</summary>
+        /// <summary>Panic recovery (bound to a global hotkey): force the default config back to Automatic
+        /// (your screen reader, best available) and ask the library to re-probe, so a reader started
+        /// after boot — or a stuck pick — can't keep us silent. Safe to call any time.</summary>
         public static void ResetToPrism()
         {
             if (!Ready) return;
             Context.Refresh();
-            var outputSetting = Default.Tree?.Get<ChoiceSetting>("output");
-            bool willAnnounceViaChange = outputSetting != null && outputSetting.ValueId != SpeechOutputs.Auto;
-            outputSetting?.Set(SpeechOutputs.Auto); // persist; fires OnDefaultOutputChanged IF it changed
+            var voice = Default.Tree?.Get<StringSetting>("voice");
+            bool willAnnounceViaChange = voice != null && !SpeechVoices.IsInherit(voice.Get()) && voice.Get() != SpeechVoices.Auto;
+            voice?.Set(SpeechVoices.Auto); // persist; fires OnDefaultVoiceChanged IF it changed
             if (!willAnnounceViaChange)
             {
-                Context.Resolve(Default.Profile, SpeechFeature.Speak, out var voice, out _, out _);
-                var name = Context.GetVoice(voice)?.Name ?? "none";
-                Default.Output(Message.Localized("ui", "speech.reset_prism", new { handler = name }).Resolve(), interrupt: true);
+                var name = Default.ResolvedVoiceName;
+                Default.Output(Message.Localized("ui", "speech.reset_prism", new { handler = string.IsNullOrEmpty(name) ? "none" : name }).Resolve(), interrupt: true);
             }
-            Main.Log?.Log("[speech] reset-to-auto-output requested.");
+            Main.Log?.Log("[speech] reset-to-automatic-voice requested.");
         }
     }
 }
