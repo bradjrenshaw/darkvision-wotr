@@ -218,7 +218,14 @@ namespace WrathAccess.Exploration.Overlays
             int trueSector = SectorOf(MapFrame.ToMap(Mathf.Atan2(dx, dz) * Mathf.Rad2Deg));
             if (trueSector != e.Sector) parts.Add(Loc.T("worldmap.exit_bears", new { bearing = Word(trueSector) }));
             if (e.Locked) parts.Add(Loc.T("worldmap.exit_locked"));
-            else if (e.Unexplored) parts.Add(Loc.T("worldmap.exit_unexplored"));
+            else if (e.Unexplored)
+            {
+                parts.Add(Loc.T("worldmap.exit_unexplored"));
+                // Exploring is offered only from the party's own node (the game draws explore arrows only at
+                // the pawn): say when a second press would just move the cursor. Not when the party stands at
+                // the far end — that road is explored from there, and the label already says "you are here".
+                if (!TravelerIsOn(from) && !TravelerIsOn(e.To)) parts.Add(Loc.T("worldmap.exit_party_away"));
+            }
             return string.Join(", ", parts);
         }
 

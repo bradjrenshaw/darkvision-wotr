@@ -550,6 +550,7 @@
   "worldmap.exit_bears": "lies {bearing}",
   "worldmap.exit_locked": "road closed",
   "worldmap.exit_unexplored": "unexplored road",
+  "worldmap.exit_party_away": "party not here",
   "worldmap.exit_toward": "toward {list}",
   "worldmap.no_exit": "No road {direction}",
   "worldmap.exits": "Roads: {list}",
