@@ -374,6 +374,8 @@
   "choice.mode.none": "None",
   "choice.mode.continuous": "Continuous",
   "choice.mode.tiled": "Tiled",
+  "choice.mode.connected": "Connected",
+  "cursor.connected_seeded": "Connected default applied",
   "sound.door": "Door",
   "sound.door_open": "Door open",
   "sound.loot-chest": "Chest",

@@ -89,6 +89,7 @@ namespace WrathAccess.Exploration.Overlays
                 var id = CursorSettings.Mode(slotCat);
                 if (id == CursorSettings.ModeContinuous) _modes.Add(new ContinuousGlide(slot, slotCat, ctx));
                 else if (id == CursorSettings.ModeTiled) _modes.Add(new TileStep(slot, slotCat));
+                else if (id == CursorSettings.ModeConnected) _modes.Add(new ConnectedStep(slot));
             }
             foreach (var m in _modes) m.OnEnter(this);
         }

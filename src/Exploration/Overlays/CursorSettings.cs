@@ -14,9 +14,10 @@ namespace WrathAccess.Exploration.Overlays
     ///   battles          movement (reserved for crusade tactical combat; inert until that is built)
     ///     movement
     ///       primary | secondary | tertiary | quaternary      (W A S D / Shift+W A S D / arrows / Shift+arrows)
-    ///         mode: none | continuous | tiled
+    ///         mode: none | continuous | tiled | connected (world map only)
     ///         continuous: speed            shown only while mode == continuous
     ///         tiled: tile size             shown only while mode == tiled (feet in an area, miles on the map)
+    ///         (connected has no tunables: the roads out of the point under the cursor are the moves)
     /// </code>
     /// Each mode keeps its OWN subtree so switching modes swaps what is shown without losing the other
     /// mode's tuned values (the subtree not matching the dropdown is hidden, never overwritten). An
@@ -37,6 +38,7 @@ namespace WrathAccess.Exploration.Overlays
         public const string ModeNone = "none";
         public const string ModeContinuous = "continuous";
         public const string ModeTiled = "tiled";
+        public const string ModeConnected = "connected"; // world map: road-graph stepping (ConnectedStep)
 
         private static readonly Choice[] AllModes =
         {
@@ -45,6 +47,8 @@ namespace WrathAccess.Exploration.Overlays
             new Choice(ModeTiled, "Tiled", "choice.mode.tiled"),
         };
         private static readonly Choice[] SteppingModes = { AllModes[0], AllModes[2] }; // battles: no free glide on a hex grid
+        private static readonly Choice[] WorldMapModes =
+            { AllModes[0], AllModes[1], AllModes[2], new Choice(ModeConnected, "Connected", "choice.mode.connected") };
 
         /// <summary>Fired after any slot's mode changes, in the defaults or in an overlay's copy — the
         /// cursors rebuild their movement modes from it.</summary>
@@ -83,7 +87,7 @@ namespace WrathAccess.Exploration.Overlays
             var wmm = Ensure(wm, "movement", "Movement modes", "cursor.movement");
             Slot(wmm, WorldMap, "primary", ModeContinuous, 18);
             Slot(wmm, WorldMap, "secondary", ModeContinuous, 45);
-            Slot(wmm, WorldMap, "tertiary", ModeTiled, 18);
+            Slot(wmm, WorldMap, "tertiary", ModeConnected, 18);
             Slot(wmm, WorldMap, "quaternary", ModeNone, 18);
 
             // Crusade battles: reserved. The hex grid wants stepping; a slot is none or tiled.
@@ -101,7 +105,7 @@ namespace WrathAccess.Exploration.Overlays
         private static void Slot(CategorySetting movement, string ctx, string key, string defaultMode, int defaultSpeed)
         {
             var slot = Ensure(movement, key, SlotLabel(key), "cursor.slot." + key);
-            var choices = ctx == Battles ? SteppingModes : AllModes;
+            var choices = ctx == Battles ? SteppingModes : ctx == WorldMap ? WorldMapModes : AllModes;
             var mode = slot.Get<ChoiceSetting>("mode");
             if (mode == null)
             {
@@ -118,6 +122,8 @@ namespace WrathAccess.Exploration.Overlays
                         ? new IntSetting("speed", "Speed (miles per second)", defaultSpeed, 1, 100, 1, "cursor.speed_miles")
                         : new IntSetting("speed", "Speed (feet per second)", defaultSpeed, 1, 60, 1, "cursor.speed_feet"));
             }
+            if (ctx == WorldMap && key == "tertiary" && slot.GetByKey("connected_seeded") == null)
+                slot.Add(new BoolSetting("connected_seeded", "Connected default applied", false, "cursor.connected_seeded") { Hidden = true });
             var tiled = Ensure(slot, ModeTiled, "Tiled", "cursor.tiled");
             tiled.Inline = true;
             if (tiled.GetByKey("cell_size") == null)
@@ -266,7 +272,21 @@ namespace WrathAccess.Exploration.Overlays
                 || p == "defaults.grid.cell_size" || p.EndsWith(".grid.custom.cell_size")
                 || (p.StartsWith("overlays.") && (p.Contains(".cursor.primary.") || p.Contains(".cursor.secondary."))));
             if (moved > 0) Main.Log?.Log("[cursor] migrated " + moved + " pre-refactor cursor settings into the cursor tree");
+            SeedConnected(root);
             RefreshVisibility(root);
+        }
+
+        // 2026-10-12: the world map's arrow slot defaults to the connected (road-graph) mode. Saved files
+        // hold every value, so an existing save still says "tiled" (the old default) — move it over ONCE,
+        // marked by a hidden flag so a later deliberate "tiled" pick sticks.
+        private static void SeedConnected(CategorySetting root)
+        {
+            var slot = root.Get<CategorySetting>(WorldMap)?.Get<CategorySetting>("movement")?.Get<CategorySetting>("tertiary");
+            var seeded = slot?.Get<BoolSetting>("connected_seeded");
+            var mode = slot?.Get<ChoiceSetting>("mode");
+            if (seeded == null || mode == null || seeded.Get()) return;
+            if (mode.Current?.Id == ModeTiled) mode.Set(ModeConnected);
+            seeded.Set(true);
         }
 
         // ---- helpers ----

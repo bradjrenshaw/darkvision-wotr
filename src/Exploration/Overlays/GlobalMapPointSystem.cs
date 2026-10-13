@@ -76,6 +76,13 @@ namespace WrathAccess.Exploration.Overlays
             if (sayArmy) yield return new OverlayAnnouncement(ctx.Want, Message.Raw(GlobalMapActions.ArmyInPlace(army)), OverlayAnnouncement.OrderContents);
             if (sayPoint) yield return new OverlayAnnouncement(ctx.Want, Message.Raw(GlobalMapActions.InPlace(inside)), OverlayAnnouncement.OrderContents + 1);
             if (sayArmy || sayPoint || ctx.Trigger == ReadoutTrigger.Settle) yield break;
+            // One of the roads' invisible nodes (the connected mode stops on them): its roads, with directions.
+            var node = ConnectedStep.SystemNodeWithin(ctx.Cursor);
+            if (node != null)
+            {
+                yield return new OverlayAnnouncement(ctx.Want, Message.Raw(ConnectedStep.DescribeNode(node)), OverlayAnnouncement.OrderContents);
+                yield break;
+            }
             // Nothing under the cursor: a step still places it (bearing + miles); a demand says so.
             yield return ctx.Trigger == ReadoutTrigger.Step
                 ? new OverlayAnnouncement(ctx.Want, Message.Raw(GlobalMapActions.PositionAt(ctx.Cursor)), OverlayAnnouncement.OrderPosition)
