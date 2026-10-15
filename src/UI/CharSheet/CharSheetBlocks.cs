@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kingmaker.Blueprints.Root;         // BlueprintRoot.MythicsSettings (shards vs mythic wording)
 using Kingmaker.Blueprints.Root.Strings; // UIStrings (game-localized Level Up label)
 using Kingmaker.UI.Common; // UIUtility.AddSign, UIUtilityItem.AttackData
 using Kingmaker.UI.MVVM._VM.ServiceWindows.CharacterInfo.Sections.LevelClassScores;
+using Kingmaker.UI.MVVM._VM.ServiceWindows.CharacterInfo.Sections.LevelClassScores.Experience; // CharInfoExperienceVM
+using Kingmaker.UnitLogic.Class.LevelUp;   // LevelUpController / LevelUpConfig / LevelUpState (the mythic button)
 using Kingmaker.UI.MVVM._VM.ServiceWindows.CharacterInfo.Sections.Martial.Attack;
 using Kingmaker.UI.MVVM._VM.ServiceWindows.CharacterInfo.Sections.Martial.Defence;
 using Kingmaker.UI.MVVM._VM.ServiceWindows.CharacterInfo.Sections.NameAndPortrait;
@@ -34,6 +37,29 @@ namespace WrathAccess.UI.CharSheet
         // withLevelUp adds the game's Level Up button next to the XP readout — only the character
         // sheet's prefab wires that button (CharInfoExperiencePCView null-checks it), so the
         // inventory's shared summary leaves it off, mirroring the game.
+        private static bool CanLevelUpMythic(CharInfoExperienceVM xp)
+        {
+            var unit = xp.Unit?.Value;
+            return unit != null && LevelUpController.CanLevelUpMythic(unit);
+        }
+
+        // The game words this button two ways (its console hint and the Mythic window pick the same):
+        // "shards" wording while the Shards mythic condition holds, else the plain mythic one.
+        private static string MythicLevelUpLabel()
+        {
+            var settings = BlueprintRoot.Instance?.MythicsSettings;
+            bool shards = settings != null && settings.ShardsMythicConditions != null && settings.ShardsMythicConditions.Condition.Check();
+            var t = UIStrings.Instance.CharacterSheet;
+            return shards ? t.ShardsLevelUp : t.MythicLevelUp;
+        }
+
+        private static void MythicLevelUp(CharInfoExperienceVM xp)
+        {
+            var unit = xp.Unit?.Value;
+            if (unit == null || !LevelUpController.CanLevelUpMythic(unit)) return; // re-check at press, like the game's gate
+            LevelUpConfig.Create(unit, LevelUpState.CharBuildMode.Mythic).OpenUI();
+        }
+
         public static void LevelClassScores(CharInfoLevelClassScoresVM lcs, ICharSheetSink sink, bool withLevelUp = false)
         {
             if (lcs == null) return;
@@ -51,6 +77,14 @@ namespace WrathAccess.UI.CharSheet
                     items.Add(GraphNodes.Button(
                         () => TextUtil.StripRichText(UIStrings.Instance.InGameMenuTexts.LevelUpText),
                         () => xp.LevelUp()));
+                if (withLevelUp && CanLevelUpMythic(xp))
+                    // The game's second button lives on the Mythic window's level block
+                    // (MythicInfoLevelVM.LevelUp) and on the party portrait; the sheet is where the mod
+                    // offers both. Same gate (LevelUpController.CanLevelUpMythic, read live like the
+                    // portrait's) and the same call: the wizard in its Mythic build mode.
+                    items.Add(GraphNodes.Button(
+                        () => TextUtil.StripRichText(MythicLevelUpLabel()),
+                        () => MythicLevelUp(xp)));
                 sink.ListSection(Loc.T("section.level"), items);
             }
 

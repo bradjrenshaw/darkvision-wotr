@@ -14,6 +14,7 @@ using Kingmaker.UI.MVVM._VM.CharGen.Phases.Name;
 using Kingmaker.UI.MVVM._VM.CharGen.Phases.Spells;
 using Kingmaker.UI.MVVM._VM.CharGen.Phases.Total;
 using Kingmaker.UI.MVVM._VM.CharGen.Phases.Appearance;
+using Kingmaker.UI.MVVM._VM.CharGen.Phases.Mythic;
 using WrathAccess.UI;
 
 namespace WrathAccess.Screens
@@ -72,6 +73,7 @@ namespace WrathAccess.Screens
             Register<CharGenSpellsPhaseVM>(vm => new SpellsPhaseContent(vm));
             Register<CharGenTotalPhaseVM>(vm => new TotalPhaseContent(vm));
             Register<CharGenAppearancePhaseVM>(vm => new AppearancePhaseContent(vm));
+            Register<CharGenMythicPhaseVM>(vm => new MythicPhaseContent(vm));
         }
     }
 }

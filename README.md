@@ -14,7 +14,7 @@ the world around you, and review "buffers" for inspecting characters in detail.
 
 - **Speech** through your screen reader (NVDA, JAWS, etc.) via Prism, with a Windows SAPI fallback.
 - **Custom keyboard navigation** in mouse mode, with key-repeat matching your OS settings.
-- **Main menu**, the **New Game** flow, and **character creation / level-up**.
+- **Main menu**, the **New Game** flow, and **character creation / level-up**, including mythic rank-ups and the mythic path choice.
 - **Settings** (checkboxes, sliders, dropdowns) and **rebindable key bindings**.
 - A **mod menu** (Ctrl+M) with the mod's own settings and a **first-run setup wizard** that walks
   you through speech, movement, wall tones, sonar, and event feedback.
@@ -139,7 +139,7 @@ Turn-based combat is supported. When it begins you'll hear whose turn it is, and
 To use an ability or spell, tab to the action bar and choose it; the game then enters targeting mode. Aim with either cursor: move the movement cursor onto a target and press enter, or put the review cursor on a target and press i. Press escape to cancel targeting (when you're not targeting, escape opens the game menu instead).
 
 ### Your character windows
-You can open the main character screens directly, both in an area and on the world map: control c for the character sheet, control i for inventory, control b for the spellbook, and control j for the journal. Each one toggles, so pressing the key again closes it, and you move around inside with the usual arrows, tab, and enter. The encyclopedia and local map don't have a shortcut yet; open them from the Windows panel of the in-game UI.
+You can open the main character screens directly, both in an area and on the world map: control c for the character sheet, control i for inventory, control b for the spellbook, and control j for the journal. Each one toggles, so pressing the key again closes it, and you move around inside with the usual arrows, tab, and enter. When a character has a level or a mythic rank waiting, the character sheet’s level section carries the game’s Level Up button, with the Mythic Level Up button beneath it; either opens the level-up wizard. The encyclopedia and local map don't have a shortcut yet; open them from the Windows panel of the in-game UI.
 
 ### Dialogue
 Conversations are presented as a transcript you can read through: what has already been said, the current line, and your answer choices, including any skill-check options. Choose an answer to continue; storybook passages (book events) work the same way, with any check results and the notifications a page produces (experience, items, alignment and crusade changes) read as part of the passage. Speech never interrupts itself, so lines won't cut each other off.
