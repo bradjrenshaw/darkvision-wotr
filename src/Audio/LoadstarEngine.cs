@@ -86,7 +86,7 @@ namespace WrathAccess.Audio
                 Main.Log?.Log("[loadstar] output open: " + e.Description);
                 return e;
             }
-            catch (DllNotFoundException e) { Main.Log?.Warning("[loadstar] loadstar.dll not found next to Wrath.exe — " + e.Message); }
+            catch (DllNotFoundException e) { Main.Log?.Warning("[loadstar] loadstar.dll could not be loaded from next to Wrath.exe (missing, or a library it needs is missing) — " + e.Message); }
             catch (EntryPointNotFoundException e) { Main.Log?.Warning("[loadstar] loadstar.dll is too old (missing export) — " + e.Message); }
             catch (Exception e) { Main.Log?.Warning("[loadstar] open failed — " + e.Message); }
             return null;

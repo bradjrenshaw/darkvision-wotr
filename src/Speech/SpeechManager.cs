@@ -52,7 +52,7 @@ namespace WrathAccess.Speech
                 Main.Log?.Log("[speech] loadstar speech open in " + (DateTime.UtcNow - t0).TotalMilliseconds.ToString("F0") + " ms; prism: "
                     + (string.IsNullOrEmpty(ctx.PrismVersion) ? "not loaded" : ctx.PrismVersion));
             }
-            catch (DllNotFoundException e) { Main.Log?.Error("[speech] loadstar.dll not found next to Wrath.exe — no speech. " + e.Message); }
+            catch (DllNotFoundException e) { Main.Log?.Error("[speech] loadstar.dll could not be loaded from next to Wrath.exe (missing, or a library it needs is missing) — no speech. " + e.Message); }
             catch (EntryPointNotFoundException e) { Main.Log?.Error("[speech] loadstar.dll is too old (missing lv_* exports) — no speech. " + e.Message); }
             catch (Exception e) { Main.Log?.Error("[speech] speech context failed to open — no speech. " + e); }
         }
