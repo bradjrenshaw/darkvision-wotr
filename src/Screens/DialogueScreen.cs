@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using Kingmaker;
-using Kingmaker.Blueprints.Root.Strings; // UINotificationTexts (game-localized notification formats)
 using Kingmaker.GameModes;
-using Kingmaker.Settings;                // SettingsRoot (the game's per-category notification toggles)
 using Kingmaker.UI.Common;               // UIUtility.SkillCheckText / alignment texts
 using Kingmaker.UI.MVVM._VM.Dialog.Dialog;
 using UniRx;
@@ -32,8 +30,8 @@ namespace WrathAccess.Screens
     /// delivery. So: announce when the cue is new, we're in Dialog mode, AND the cue isn't cutscene-
     /// scheduled. Notification lines arrive with the cue-show event (the VM clears its lists right after
     /// the command, so the subscriber snapshots synchronously) and are QUEUED ahead of the cue line as
-    /// separate utterances — nothing in dialogue ever interrupts speech (user spec). Book events,
-    /// interchapters, and kingdom/crusade notification categories are not handled here yet.
+    /// separate utterances — nothing in dialogue ever interrupts speech (user spec). The lines themselves
+    /// come from <see cref="DialogTranscript.Notifications"/>, shared with the book-event screen.
     /// </summary>
     public sealed class DialogueScreen : Screen
     {
@@ -127,7 +125,7 @@ namespace WrathAccess.Screens
                 _notifSub = vm.DialogNotifications.OnUpdateCommand.Subscribe(show =>
                 {
                     if (!show) return;
-                    var lines = ComposeNotifications(vm.DialogNotifications);
+                    var lines = DialogTranscript.Notifications(vm.DialogNotifications);
                     _pendingNotifRows.AddRange(lines);
                     _pendingSpeak.AddRange(lines);
                 });
@@ -231,60 +229,6 @@ namespace WrathAccess.Screens
                 }
             }
             b.PopContext();
-        }
-
-        // Mirrors DialogNotificationsView: the same per-category game settings gates and the same
-        // game-localized UINotificationTexts formats; colors stripped for speech. Kingdom/crusade
-        // categories (stats, events, free buildings, morale) are deferred with the kingdom screens.
-        private static List<string> ComposeNotifications(DialogNotificationsVM n)
-        {
-            var lines = new List<string>();
-            var t = UINotificationTexts.Instance;
-
-            if (SettingsRoot.Game.Dialogs.ShowAlignmentShiftsNotifications)
-            {
-                foreach (var shift in n.AlignmentShifts)
-                    lines.Add(TextUtil.StripRichText(string.Format(t.AlignmentShiftedFormat, "#FFFFFF",
-                        UIUtility.GetAlignmentShiftDirectionText(shift.Direction), shift.Value)));
-                var cueData = n.CueData;
-                if (cueData != null && cueData.NewAlignment.HasValue)
-                    lines.Add(TextUtil.StripRichText(string.Format(t.NewAlignmentAfterShiftedFormat, "#FFFFFF",
-                        UIUtility.GetAlignmentName(cueData.NewAlignment.Value))));
-            }
-
-            if (SettingsRoot.Game.Dialogs.ShowLocationRevealedNotification && n.RevealedLocationNames.Count > 0)
-                lines.Add(TextUtil.StripRichText(string.Format(
-                    n.RevealedLocationNames.Count < 2 ? t.RevealedLocationFormat : t.RevealedLocationsFormat,
-                    string.Join(", ", n.RevealedLocationNames.ToArray()))));
-
-            if (SettingsRoot.Game.Dialogs.ShowItemsReceivedNotification)
-            {
-                var got = new List<string>();
-                var lost = new List<string>();
-                foreach (var kv in n.ItemsChanged)
-                {
-                    if (kv.Key == null || kv.Value == 0) continue;
-                    int abs = Math.Abs(kv.Value);
-                    var label = abs > 1 ? kv.Key.Name + " ×" + abs : kv.Key.Name;
-                    (kv.Value > 0 ? got : lost).Add(label);
-                }
-                if (got.Count > 0)
-                    lines.Add(TextUtil.StripRichText(string.Format(t.ItemsRecievedFormat, string.Join(", ", got.ToArray()))));
-                if (lost.Count > 0)
-                    lines.Add(TextUtil.StripRichText(string.Format(t.ItemsLostFormat, string.Join(", ", lost.ToArray()))));
-            }
-
-            if (SettingsRoot.Game.Dialogs.ShowXPGainedNotification && n.XpGains.Count > 0)
-            {
-                int sum = 0;
-                foreach (var x in n.XpGains) sum += x;
-                lines.Add(TextUtil.StripRichText(string.Format(t.XPGainedFormat, sum)));
-            }
-
-            foreach (var c in n.CustomNotifications)
-                if (!string.IsNullOrEmpty(c)) lines.Add(TextUtil.StripRichText(c));
-
-            return lines;
         }
 
         private static string CueLine(DialogVM vm) => TextUtil.StripRichText(CueLineRaw(vm));

@@ -142,7 +142,7 @@ To use an ability or spell, tab to the action bar and choose it; the game then e
 You can open the main character screens directly, both in an area and on the world map: control c for the character sheet, control i for inventory, control b for the spellbook, and control j for the journal. Each one toggles, so pressing the key again closes it, and you move around inside with the usual arrows, tab, and enter. The encyclopedia and local map don't have a shortcut yet; open them from the Windows panel of the in-game UI.
 
 ### Dialogue
-Conversations are presented as a transcript you can read through: what has already been said, the current line, and your answer choices, including any skill-check options. Choose an answer to continue; storybook passages (book events) work the same way. Speech never interrupts itself, so lines won't cut each other off.
+Conversations are presented as a transcript you can read through: what has already been said, the current line, and your answer choices, including any skill-check options. Choose an answer to continue; storybook passages (book events) work the same way, with any check results and the notifications a page produces (experience, items, alignment and crusade changes) read as part of the passage. Speech never interrupts itself, so lines won't cut each other off.
 
 ### Vendors and trade
 A vendor window is a series of labelled panels you tab between: your inventory, the store, your buying cart, your selling cart, the bulk-sell options, the running deal total, and close. Pressing enter on an item moves it the sensible way for the panel it's in (buying from the store, selling from your inventory, or returning something from a cart), and the deal button confirms the trade.
