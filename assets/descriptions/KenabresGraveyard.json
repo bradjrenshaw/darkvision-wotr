@@ -1,0 +1,168 @@
+{
+  "rooms": [
+    {
+      "x": -27.4,
+      "y": 1.28,
+      "z": -76.24,
+      "key": "cem_maple_corner"
+    },
+    {
+      "x": -21.9,
+      "y": 1.21,
+      "z": -75.24,
+      "key": "cem_railed_plot"
+    },
+    {
+      "x": -39.4,
+      "y": 1.29,
+      "z": -71.49,
+      "key": "cem_headstone_field"
+    },
+    {
+      "x": -20.9,
+      "y": 1.11,
+      "z": -69.24,
+      "key": "cem_opened_grave"
+    },
+    {
+      "x": -55.15,
+      "y": 1.05,
+      "z": -63.24,
+      "key": "cem_cart_yard"
+    },
+    {
+      "x": -26.4,
+      "y": 0.9,
+      "z": -61.24,
+      "key": "cem_crossroads"
+    },
+    {
+      "x": -72.65,
+      "y": 0.97,
+      "z": -57.99,
+      "key": "cem_street"
+    },
+    {
+      "x": -35.4,
+      "y": 0.98,
+      "z": -58.24,
+      "key": "cem_crossroads_graves"
+    },
+    {
+      "x": -42.4,
+      "y": 1.01,
+      "z": -55.74,
+      "key": "cem_maple_graves"
+    },
+    {
+      "x": -60.65,
+      "y": 1.03,
+      "z": -53.74,
+      "key": "cem_mausoleum_enclosure"
+    },
+    {
+      "x": -52.4,
+      "y": 1.31,
+      "z": -52.74,
+      "key": "cem_maple_plot"
+    },
+    {
+      "x": -83.15,
+      "y": 1.0,
+      "z": -49.49,
+      "key": "cem_ladder_nook"
+    },
+    {
+      "x": -43.15,
+      "y": 0.95,
+      "z": -45.99,
+      "key": "cem_tower_yard"
+    },
+    {
+      "x": -39.65,
+      "y": 2.0,
+      "z": -44.49,
+      "key": "cem_tower_stair"
+    },
+    {
+      "x": -49.15,
+      "y": 6.76,
+      "z": -40.99,
+      "key": "cem_tower_roof"
+    },
+    {
+      "x": -42.4,
+      "y": 5.23,
+      "z": -40.49,
+      "key": "cem_scaffold_stair"
+    },
+    {
+      "x": -30.15,
+      "y": 7.73,
+      "z": -37.99,
+      "key": "cem_house_rooftop"
+    },
+    {
+      "x": -68.15,
+      "y": 1.0,
+      "z": -35.24,
+      "key": "cem_drain_yard"
+    },
+    {
+      "x": -23.9,
+      "y": 5.77,
+      "z": -28.74,
+      "key": "cem_tower_wall_descent"
+    },
+    {
+      "x": -41.15,
+      "y": 1.13,
+      "z": -24.24,
+      "key": "cem_roofless_nave"
+    },
+    {
+      "x": -76.65,
+      "y": 1.02,
+      "z": -22.74,
+      "key": "cem_cart_street"
+    },
+    {
+      "x": -25.15,
+      "y": 2.94,
+      "z": -22.24,
+      "key": "cem_tower_climb"
+    },
+    {
+      "x": -65.4,
+      "y": 2.36,
+      "z": -18.49,
+      "key": "cem_timber_platform"
+    },
+    {
+      "x": -59.9,
+      "y": 0.98,
+      "z": -16.74,
+      "key": "cem_ruin_foot"
+    },
+    {
+      "x": -72.4,
+      "y": 0.96,
+      "z": -15.74,
+      "key": "cem_street_end"
+    }
+  ],
+  "merges": [
+    [
+      [
+        -72.65,
+        0.97,
+        -57.99
+      ],
+      [
+        -72.7,
+        1.0,
+        -50.8
+      ]
+    ]
+  ]
+}
