@@ -281,6 +281,7 @@
   "system.worldmap_point": "World map point readout",
   "system.aoe": "Area preview",
   "system.log": "Log",
+  "system.tactical_cell": "Battle grid readout",
   "overlay.custom": "Custom settings",
   "overlay.customize": "Customize for this overlay",
   "overlay.reset_defaults": "Reset to defaults",

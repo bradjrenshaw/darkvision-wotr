@@ -74,9 +74,11 @@ namespace WrathAccess.Exploration.Overlays
             }
             _spoken = inside; _spokenArmy = army;
             if (sayArmy) yield return new OverlayAnnouncement(ctx.Want, Message.Raw(GlobalMapActions.ArmyInPlace(army)), OverlayAnnouncement.OrderContents);
-            if (sayPoint) yield return new OverlayAnnouncement(ctx.Want, Message.Raw(GlobalMapActions.InPlace(inside)), OverlayAnnouncement.OrderContents + 1);
+            // A bend or fork reads with its roads (it has no name of its own to tell it apart).
+            if (sayPoint) yield return new OverlayAnnouncement(ctx.Want, Message.Raw(GlobalMapModel.IsSystemNode(inside)
+                ? ConnectedStep.DescribeNode(inside) : GlobalMapActions.InPlace(inside)), OverlayAnnouncement.OrderContents + 1);
             if (sayArmy || sayPoint || ctx.Trigger == ReadoutTrigger.Settle) yield break;
-            // One of the roads' invisible nodes (the connected mode stops on them): its roads, with directions.
+            // An UNREVEALED bend or fork (no junction dot; the connected mode still stops on them): its roads.
             var node = ConnectedStep.SystemNodeWithin(ctx.Cursor);
             if (node != null)
             {

@@ -51,6 +51,18 @@ namespace WrathAccess.Exploration
             var mode = game.CurrentMode;
             if (mode == GameModeType.Cutscene || mode == GameModeType.Dialog || mode == GameModeType.Rest) return false;
 
+            // A crusade battle: the ears sit on the battle-grid cursor (or the acting squad), facing the way
+            // the CAMERA faces — the same frame the battle's steps, coordinates, sonar and wall tones use. The area's listener facing and in-area cursor don't apply here (the
+            // facing defaults to the area's map north, which for the battle map is world -Z: game
+            // sounds on the right were heard on the left).
+            if (TacticalModel.Active)
+            {
+                var at = choice == "cursor" ? Overlays.Cursor.Tactical.Position : Overlays.Cursor.Tactical.Reference;
+                pos = at + Vector3.up * HeightMetres;
+                rot = Quaternion.Euler(0f, TacticalModel.CameraYaw, 0f);
+                return true;
+            }
+
             var anchor = (choice == "cursor" && Cursor.Has)
                 ? Cursor.Position.Value
                 : Overlays.Cursor.PlayerPosition; // the TB-aware reference (acting unit in turn-based)

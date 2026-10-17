@@ -32,33 +32,7 @@ namespace WrathAccess.Screens
             b.BeginStop(k).PushContext(l.CommonVM?.Name.Value ?? "", "group");
 
             b.AddItem(ControlId.Structural(k + ":level"), GraphNodes.Text(() => LevelLine(l)));
-            b.AddItem(ControlId.Structural(k + ":atk"), GraphNodes.Text(
-                () => Line(ct.AttackBonusTooltipHeader, l.StatsVM.AttackBonus.Value),
-                () => SimpleTooltip.Make(ct.AttackBonusTooltipHeader, ct.AttackBonusTooltipDescription)));
-            b.AddItem(ControlId.Structural(k + ":def"), GraphNodes.Text(
-                () => Line(ct.DefenceBonusTooltipHeader, l.StatsVM.DefenseBonus.Value),
-                () => SimpleTooltip.Make(ct.DefenceBonusTooltipHeader, ct.DefenceBonusTooltipDescription)));
-            b.AddItem(ControlId.Structural(k + ":spell"), GraphNodes.Text(
-                () => Line(ct.SpellBonusTooltipHeader, l.StatsVM.SpellStrength.Value),
-                () => SimpleTooltip.Make(ct.SpellBonusTooltipHeader, ct.SpellBonusTooltipDescription)));
-            b.AddItem(ControlId.Structural(k + ":size"), GraphNodes.Text(
-                () => Line(ct.ArmySizeIncreaseTooltipHeader, l.StatsVM.ArmySize.Value),
-                () => SimpleTooltip.Make(ct.ArmySizeIncreaseTooltipHeader, ct.ArmySizeIncreaseTooltipDescription)));
-            b.AddItem(ControlId.Structural(k + ":inf"), GraphNodes.Text(
-                () => Line(ct.InfirmaryTooltipHeader, l.StatsVM.Infirmary.Value),
-                () => SimpleTooltip.Make(ct.InfirmaryTooltipHeader, ct.InfirmaryTooltipDescription)));
-            b.AddItem(ControlId.Structural(k + ":mana"), GraphNodes.Text(
-                () => Loc.T("worldmap.size_line", new { name = (string)ct.MagicReserves, current = l.StatsVM.CurrentMana.Value, max = l.StatsVM.MaxMana.Value })));
-
-            var skills = l.SkillsVM.Skills;
-            for (int i = 0; i < skills.Count; i++)
-            {
-                var s = skills[i];
-                if (s == null) continue;
-                b.AddItem(ControlId.Referenced(s, k + ":skill:" + i), GraphNodes.Text(
-                    () => s.Count.Value > 1 ? Loc.T("crusade.skill_count", new { name = s.Name.Value, count = s.Count.Value }) : s.Name.Value,
-                    () => s.GetTooltipTemplate()));
-            }
+            Rows(b, k, l.StatsVM, l.SkillsVM);
 
             bool cooling = honourCooldown && l.AssignmentCooldown.Value > TimeSpan.Zero;
             if (cooling)
@@ -68,6 +42,42 @@ namespace WrathAccess.Screens
                 b.AddItem(ControlId.Structural(k + ":act"), GraphNodes.Button(buttonLabel, () => l.OnClick()));
 
             b.PopContext();
+        }
+
+        /// <summary>A general's card rows over its stats and skills VMs: the five stats (Space = the
+        /// game's stat tooltip), magic reserves, one row per skill (Space = the skill's tooltip). Shared
+        /// by the army panels' cards and the battle's leader card.</summary>
+        public static void Rows(GraphBuilder b, string k, ArmyLeaderStatsVM stats, ArmyLeaderSkillsVM skillsVm)
+        {
+            var ct = UIStrings.Instance.CrusadeTexts;
+            b.AddItem(ControlId.Structural(k + ":atk"), GraphNodes.Text(
+                () => Line(ct.AttackBonusTooltipHeader, stats.AttackBonus.Value),
+                () => SimpleTooltip.Make(ct.AttackBonusTooltipHeader, ct.AttackBonusTooltipDescription)));
+            b.AddItem(ControlId.Structural(k + ":def"), GraphNodes.Text(
+                () => Line(ct.DefenceBonusTooltipHeader, stats.DefenseBonus.Value),
+                () => SimpleTooltip.Make(ct.DefenceBonusTooltipHeader, ct.DefenceBonusTooltipDescription)));
+            b.AddItem(ControlId.Structural(k + ":spell"), GraphNodes.Text(
+                () => Line(ct.SpellBonusTooltipHeader, stats.SpellStrength.Value),
+                () => SimpleTooltip.Make(ct.SpellBonusTooltipHeader, ct.SpellBonusTooltipDescription)));
+            b.AddItem(ControlId.Structural(k + ":size"), GraphNodes.Text(
+                () => Line(ct.ArmySizeIncreaseTooltipHeader, stats.ArmySize.Value),
+                () => SimpleTooltip.Make(ct.ArmySizeIncreaseTooltipHeader, ct.ArmySizeIncreaseTooltipDescription)));
+            b.AddItem(ControlId.Structural(k + ":inf"), GraphNodes.Text(
+                () => Line(ct.InfirmaryTooltipHeader, stats.Infirmary.Value),
+                () => SimpleTooltip.Make(ct.InfirmaryTooltipHeader, ct.InfirmaryTooltipDescription)));
+            b.AddItem(ControlId.Structural(k + ":mana"), GraphNodes.Text(
+                () => Loc.T("worldmap.size_line", new { name = (string)ct.MagicReserves, current = stats.CurrentMana.Value, max = stats.MaxMana.Value })));
+
+            var skills = skillsVm.Skills;
+            for (int i = 0; i < skills.Count; i++)
+            {
+                var s = skills[i];
+                if (s == null) continue;
+                b.AddItem(ControlId.Referenced(s, k + ":skill:" + i), GraphNodes.Text(
+                    () => s.Count.Value > 1 ? Loc.T("crusade.skill_count", new { name = s.Name.Value, count = s.Count.Value }) : s.Name.Value,
+                    () => s.GetTooltipTemplate()));
+            }
+
         }
 
         /// <summary>The same card as read-only tooltip lines — for the game's army-leader tooltip brick

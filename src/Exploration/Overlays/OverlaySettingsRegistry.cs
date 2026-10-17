@@ -34,6 +34,7 @@ namespace WrathAccess.Exploration.Overlays
             () => new AoePreviewSystem(),
             () => new LogSystem(),
             () => new GlobalMapSonarSystem(), // WorldMap-scoped: sweeps map points under the engaged overlay
+            () => new TacticalCellSystem(),   // Tactical-scoped: the crusade battle grid's cell readout
         };
 
         // One prototype per system type (for Key/Name/schema; never bound or ticked).
@@ -83,7 +84,7 @@ namespace WrathAccess.Exploration.Overlays
         // worldmap_sonar defaults OFF (2026-07-22): it sweeps every location on the map at once — the
         // old setup wizard's sonar step turned it off as its recommendation; now it just starts off.
         private static readonly HashSet<string> DefaultOn =
-            new HashSet<string> { "grid", "sonar", "fog", "object", "path", "aoe", "log", "worldmap_point" };
+            new HashSet<string> { "tactical_cell", "grid", "sonar", "fog", "object", "path", "aoe", "log", "worldmap_point" };
 
         private static readonly Dictionary<string, Overlay> _objects = new Dictionary<string, Overlay>();
         private static bool _cursorChangedWired;

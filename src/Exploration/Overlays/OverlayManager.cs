@@ -52,7 +52,8 @@ namespace WrathAccess.Exploration.Overlays
                 // a cutscene), while the audio systems decide for themselves (today: they keep playing).
                 var key = ScreenManager.Current.Key;
                 return key == "ctx.ingame" || key == "ctx.globalmap"
-                    || key == WrathAccess.Screens.LocalMapScreen.ScreenKey; // map screen: same systems, ears on the map cursor
+                    || key == WrathAccess.Screens.LocalMapScreen.ScreenKey // map screen: same systems, ears on the map cursor
+                    || key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey; // crusade battle: its grid cursor + readout
             }
         }
 
@@ -60,9 +61,30 @@ namespace WrathAccess.Exploration.Overlays
         /// filter (in-area systems on "ctx.ingame", world-map systems on "ctx.globalmap"). The map screen
         /// counts as IN-AREA: it's the same space and the same systems, just heard from the map cursor
         /// (the Cursor read-override the screen registers).</summary>
-        internal static OverlayScope CurrentScope =>
-            ScreenManager.Current != null && ScreenManager.Current.Key == "ctx.globalmap"
-                ? OverlayScope.WorldMap : OverlayScope.InArea;
+        internal static OverlayScope CurrentScope
+        {
+            get
+            {
+                var key = ScreenManager.Current?.Key;
+                if (key == "ctx.globalmap") return OverlayScope.WorldMap;
+                if (key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey) return OverlayScope.Tactical;
+                return OverlayScope.InArea;
+            }
+        }
+
+        /// <summary>The cursor of the live context (the one the verbs act on).</summary>
+        internal static Cursor CurrentCursor
+        {
+            get
+            {
+                switch (CurrentScope)
+                {
+                    case OverlayScope.WorldMap: return Cursor.WorldMap;
+                    case OverlayScope.Tactical: return Cursor.Tactical;
+                    default: return Cursor.Area;
+                }
+            }
+        }
 
         public static bool Active => InExploration && _active >= 0;
 
@@ -94,7 +116,7 @@ namespace WrathAccess.Exploration.Overlays
             if (Current == null) { Tts.Speak(Loc.T("overlay.off"), interrupt: true); return; }
             Tts.Speak(Current.Name, interrupt: true);
             Current.OnEnter();
-            Cursor.Area.AnnounceCurrent(); // through the new lens (its modes re-resolve on the next tick if it customized the cursor)
+            CurrentCursor.AnnounceCurrent(); // through the new lens (its modes re-resolve on the next tick if it customized the cursor)
         }
 
         // Every frame (whether or not we're exploring): the live context's cursor moves first (its modes
@@ -107,8 +129,11 @@ namespace WrathAccess.Exploration.Overlays
         {
             SetForceHeld("walltones", InputManager.Held("overlay.holdWalltones"));
             SetForceHeld("sonar", InputManager.Held("overlay.holdSonar"));
-            if (CurrentScope == OverlayScope.InArea) { Cursor.Area.Tick(dt); Cursor.WorldMap.Idle(); }
-            else { Cursor.WorldMap.Tick(dt); Cursor.Area.Idle(); }
+            var live = CurrentCursor;
+            foreach (var c in new[] { Cursor.Area, Cursor.WorldMap, Cursor.Tactical })
+                if (c == live) c.Tick(dt); else c.Idle();
+            // Each battle's cursor starts fresh, on the acting squad.
+            if (!WrathAccess.Exploration.TacticalModel.Active && Cursor.Tactical.Space is TacticalSpace ts) ts.Reset();
             Current?.Tick(dt);
         }
 
@@ -139,8 +164,8 @@ namespace WrathAccess.Exploration.Overlays
             Tts.Speak(Loc.T("overlay.mode_set", new { system = sysName, mode = setting.Current?.Label ?? "" }), interrupt: true);
         }
 
-        public static void Recenter() { if (Active) Cursor.Area.Recenter(); }
-        public static void AnnounceCurrent() { if (Active) Cursor.Area.AnnounceCurrent(); }
-        public static void VerticalFollow(int dir) { if (Active) Cursor.Area.VerticalFollow(dir); }
+        public static void Recenter() { if (Active) CurrentCursor.Recenter(); }
+        public static void AnnounceCurrent() { if (Active) CurrentCursor.AnnounceCurrent(); }
+        public static void VerticalFollow(int dir) { if (Active) CurrentCursor.VerticalFollow(dir); }
     }
 }

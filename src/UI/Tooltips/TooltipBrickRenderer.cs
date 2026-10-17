@@ -30,6 +30,11 @@ namespace WrathAccess.UI.Tooltips
 
         public bool IsEmpty => string.IsNullOrWhiteSpace(Text);
 
+        /// <summary>Several drill targets on one line, each with its own label — a brick whose columns
+        /// each carry a tooltip (the BAB / CMB / CMD row's glossary entries). Space treats them like the
+        /// links in a line of text: one opens directly, several open a chooser.</summary>
+        public List<KeyValuePair<string, Func<TooltipBaseTemplate>>> Links { get; set; }
+
         /// <summary>Set by the flow builder on rows that came from the template's HEADER (the name
         /// line): a document with header rows only is still "empty" to the reader.</summary>
         public bool FromHeader { get; internal set; }
@@ -60,7 +65,7 @@ namespace WrathAccess.UI.Tooltips
         }
 
         protected static string Join(params string[] parts) =>
-            string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+            string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.Trim()));
 
         protected static string StatLine(CharInfoStatVM s)
         {

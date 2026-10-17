@@ -1,0 +1,64 @@
+{
+  "rooms": [
+    {
+      "x": -8.63,
+      "y": 41.46,
+      "z": -23.38,
+      "key": "hh_north_grass_hollow"
+    },
+    {
+      "x": 5.62,
+      "y": 41.68,
+      "z": -22.63,
+      "key": "hh_rock_spur_ledge"
+    },
+    {
+      "x": -20.38,
+      "y": 41.49,
+      "z": -22.63,
+      "key": "hh_collapsed_tent_site"
+    },
+    {
+      "x": 16.87,
+      "y": 38.52,
+      "z": -19.88,
+      "key": "hh_sunken_glade_floor"
+    },
+    {
+      "x": 22.37,
+      "y": 38.5,
+      "z": -13.63,
+      "key": "hh_cliff_foot_nook"
+    },
+    {
+      "x": -21.63,
+      "y": 41.56,
+      "z": -11.63,
+      "key": "hh_wrecked_cart_nook"
+    },
+    {
+      "x": -0.63,
+      "y": 41.45,
+      "z": -8.13,
+      "key": "hh_burned_battleground"
+    },
+    {
+      "x": -14.13,
+      "y": 39.8,
+      "z": 10.62,
+      "key": "hh_autumn_woodland"
+    },
+    {
+      "x": 19.37,
+      "y": 38.1,
+      "z": 17.62,
+      "key": "hh_western_glade"
+    },
+    {
+      "x": 4.87,
+      "y": 38.18,
+      "z": 18.12,
+      "key": "hh_leafy_slope"
+    }
+  ]
+}

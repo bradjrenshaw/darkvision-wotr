@@ -23,11 +23,15 @@ namespace WrathAccess.Exploration.Overlays
         /// <summary>The world-map cursor: its own point over the flat map, in miles.</summary>
         public static Cursor WorldMap { get; private set; } = new Cursor(new GlobalMapSpace(), CursorSettings.WorldMap);
 
+        /// <summary>The crusade battle cursor: a cell of the game's battle grid, one fixed mode.</summary>
+        public static Cursor Tactical { get; private set; } = new Cursor(new TacticalSpace(), CursorSettings.Battles);
+
         /// <summary>Module load/reload: fresh cursors (modes, settle, motion, the map's placed point).</summary>
         public static void ResetAll()
         {
             Area = new Cursor(new AreaSpace(), CursorSettings.Exploration);
             WorldMap = new Cursor(new GlobalMapSpace(), CursorSettings.WorldMap);
+            Tactical = new Cursor(new TacticalSpace(), CursorSettings.Battles);
         }
 
         public CursorSpace Space { get; }
@@ -82,6 +86,13 @@ namespace WrathAccess.Exploration.Overlays
             _boundContext = ctx;
             foreach (var m in _modes) m.OnExit(this);
             _modes.Clear();
+            var fixedModes = Space.FixedModes(); // a space whose geometry fixes the movement (the battle grid)
+            if (fixedModes != null)
+            {
+                _modes.AddRange(fixedModes);
+                foreach (var m in _modes) m.OnEnter(this);
+                return;
+            }
             TileCell = CursorSettings.DefaultTileCell(ctx, Space);
             foreach (var slot in CursorKeys.Slots)
             {

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Kingmaker.View; // ObstacleAnalyzer.TraceAlongNavmesh
 using UnityEngine;
 
@@ -48,6 +49,48 @@ namespace WrathAccess.Exploration.Overlays
         /// <summary>Whether the shared explore.* movement keys belong to this cursor right now: its own
         /// screen is on top. (The local map screen reads them for its own cursor, so neither of these does.)</summary>
         public abstract bool OwnsKeys { get; }
+
+        /// <summary>A space whose movement is fixed by its geometry (the crusade battle grid) supplies its
+        /// own modes instead of the cursor settings' per-slot dropdowns; null = resolve from settings.</summary>
+        public virtual List<MovementMode> FixedModes() => null;
+    }
+
+    /// <summary>The crusade (tactical) battle space: the game's 9 x 7 square grid. The point is always a
+    /// cell centre; it starts on — and recenters to — the acting squad's cell, and is forgotten when a
+    /// battle ends so the next one starts fresh. One movement mode, fixed: a cell per press
+    /// (<see cref="GridStep"/>) on the primary keys (WASD) and the arrows. The battlefield is seen from
+    /// its long side with the camera looking along world +Z, so "up" is +Z (row up) and "right" is +X.</summary>
+    internal sealed class TacticalSpace : CursorSpace
+    {
+        private Vector2Int? _cell;
+        public Vector2Int Cell => _cell ?? TacticalModel.HomeCell;
+
+        public void Reset() => _cell = null;
+        public void SetCell(Vector2Int c) => _cell = TacticalModel.Clamp(c);
+
+        public override Vector3 Get() => TacticalModel.Active ? TacticalModel.CellCenter(Cell) : Vector3.zero;
+        public override void Set(Vector3 p) { if (TacticalModel.Active) SetCell(TacticalModel.CellAt(p)); }
+        public override Vector3 Reference => TacticalModel.Active ? TacticalModel.CellCenter(TacticalModel.HomeCell) : Vector3.zero;
+
+        public override float Unit => 3f; // metres per cell
+        public override int DefaultCell => 1;
+        public override int DefaultSpeed => 1;
+        public override void InputToWorld(ref float dx, ref float dz) { }
+        public override void StepToWorld(ref int dx, ref int dz) { }
+
+        public override bool CanMove => TacticalModel.Active;
+        public override bool OwnsKeys => WrathAccess.Screens.ScreenManager.Current?.Key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey;
+
+        public override bool Trace(Vector3 from, Vector3 intended, bool slide, out Vector3 traced)
+        {
+            traced = TacticalModel.CellCenter(TacticalModel.CellAt(intended));
+            return (traced - from).sqrMagnitude >= 1e-6f;
+        }
+
+        public override Vector3 Land(float x, float z, float keepY) => TacticalModel.CellCenter(TacticalModel.CellAt(new Vector3(x, keepY, z)));
+
+        public override List<MovementMode> FixedModes()
+            => new List<MovementMode> { new GridStep(MovementSlot.Primary), new GridStep(MovementSlot.Tertiary) };
     }
 
     /// <summary>The in-area space: the shared world point, navmesh-bound, feet, listener-relative input.</summary>

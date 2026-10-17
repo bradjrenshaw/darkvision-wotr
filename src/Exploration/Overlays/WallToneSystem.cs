@@ -42,6 +42,9 @@ namespace WrathAccess.Exploration.Overlays
         private const float WallSlack = 1.75f;
 
         private static readonly Vector3[] DirVecs = { Vector3.forward, Vector3.back, Vector3.right, Vector3.left }; // ahead, behind, right, left
+        private static readonly Vector2Int[] GridDirs = { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) }; // same order, battle grid
+        private const int GridRange = 3;                 // cells: a blocked cell further than this is silent
+        private const float TacticalCellMetres = 3f;     // the battle grid's cell edge
 
         private int _gen = -1;          // AudioEngines.Generation the voices were created on
         private IWallTones _walls;      // tone set 1 — real walls (sight-blocked)
@@ -71,10 +74,11 @@ namespace WrathAccess.Exploration.Overlays
             // Silent without control (cutscene; on the map: a panel open): the overlay stays engaged, but
             // wall tones shouldn't play over a scripted scene. Mute (don't dispose) so they resume seamlessly.
             bool onMap = OverlayManager.CurrentScope == OverlayScope.WorldMap;
-            var cursor = onMap ? Cursor.WorldMap : Cursor.Area;
+            bool onGrid = OverlayManager.CurrentScope == OverlayScope.Tactical;
+            var cursor = OverlayManager.CurrentCursor;
             if (!OverlayManager.Active || !ShouldPlay(overlay) || !cursor.Space.CanMove) { Mute(); return; }
 
-            bool split = Split && !onMap; // the map's edge is never an "obstacle
+            bool split = Split && !onMap && !onGrid; // the map's edge is never an "obstacle"
             // A backend switch disposed the engine our voices lived on: drop and recreate them.
             if (_gen != AudioEngines.Generation)
             {
@@ -87,6 +91,34 @@ namespace WrathAccess.Exploration.Overlays
 
             var c = cursor.Position;
             float v = EffectiveVolume;
+
+            if (onGrid)
+            {
+                // The battle grid: in each direction (ahead = row up, right = column right; world deltas
+                // are the ear frame here), the first cell you can't step into — the field's edge or an
+                // obstacle — sounds from the boundary in front of it, over three cells.
+                var from = ((TacticalSpace)cursor.Space).Cell;
+                for (int i = 0; i < 4; i++)
+                {
+                    var g = GridDirs[i];
+                    var step = TacticalModel.ScreenStep(g.x, g.y); // the view's ahead / behind / right / left
+                    int n = 1;
+                    while (n <= GridRange)
+                    {
+                        var cc = new Vector2Int(from.x + step.x * n, from.y + step.y * n);
+                        if (!TacticalModel.IsValid(cc) || TacticalModel.ObstacleAt(cc)) break;
+                        n++;
+                    }
+                    float dist = (n - 0.5f) * TacticalCellMetres; // to the near face of the blocking cell
+                    _hits[i] = c + new Vector3(step.x, 0f, step.y) * dist;
+                    float t = Mathf.Clamp01(1f - dist / (GridRange * TacticalCellMetres));
+                    _wallVols[i] = n <= GridRange ? t * t * v : 0f;
+                    _obstVols[i] = 0f;
+                }
+                _walls.Update(_hits, _wallVols);
+                _obstacles?.Update(_hits, _obstVols);
+                return;
+            }
 
             if (onMap)
             {

@@ -53,7 +53,9 @@ namespace WrathAccess.Screens
             // Two hosts (in-area static HUD, or the world map's own context) — same dual-context
             // shape as ServiceWindows.Current, so Ctrl+L works on the global map too.
             var rc = Game.Instance?.RootUiContext;
-            var clog = rc?.InGameVM?.StaticPartVM?.CombatLogVM ?? rc?.GlobalMapVM?.CombatLogVM;
+            // In an area, on the world map, or in a crusade battle (which carries its own log, with the battle channels).
+            var clog = (rc != null && rc.IsTacticalCombat ? rc.TacticalCombatVM?.CombatLogVM : null)
+                ?? rc?.InGameVM?.StaticPartVM?.CombatLogVM ?? rc?.GlobalMapVM?.CombatLogVM;
             return clog != null ? ChannelsField?.GetValue(clog) as List<CombatLogChannel> : null;
         }
 

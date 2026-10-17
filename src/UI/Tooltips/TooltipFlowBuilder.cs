@@ -27,6 +27,16 @@ namespace WrathAccess.UI.Tooltips
         /// <param name="includeEmptyNotice">When the template yields no rows, add a single
         /// "No tooltip information" row (true, for standalone pages where Space must show something)
         /// or emit nothing (false, for embedded detail panels).</param>
+        // A line with several labelled drill targets: one opens directly, several open the chooser.
+        private static void OpenLinks(BrickLine line)
+        {
+            if (line.Links.Count == 1) { var t = line.Links[0].Value(); if (t != null) WrathAccess.Screens.TooltipScreen.Open(t); return; }
+            var labels = new System.Collections.Generic.List<string>();
+            var opens = new System.Collections.Generic.List<System.Func<Owlcat.Runtime.UI.Tooltips.TooltipBaseTemplate>>();
+            foreach (var kv in line.Links) { labels.Add(kv.Key); opens.Add(kv.Value); }
+            WrathAccess.Screens.TooltipScreen.OpenMenu(Loc.T("tooltip.links_title"), labels, opens);
+        }
+
         public static int Emit(WrathAccess.UI.Graph.GraphBuilder b, string keyPrefix,
             TooltipBaseTemplate template, TooltipTemplateType type = TooltipTemplateType.Info,
             bool includeEmptyNotice = true)
@@ -45,8 +55,11 @@ namespace WrathAccess.UI.Tooltips
                     // Every row offers Space: the handler resolves the drill targets LIVE (the line's own
                     // template + inline glossary links from the RAW text) and speaks "no tooltip" when
                     // there are none — the reader's UX.
-                    OnTooltip = () => WrathAccess.Screens.TooltipScreen.FollowLinks(
-                        line.Text, null, line.DrillIn != null ? line.DrillIn() : null),
+                    OnTooltip = () =>
+                    {
+                        if (line.Links != null && line.Links.Count > 0) { OpenLinks(line); return; }
+                        WrathAccess.Screens.TooltipScreen.FollowLinks(line.Text, null, line.DrillIn != null ? line.DrillIn() : null);
+                    },
                 });
                 i++;
             }

@@ -95,14 +95,15 @@ namespace WrathAccess.Exploration
             => Points.Where(p => p != null && p.State != null && p.State.IsRevealed
                 && p.Blueprint != null && (p.Blueprint.Type == GlobalMapPointType.Location || IsWarCamp(p)));
 
-        /// <summary>Revealed road junctions — the VISIBLE crossroads markers (type Waypoint), not browse
-        /// targets. SYSTEM waypoints are excluded: they are invisible path nodes (no model, no icon, no hover
-        /// sound) that exist so roads can bend and fork — a sighted player never sees or clicks one, so we
-        /// don't list one either (they stay in the road graph for routing; see <see cref="IsSystemNode"/>).
+        /// <summary>Revealed road junctions — the VISIBLE crossroads markers. Both waypoint kinds count once
+        /// revealed: a SYSTEM waypoint (where a road bends or forks) gets the very same junction dot as a
+        /// plain Waypoint on reveal (WaypointVisualMesh), a click collider, and the same click → location
+        /// panel → travel (verified live 2026-10-17). UNREVEALED system waypoints have no visual and stay
+        /// out of every list (the connected mode still stops at them: the drawn road visibly bends there).
         /// The junction the war camp stands on is a location instead.</summary>
         public static IEnumerable<GlobalMapPointView> Junctions
             => Points.Where(p => p != null && p.State != null && p.State.IsRevealed
-                && p.Blueprint != null && p.Blueprint.Type == GlobalMapPointType.Waypoint && !IsWarCamp(p));
+                && p.Blueprint != null && p.Blueprint.Type.IsWaypoint() && !IsWarCamp(p));
 
         /// <summary>An invisible routing node (system waypoint) — part of the road, not a place. Roads are
         /// read THROUGH these: the next place along a road is the first non-system point.</summary>

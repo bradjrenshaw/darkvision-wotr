@@ -426,6 +426,15 @@ namespace WrathAccess.Exploration
             bool standUp = (states != null && states.Move.Type == CombatAction.UsageType.Standup)
                 || (turn.UnitCanGetUpOnCommand.Value && cu.Descriptor.State.Prone.Active);
             if (standUp && moveOk) moveState = Message.Localized("ui", "combat.move_standup").Resolve();
+            // A RESTRICTED move action (one action this round: surprise round, staggered) isn't spent —
+            // the game greys the slot because walking now costs the standard action instead. Saying
+            // "used" read as if the unit had already acted (user report: a pet that hadn't moved). Name
+            // the surprise round with the game's own string; any other restriction reads "unavailable".
+            else if (!moveOk && cu.IsMoveActionRestricted() && !cu.UsedStandardAction())
+                moveState = Game.Instance.TurnBasedCombatController.IsSurprising(cu)
+                    ? Message.Localized("ui", "combat.move_restricted_reason",
+                        new { reason = (string)UIStrings.Instance.TurnBasedTexts.SurpriseRound }).Resolve()
+                    : Message.Localized("ui", "combat.move_restricted").Resolve();
             var sb = new System.Text.StringBuilder(Message.Localized("ui", "combat.status_actions", new
             {
                 name = cu.CharacterName,

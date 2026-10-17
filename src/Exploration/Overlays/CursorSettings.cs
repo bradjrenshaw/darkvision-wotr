@@ -11,7 +11,7 @@ namespace WrathAccess.Exploration.Overlays
     /// cursor
     ///   exploration      behaviours (announce rooms, wall slide, …) + movement
     ///   worldmap         movement
-    ///   battles          movement (reserved for crusade tactical combat; inert until that is built)
+    ///   battles          hidden: crusade battles have ONE fixed mode (a grid cell per press, TacticalSpace)
     ///     movement
     ///       primary | secondary | tertiary | quaternary      (W A S D / Shift+W A S D / arrows / Shift+arrows)
     ///         mode: none | continuous | tiled | connected (world map only)
@@ -92,6 +92,7 @@ namespace WrathAccess.Exploration.Overlays
 
             // Crusade battles: reserved. The hex grid wants stepping; a slot is none or tiled.
             var bt = Ensure(root, Battles, "Crusade battles", "cursor.battles");
+            bt.Hidden = true; // the battle grid fixes its one movement mode (TacticalSpace.FixedModes)
             var btm = Ensure(bt, "movement", "Movement modes", "cursor.movement");
             Slot(btm, Battles, "primary", ModeTiled, 0);
             Slot(btm, Battles, "secondary", ModeNone, 0);

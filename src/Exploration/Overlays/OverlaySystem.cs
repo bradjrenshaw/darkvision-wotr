@@ -7,7 +7,7 @@ namespace WrathAccess.Exploration.Overlays
     /// overlay only ticks/announces systems matching the live context (see <see cref="OverlayManager.CurrentScope"/>),
     /// so navmesh-bound in-area systems stay off the map while world-map systems stay off in areas; the Log
     /// is Both (it just reads the game's log feed).</summary>
-    internal enum OverlayScope { InArea, WorldMap, Both }
+    internal enum OverlayScope { InArea, WorldMap, Both, Tactical }
 
     /// <summary>How a system decides to play: never (Off), only while the cursor is moving (WhenMoving),
     /// or always (Continuous) — the shared vocabulary for every system's "mode" dropdown + cycle order.</summary>
@@ -110,7 +110,7 @@ namespace WrathAccess.Exploration.Overlays
 
         /// <summary>Whether this system's relevant cursor is moving (for WhenMoving). Default: the shared
         /// in-area cursor; world-map systems override to their own cursor.</summary>
-        protected virtual bool MovingNow(Overlay overlay) => Cursor.Area.MovingRecently;
+        protected virtual bool MovingNow(Overlay overlay) => OverlayManager.CurrentCursor.MovingRecently;
 
         protected bool Bool(string key, bool fallback) => Settings?.Get<BoolSetting>(key)?.Get() ?? fallback;
         protected int Int(string key, int fallback) => Settings?.Get<IntSetting>(key)?.Get() ?? fallback;

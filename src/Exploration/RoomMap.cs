@@ -473,6 +473,18 @@ namespace WrathAccess.Exploration
                 }
             }
 
+            // 3.6) DOOR LEAVES: a door's NavmeshCut moves with its leaf (InteractionDoorPart only
+            //      disables it with DisableNavmeshCutWhenOpen, which most doors don't set). Closed, the
+            //      cut sits in the doorway — a boundary anyway. Open, the leaf lies against the wall
+            //      BESIDE the doorway and pinches the room it swung into, and the watershed read that
+            //      pinch as a second doorway (the cemetery street split in two when its gate opened;
+            //      same class of report before). So every door cut's footprint, grown by the agent
+            //      radius the cutter expands cuts by, casts no clearance shadow — like furniture. The
+            //      cells stay unwalkable (cursor and pathing use the live navmesh; exits come from real
+            //      graph connectivity); only the clearance field ignores them. Doors only: other cuts
+            //      (rubble, barricades) are real structure.
+            MaskDoorLeaves(walk, noShadow);
+
             // 4) Chamfer 3-4 distance transform → clearance in metres.
             var dist = new int[n];
             const int INF = int.MaxValue / 4;
@@ -795,6 +807,79 @@ namespace WrathAccess.Exploration
         }
 
         // 4-neighbourhood binary dilation/erosion passes (the slope mask's close-then-open).
+        // Rasterize each door's NavmeshCut contour (a world-space polygon from the live leaf
+        // transform), dilated by the recast character radius the cutter grows cuts by, into
+        // noShadow — unwalkable cells only; walkable cells are never touched.
+        private static void MaskDoorLeaves(bool[] walk, bool[] noShadow)
+        {
+            var state = Game.Instance?.State;
+            if (state == null || AstarPath.active?.data?.graphs == null) return;
+            float radius = 0.5f;
+            foreach (var g in AstarPath.active.data.graphs)
+                if (g is RecastGraph rg) { radius = rg.characterRadius; break; }
+            int grow = Mathf.CeilToInt((radius + 0.1f) / _cell);
+            int n = _w * _h;
+            bool[] mask = null;
+            var contours = new List<List<Vector3>>();
+            int doors = 0;
+            foreach (var mo in state.MapObjects)
+            {
+                var view = mo?.View;
+                if (view == null || view.NavmeshCuts == null || view.NavmeshCuts.Count == 0) continue;
+                if (mo.Get<Kingmaker.View.MapObjects.InteractionDoorPart>() == null) continue;
+                doors++;
+                foreach (var cut in view.NavmeshCuts)
+                {
+                    if (cut == null) continue;
+                    contours.Clear();
+                    try { cut.GetContour(contours); } catch { continue; }
+                    foreach (var poly in contours)
+                    {
+                        if (poly == null || poly.Count < 3) continue;
+                        mask ??= new bool[n];
+                        FillPolygon(poly, mask);
+                    }
+                }
+            }
+            if (mask == null) return;
+            Morph(mask, grow, dilate: true);
+            int masked = 0;
+            for (int i = 0; i < n; i++)
+                if (mask[i] && !walk[i]) { noShadow[i] = true; masked++; }
+            Main.Log?.Log("[rooms] " + doors + " door leaves cast no clearance shadow (" + masked + " cells)");
+        }
+
+        // Scanline point-in-polygon over the polygon's cell bounding box (XZ). Cell centres follow
+        // the rasterizer's mapping: grid x = (world x − x0) / cell + 1.
+        private static void FillPolygon(List<Vector3> poly, bool[] mask)
+        {
+            float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+            foreach (var p in poly)
+            {
+                if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+                if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
+            }
+            int lox = Mathf.Max(0, (int)((minX - _x0) / _cell)), hix = Mathf.Min(_w - 1, (int)((maxX - _x0) / _cell) + 2);
+            int loz = Mathf.Max(0, (int)((minZ - _z0) / _cell)), hiz = Mathf.Min(_h - 1, (int)((maxZ - _z0) / _cell) + 2);
+            for (int gz = loz; gz <= hiz; gz++)
+                for (int gx = lox; gx <= hix; gx++)
+                {
+                    float px = _x0 + (gx - 0.5f) * _cell, pz = _z0 + (gz - 0.5f) * _cell;
+                    if (PointInPolygon(px, pz, poly)) mask[gz * _w + gx] = true;
+                }
+        }
+
+        private static bool PointInPolygon(float px, float pz, List<Vector3> poly)
+        {
+            bool inside = false;
+            for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
+            {
+                var a = poly[i]; var b = poly[j];
+                if ((a.z > pz) != (b.z > pz) && px < (b.x - a.x) * (pz - a.z) / (b.z - a.z) + a.x) inside = !inside;
+            }
+            return inside;
+        }
+
         private static void Morph(bool[] m, int iters, bool dilate)
         {
             int n = _w * _h;

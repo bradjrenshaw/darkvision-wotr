@@ -20,6 +20,10 @@ namespace WrathAccess.Exploration.Overlays
         public override string Name => "Sonar";
         public override string Key => "sonar";
 
+        // In-area AND crusade battles (the battle grid sweeps its squads, below); never the world map,
+        // which has its own sonar (GlobalMapSonarSystem).
+        public override OverlayScope Scope => OverlayScope.Both;
+
         private readonly List<ScanItem> _sweep = new List<ScanItem>(); // ordered snapshot for the current sweep
         private int _index;   // next thing in _sweep to ping
         private float _timer; // seconds until the next ping / until the end-of-sweep rest elapses
@@ -130,7 +134,7 @@ namespace WrathAccess.Exploration.Overlays
         }
 
         // The sweep's distance→volume curve (reads the live ref-distance + system volume settings).
-        private float VolumeFor(float dist)
+        internal float VolumeFor(float dist)
         {
             float refDist = Int("ref_distance", 10) * Geo.MetresPerFoot;
             return Mathf.Clamp(refDist / (refDist + dist), MinVol, 1f) * EffectiveVolume;
@@ -144,6 +148,8 @@ namespace WrathAccess.Exploration.Overlays
         {
             // Silent without control (cutscene): the overlay stays engaged, but the sonar shouldn't sweep
             // over a scripted scene. ResetSweep so it starts fresh when control returns.
+            if (OverlayManager.CurrentScope == OverlayScope.WorldMap) { ResetSweep(); _field?.Reset(); return; }
+            if (OverlayManager.CurrentScope == OverlayScope.Tactical) { _field?.Reset(); TacticalTick(dt, overlay); return; }
             if (!OverlayManager.Active || !ShouldPlay(overlay) || !WrathAccess.ControlState.HasControl) { ResetSweep(); _field?.Reset(); return; }
 
             if (ChoiceId("sonar_mode", "sweep") == "pulse") { ResetSweep(); PulseTick(dt, overlay); return; }
@@ -205,7 +211,60 @@ namespace WrathAccess.Exploration.Overlays
                 FirePing(fired[i], overlay); // live-positioned SpatialSources, same as the sweep
         }
 
-        private void ResetSweep() { _sweep.Clear(); _index = 0; _timer = 0f; }
+        private void ResetSweep() { _sweep.Clear(); _index = 0; _timer = 0f; _squads.Clear(); }
+
+        // ---- crusade battles: sweep the squads on the grid ----
+        // The same left-to-right sweep over every live squad on the field (it is small: the whole
+        // battle is in range), each pinged at its cell with its side's unit sound from the Scanner tab
+        // (units.enemies / units.party), heard from the grid cursor. The battle is seen from its long
+        // side with the camera looking along world +Z, so world deltas ARE the ear frame (no listener
+        // facing here): +X right, +Z ahead.
+        private readonly List<Kingmaker.EntitySystem.Entities.UnitEntityData> _squads = new List<Kingmaker.EntitySystem.Entities.UnitEntityData>();
+
+        private void TacticalTick(float dt, Overlay overlay)
+        {
+            if (!OverlayManager.Active || !ShouldPlay(overlay) || !TacticalModel.Active) { ResetSweep(); return; }
+            _timer -= dt;
+            if (_timer > 0f) return;
+            if (_index >= _squads.Count)
+            {
+                _squads.Clear();
+                foreach (var u in TacticalModel.Squads())
+                    if (ScanSounds.Resolve(SquadNode(u)) != null) _squads.Add(u);
+                var c = Cursor.Tactical.Position;
+                _squads.Sort((a, b) => EarX(a.Position, c).CompareTo(EarX(b.Position, c))); // left to right as heard
+                _index = 0;
+                if (_squads.Count == 0) { _timer = RestSec; return; }
+            }
+            var squad = _squads[_index++];
+            var cell = TacticalModel.CellOf(squad);
+            var snd = ScanSounds.Resolve(SquadNode(squad));
+            if (cell.HasValue && snd != null && !squad.State.IsDead)
+                PlayTacticalAt(Path.Combine(OverlayAudio.Dir, "interactables", snd + ".wav"),
+                    Cursor.Tactical.Position, TacticalModel.CellCenter(cell.Value), this);
+            _timer = _index >= _squads.Count ? RestSec : GapSec(_squads.Count);
+        }
+
+        private static float EarX(Vector3 p, Vector3 c)
+        {
+            float dx = p.x - c.x, dz = p.z - c.z;
+            TacticalModel.ToEar(ref dx, ref dz);
+            return dx;
+        }
+
+        private static string SquadNode(Kingmaker.EntitySystem.Entities.UnitEntityData u)
+            => TacticalModel.IsOwn(u) ? ScanTaxonomy.UnitsParty : ScanTaxonomy.UnitsEnemies;
+
+        /// <summary>A one-shot at a battle cell, heard from another (the grid cursor): the sweep's distance
+        /// curve and pan width, panned in the camera's frame. Shared with the battle review ping.</summary>
+        public static void PlayTacticalAt(string file, Vector3 from, Vector3 at, SonarSystem sys)
+        {
+            float dx = at.x - from.x, dz = at.z - from.z;
+            float dist = Mathf.Sqrt(dx * dx + dz * dz);
+            TacticalModel.ToEar(ref dx, ref dz); // the view's right / ahead
+            float vol = sys != null ? sys.VolumeFor(dist) : Mathf.Clamp(3f / (3f + dist), MinVol, 1f);
+            AudioEngines.Current.PlaySpatial(file, vol, dx, dz, PanWidthM);
+        }
 
         // Visible sonifiable things within the sense radius of the cursor, ordered left→right by lateral
         // offset so the pan glides across the sweep (two same-type things read as "left … right", not a

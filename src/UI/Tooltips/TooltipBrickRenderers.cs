@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kingmaker.UI.MVVM._VM.ServiceWindows.CharacterInfo.Sections.Progression.ChupaChupses; // ClassArchetypeDifType
@@ -167,8 +168,26 @@ namespace WrathAccess.UI.Tooltips
     public sealed class ThreeColumnsStatBrickRenderer : TooltipBrickRenderer<TooltipBrickThreeColumnsStatVM>
     {
         public override IEnumerable<BrickLine> GetExpandedLines(TooltipBrickThreeColumnsStatVM vm)
-            => One(vm == null ? null : Join(Stat(vm.NameLeft, vm.ValueLeft, vm.IconLeft),
+        {
+            if (vm == null) yield break;
+            var line = new BrickLine(Join(Stat(vm.NameLeft, vm.ValueLeft, vm.IconLeft),
                 Stat(vm.NameCenter, vm.ValueCenter, vm.IconCenter), Stat(vm.NameRight, vm.ValueRight, vm.IconRight)));
+            // Each column's own tooltip (the game's glossary entry behind BAB / CMB / CMD), listed like
+            // the links in a line of text. A glossary template with no entry has nothing to show.
+            var links = new List<KeyValuePair<string, Func<TooltipBaseTemplate>>>();
+            AddLink(links, vm.NameLeft, vm.TooltipLeft);
+            AddLink(links, vm.NameCenter, vm.TooltipCenter);
+            AddLink(links, vm.NameRight, vm.TooltipRight);
+            if (links.Count > 0) line.Links = links;
+            yield return line;
+        }
+
+        private static void AddLink(List<KeyValuePair<string, Func<TooltipBaseTemplate>>> links, string name, TooltipBaseTemplate tpl)
+        {
+            if (tpl == null || string.IsNullOrWhiteSpace(name)) return;
+            if (tpl is Kingmaker.UI.MVVM._VM.Tooltip.Templates.TooltipTemplateGlossary g && g.GlossaryEntry == null) return;
+            links.Add(new KeyValuePair<string, Func<TooltipBaseTemplate>>(TextUtil.StripRichText(name), () => tpl));
+        }
 
     }
 

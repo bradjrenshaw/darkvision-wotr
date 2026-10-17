@@ -289,13 +289,14 @@ namespace WrathAccess
         // context is on top — in-area, the local map screen, or the world map — so the SAME binding set
         // (and the same rebinds) drives all three. A context without a sink simply ignores the key.
         // (Sinks keep their own gates too — Scanner requires ctx.ingame etc. — belt and braces.)
-        private static Action Route(Action inArea = null, Action localMap = null, Action worldMap = null)
+        private static Action Route(Action inArea = null, Action localMap = null, Action worldMap = null, Action tactical = null)
             => () =>
             {
                 var key = WrathAccess.Screens.ScreenManager.Current?.Key;
                 if (key == "ctx.ingame") inArea?.Invoke();
                 else if (key == WrathAccess.Screens.LocalMapScreen.ScreenKey) localMap?.Invoke();
                 else if (key == "ctx.globalmap") worldMap?.Invoke();
+                else if (key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey) tactical?.Invoke();
             };
 
         // Flip the game's real-time-with-pause <-> turn-based combat mode. We only flip the EnableTurnBasedMode
@@ -608,7 +609,8 @@ namespace WrathAccess
             InputManager.Register("explore.interact", "Interact at cursor", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Scanner.InteractAtCursor,
                       localMap: WrathAccess.Exploration.LocalMapCursor.SyncWorldCursor,
-                      worldMap: WrathAccess.Exploration.GlobalMapCursor.Interact))
+                      worldMap: WrathAccess.Exploration.GlobalMapCursor.Interact,
+                      tactical: WrathAccess.Exploration.TacticalReview.ClickCursorCell))
                 .AddBinding(KeyCode.Return).AddBinding(KeyCode.KeypadEnter);
             // The game's pause toggle, matching its own Space binding. (A move queued while paused only
             // walks once unpaused.)
@@ -639,6 +641,13 @@ namespace WrathAccess
                 () =>
                 {
                     if (WrathAccess.Exploration.Targeting.Aiming) { WrathAccess.Exploration.Targeting.Cancel(); return; }
+                    // A crusade battle spell waiting for its target: drop it, as the game's right-click does.
+                    if (WrathAccess.Exploration.TacticalModel.Active && Game.Instance?.SelectedAbilityHandler?.SelectedAbility != null)
+                    {
+                        Game.Instance.SelectedAbilityHandler.DropAbility();
+                        Tts.Speak(Loc.T("tactical.target_cancelled"), interrupt: true);
+                        return;
+                    }
                     // Nothing to cancel → Escape opens the game's pause menu, exactly like the game's
                     // own Esc key (the handler toggles, and EscMenuScreen takes over while it's open).
                     Kingmaker.PubSubSystem.EventBus.RaiseEvent(
@@ -753,7 +762,8 @@ namespace WrathAccess
             InputManager.Register("scan.cursorToItem", "Move cursor to review target", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Scanner.CursorToSelected,
                       localMap: WrathAccess.Exploration.LocalMapCursor.JumpToReview,
-                      worldMap: WrathAccess.Exploration.GlobalMapCursor.JumpToReview))
+                      worldMap: WrathAccess.Exploration.GlobalMapCursor.JumpToReview,
+                      tactical: WrathAccess.Exploration.TacticalReview.JumpToReview))
                 .AddBinding(KeyCode.Home).AddBinding(KeyCode.Slash).Grouped("scanner");
             InputManager.Register("scan.announceCursor", "Announce cursor position", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Scanner.AnnounceCursor,
@@ -764,14 +774,16 @@ namespace WrathAccess
                 WrathAccess.Exploration.Scanner.AnnounceParty).AddBinding(KeyCode.K, shift: true).Grouped("scanner");
             InputManager.Register("scan.interact", "Interact with item", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Scanner.InteractSelected,
-                      worldMap: WrathAccess.Exploration.GlobalMapScanner.Interact))
+                      worldMap: WrathAccess.Exploration.GlobalMapScanner.Interact,
+                      tactical: WrathAccess.Exploration.TacticalReview.ClickReview))
                 .AddBinding(KeyCode.I).Grouped("scanner");
             // Inspect: open the game's unit Inspect window (only if the unit actually has one). Y inspects the
             // review-cursor unit; ' inspects the unit the movement cursor is over. (Where am I moved to X.)
             InputManager.Register("inspect.review", "Inspect review-cursor unit", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Inspect.Review,
                       localMap: WrathAccess.Exploration.Inspect.Review,
-                      worldMap: WrathAccess.Exploration.GlobalMapScanner.InspectReview)) // the army's info window
+                      worldMap: WrathAccess.Exploration.GlobalMapScanner.InspectReview, // the army's info window
+                      tactical: WrathAccess.Exploration.TacticalReview.InspectReview))
                 .AddBinding(KeyCode.Y).Grouped("scanner");
             InputManager.Register("inspect.cursor", "Inspect unit under cursor", InputCategory.Exploration,
                 WrathAccess.Exploration.Inspect.AtCursor).AddBinding(KeyCode.Quote).Grouped("scanner");
@@ -921,7 +933,8 @@ namespace WrathAccess
             InputManager.Register("overlay.recenter", "Overlay: recenter on player", InputCategory.Exploration,
                 Route(inArea: OverlayManager.Recenter,
                       localMap: WrathAccess.Exploration.LocalMapCursor.Recenter,
-                      worldMap: WrathAccess.Exploration.GlobalMapCursor.Recenter)).AddBinding(KeyCode.C).Grouped("overlays");
+                      worldMap: WrathAccess.Exploration.GlobalMapCursor.Recenter,
+                      tactical: OverlayManager.Recenter)).AddBinding(KeyCode.C).Grouped("overlays");
             InputManager.Register("overlay.announce", "Overlay: announce cursor", InputCategory.Exploration,
                 OverlayManager.AnnounceCurrent).AddBinding(KeyCode.Keypad5).Grouped("overlays");
             InputManager.Register("overlay.descend", "Overlay: follow surface down", InputCategory.Exploration,
@@ -937,22 +950,26 @@ namespace WrathAccess
             InputManager.Register("review.nextParty", "Review next party member", InputCategory.Exploration,
                 Route(inArea: () => WrathAccess.Exploration.Scanner.CycleReview(WrathAccess.Exploration.ReviewGroup.Party, 1),
                       localMap: () => WrathAccess.Exploration.LocalMapReview.Cycle(WrathAccess.Exploration.LocalMapReview.Group.Party, 1),
-                      worldMap: WrathAccess.Exploration.GlobalMapScanner.AllyNext))
+                      worldMap: WrathAccess.Exploration.GlobalMapScanner.AllyNext,
+                      tactical: WrathAccess.Exploration.TacticalReview.OwnNext))
                 .AddBinding(KeyCode.Comma).Repeating().Grouped("review");
             InputManager.Register("review.prevParty", "Review previous party member", InputCategory.Exploration,
                 Route(inArea: () => WrathAccess.Exploration.Scanner.CycleReview(WrathAccess.Exploration.ReviewGroup.Party, -1),
                       localMap: () => WrathAccess.Exploration.LocalMapReview.Cycle(WrathAccess.Exploration.LocalMapReview.Group.Party, -1),
-                      worldMap: WrathAccess.Exploration.GlobalMapScanner.AllyPrev))
+                      worldMap: WrathAccess.Exploration.GlobalMapScanner.AllyPrev,
+                      tactical: WrathAccess.Exploration.TacticalReview.OwnPrev))
                 .AddBinding(KeyCode.Comma, shift: true).Repeating().Grouped("review");
             InputManager.Register("review.nextEnemy", "Review next enemy", InputCategory.Exploration,
                 Route(inArea: () => WrathAccess.Exploration.Scanner.CycleReview(WrathAccess.Exploration.ReviewGroup.Enemies, 1),
                       localMap: () => WrathAccess.Exploration.LocalMapReview.Cycle(WrathAccess.Exploration.LocalMapReview.Group.Enemies, 1),
-                      worldMap: WrathAccess.Exploration.GlobalMapScanner.EnemyNext))
+                      worldMap: WrathAccess.Exploration.GlobalMapScanner.EnemyNext,
+                      tactical: WrathAccess.Exploration.TacticalReview.EnemyNext))
                 .AddBinding(KeyCode.Period).Repeating().Grouped("review");
             InputManager.Register("review.prevEnemy", "Review previous enemy", InputCategory.Exploration,
                 Route(inArea: () => WrathAccess.Exploration.Scanner.CycleReview(WrathAccess.Exploration.ReviewGroup.Enemies, -1),
                       localMap: () => WrathAccess.Exploration.LocalMapReview.Cycle(WrathAccess.Exploration.LocalMapReview.Group.Enemies, -1),
-                      worldMap: WrathAccess.Exploration.GlobalMapScanner.EnemyPrev))
+                      worldMap: WrathAccess.Exploration.GlobalMapScanner.EnemyPrev,
+                      tactical: WrathAccess.Exploration.TacticalReview.EnemyPrev))
                 .AddBinding(KeyCode.Period, shift: true).Repeating().Grouped("review");
             InputManager.Register("review.nextNeutral", "Review next neutral", InputCategory.Exploration,
                 Route(inArea: () => WrathAccess.Exploration.Scanner.CycleReview(WrathAccess.Exploration.ReviewGroup.Neutrals, 1),

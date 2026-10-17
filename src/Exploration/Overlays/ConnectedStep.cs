@@ -106,11 +106,16 @@ namespace WrathAccess.Exploration.Overlays
             if (sector == _gestureArmed)
             {
                 _armedSector = -1; _gestureArmed = -1;
-                // An UNEXPLORED road out of the traveler's own node can only be walked, not travelled to
-                // (the location-select travel needs explored roads) — the game's navigation arrows. Offer
-                // the journey, asking first since it costs time; No just moves the cursor. Explored roads
-                // never prompt: the arrows are for looking, and travel to known places has its own keys.
-                if (exit.Unexplored && TravelerIsOn(anchor)) OfferTravel(exit, cursor);
+                // A walk that would cross UNEXPLORED road can only be made with the game's navigation
+                // arrows (the location-select travel needs explored roads). The arrow's walk carries on
+                // through bends, so an explored first leg can still lead into unexplored road (camp to
+                // bend explored, bend to campsite not: the user's repro). Offer the journey, asking first
+                // since it costs time; No just moves the cursor. The same goes for a walk that stops at a
+                // bend or fork: those can't be picked from the location list, so the arrow is the only way
+                // there (the camp's north road is explored, but the walk halts at the three-way bend where
+                // the unexplored road starts). Other explored walks never prompt: the arrows are for
+                // looking, and travel to known places has its own keys.
+                if (WalkExplores(exit, anchor) || WalkEndsAtHiddenNode(exit, anchor)) OfferTravel(exit, cursor);
                 else Land(exit.To, cursor);
                 return;
             }
@@ -143,6 +148,46 @@ namespace WrathAccess.Exploration.Overlays
             return t != null && t.Location != null && node.Blueprint == t.Location;
         }
 
+        /// <summary>The walk the game's navigation arrow for this road would make from the traveler's own
+        /// node (<c>CalculatePathByDirection</c>: the road, then on through single-way bends), or null when
+        /// the traveler isn't on <paramref name="from"/> or the walk is blocked.</summary>
+        private static Kingmaker.Globalmap.State.GlobalMapTravelData ArrowWalk(Exit exit, GlobalMapPointView from)
+        {
+            if (!TravelerIsOn(from) || exit.To.Blueprint == null) return null;
+            var pm = GlobalMapView.Instance?.State?.PathManager;
+            return pm?.CalculatePathByDirection(Traveler, exit.To.Blueprint);
+        }
+
+        /// <summary>Whether that walk crosses any road not yet fully explored.</summary>
+        private static bool WalkExplores(Exit exit, GlobalMapPointView from)
+        {
+            var data = ArrowWalk(exit, from);
+            if (data == null) return false;
+            foreach (var te in data.Path)
+            {
+                var st = te?.Blueprint != null ? GlobalMapView.Instance.GetEdgeView(te.Blueprint)?.State : null;
+                if (st != null && !st.Revealed) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Whether that walk stops at an UNREVEALED bend or fork — one with no junction dot, which
+        /// nothing but the arrow can reach (a revealed one is in the lists and travelled to with i).</summary>
+        private static bool WalkEndsAtHiddenNode(Exit exit, GlobalMapPointView from)
+        {
+            var data = ArrowWalk(exit, from);
+            var end = data != null ? WalkEnd(data, null) : null;
+            return GlobalMapModel.IsSystemNode(end) && end.State != null && !end.State.IsRevealed;
+        }
+
+        /// <summary>Where that walk ends (the bends it runs through are skipped), else the road's own end.</summary>
+        private static GlobalMapPointView WalkEnd(Kingmaker.Globalmap.State.GlobalMapTravelData data, GlobalMapPointView fallback)
+        {
+            var loc = data?.To?.Location;
+            var end = loc != null ? GlobalMapView.Instance.GetPointView(loc) : null;
+            return end ?? fallback;
+        }
+
         /// <summary>The game's Yes/No modal: travel this road (what clicking its navigation arrow does —
         /// <c>NavigationArrowView.OnClick</c>: <c>CalculatePathByDirection</c> + <c>StartTravel</c>), or
         /// only move the cursor. The route is computed first so the prompt can quote the journey's cost.</summary>
@@ -168,7 +213,7 @@ namespace WrathAccess.Exploration.Overlays
                     if (!string.IsNullOrEmpty(period)) cost = Loc.T("worldmap.travel_time", new { time = period });
                 }
             }
-            var text = Loc.T("worldmap.travel_confirm", new { direction = Word(exit.Sector), dest = NodeLabel(exit.To), cost });
+            var text = Loc.T("worldmap.travel_confirm", new { direction = Word(exit.Sector), dest = NodeLabel(WalkEnd(data, exit.To)), cost });
             var to = exit.To;
             Kingmaker.PubSubSystem.EventBus.RaiseEvent(delegate(Kingmaker.PubSubSystem.IMessageModalUIHandler w)
             {
@@ -226,6 +271,9 @@ namespace WrathAccess.Exploration.Overlays
                 // the far end — that road is explored from there, and the label already says "you are here".
                 if (!TravelerIsOn(from) && !TravelerIsOn(e.To)) parts.Add(Loc.T("worldmap.exit_party_away"));
             }
+            // An explored road from the party's node whose arrow walk runs on into unexplored road: a
+            // second press offers that journey, so say so.
+            else if (WalkExplores(e, from)) parts.Add(Loc.T("worldmap.exit_unexplored_beyond"));
             return string.Join(", ", parts);
         }
 
@@ -241,7 +289,15 @@ namespace WrathAccess.Exploration.Overlays
         /// <summary>A node's spoken name: a place / junction as the point readouts say it; an invisible
         /// node by its shape (fork / bend).</summary>
         public static string NodeLabel(GlobalMapPointView p)
-            => GlobalMapModel.IsSystemNode(p) ? Loc.T(RoadCount(p) >= 3 ? "worldmap.fork" : "worldmap.bend") : GlobalMapActions.InPlace(p);
+            => Unseen(p) ? Loc.T("worldmap.unseen_place") : GlobalMapActions.InPlace(p);
+
+        // A place or junction the map hasn't revealed: its road can be offered, its name can't.
+        private static bool Unseen(GlobalMapPointView p)
+            => p != null && p.State != null && !p.State.IsRevealed && !GlobalMapModel.IsSystemNode(p);
+
+        /// <summary>A system waypoint by its shape: fork (three or more offerable roads) or bend.</summary>
+        public static string ShapeLabel(GlobalMapPointView p)
+            => Loc.T(RoadCount(p) >= 3 ? "worldmap.fork" : "worldmap.bend");
 
         /// <summary>What an invisible node under the cursor reads as: its shape, then its roads with their
         /// directions and far ends — the in-place readout of a stop the sighted never click (the lens uses
@@ -256,7 +312,7 @@ namespace WrathAccess.Exploration.Overlays
 
         // A far end named briefly for a road list: the place's name, or the invisible node's shape.
         private static string ShortLabel(GlobalMapPointView p)
-            => GlobalMapModel.IsSystemNode(p) ? NodeLabel(p) : GlobalMapActions.Name(p);
+            => Unseen(p) ? Loc.T("worldmap.unseen_place") : GlobalMapActions.Name(p);
 
         private static readonly string[] Words8 =
             { "geo.north", "geo.northeast", "geo.east", "geo.southeast", "geo.south", "geo.southwest", "geo.west", "geo.northwest" };
@@ -319,14 +375,26 @@ namespace WrathAccess.Exploration.Overlays
         private static int RoadCount(GlobalMapPointView p)
         {
             int n = 0;
-            if (p.Edges != null) foreach (var e in p.Edges) if (Passable(e) && Offerable(e.GetOppositeLocation(p))) n++;
+            if (p.Edges != null) foreach (var e in p.Edges) if (Passable(e) && Offerable(e, p)) n++;
             return n;
         }
 
-        /// <summary>Whether a road's far end may be offered: an invisible node always (it has no look to
-        /// be revealed), a place or junction once revealed.</summary>
-        private static bool Offerable(GlobalMapPointView p)
-            => p != null && p.State != null && (GlobalMapModel.IsSystemNode(p) || p.State.IsRevealed);
+        /// <summary>Whether a road out of <paramref name="from"/> may be offered — what the sighted can see
+        /// of it: its far end is an invisible node (no look to be revealed) or a revealed place/junction; or
+        /// the road itself is drawn, partly walked toward an unrevealed end; or it is one the game puts a
+        /// navigation arrow on at the party's pawn (<c>NavigationArrowsController</c>: not
+        /// <c>IsHiddenLocationInEdge</c>). The last two are how unexplored country shows at all (user
+        /// report: "been everywhere, no new place" — the bend's road on toward an unrevealed junction was
+        /// a fifth walked and had an arrow, but the far end's reveal flag hid it).</summary>
+        private static bool Offerable(GlobalMapEdgeView e, GlobalMapPointView from)
+        {
+            var p = e?.GetOppositeLocation(from);
+            if (p == null || p.State == null) return false;
+            if (GlobalMapModel.IsSystemNode(p) || p.State.IsRevealed) return true;
+            var st = e.State;
+            if (st != null && (st.Explored1 > 0f || st.Explored2 > 0f)) return true;
+            return TravelerIsOn(from) && !Kingmaker.Globalmap.GlobalMapPathManager.IsHiddenLocationInEdge(e, from.Blueprint);
+        }
 
         /// <summary>The roads out of <paramref name="from"/>, one exit each to the adjacent node, with a
         /// unique compass sector apiece.</summary>
@@ -339,7 +407,7 @@ namespace WrathAccess.Exploration.Overlays
             {
                 if (!Passable(e)) continue;
                 var other = e.GetOppositeLocation(from);
-                if (!Offerable(other) || !taken.Add(other)) continue;
+                if (!Offerable(e, from) || !taken.Add(other)) continue;
                 var dir = LeaveDirection(e, from);
                 if (!dir.HasValue) continue;
                 var st = e.State;

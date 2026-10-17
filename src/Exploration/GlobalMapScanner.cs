@@ -159,8 +159,9 @@ namespace WrathAccess.Exploration
             return cur == null ? new List<GlobalMapPointView>() : Sorted(new[] { cur }.Concat(Neighbors(cur)).Distinct());
         }
 
-        // The next VISIBLE point along each road out of p: invisible system nodes are read through (a
-        // road that bends or forks at one continues to whatever the sighted see at its far end).
+        // The next VISIBLE point along each road out of p: an UNREVEALED system node has no marker, so it
+        // is read through (the road continues to whatever the sighted see at its far end); a revealed one
+        // shows a junction dot and is a neighbour like any junction.
         private static IEnumerable<GlobalMapPointView> Neighbors(GlobalMapPointView p)
         {
             var seen = new HashSet<GlobalMapPointView> { p };
@@ -173,9 +174,9 @@ namespace WrathAccess.Exploration
                 foreach (var e in q.Edges)
                 {
                     var other = e.Point1 == q ? e.Point2 : e.Point1;
-                    if (other == null || other.State == null || !other.State.IsRevealed || !seen.Add(other)) continue;
-                    if (GlobalMapModel.IsSystemNode(other)) pending.Push(other);
-                    else yield return other;
+                    if (other == null || other.State == null || !seen.Add(other)) continue;
+                    if (GlobalMapModel.IsSystemNode(other) && !other.State.IsRevealed) pending.Push(other);
+                    else if (other.State.IsRevealed) yield return other;
                 }
             }
         }

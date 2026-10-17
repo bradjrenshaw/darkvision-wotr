@@ -23,7 +23,10 @@ namespace WrathAccess.Exploration
             // The war camp's junction has no name of its own: use the game's camp label.
             if (GlobalMapModel.IsWarCamp(p)) return Kingmaker.Blueprints.Root.Strings.UIStrings.Instance.CrusadeTexts.WarCamp;
             var n = (string)p.Blueprint.Name;
-            return string.IsNullOrEmpty(n) ? Loc.T("worldmap.junction") : n;
+            if (!string.IsNullOrEmpty(n)) return n;
+            // A system waypoint is a road's bend or fork: say which (the connected mode's word for it).
+            if (GlobalMapModel.IsSystemNode(p)) return Overlays.ConnectedStep.ShapeLabel(p);
+            return Loc.T("worldmap.junction");
         }
 
         /// <summary>Name + compass bearing from the party + a state tag (here / closed). For lists.</summary>

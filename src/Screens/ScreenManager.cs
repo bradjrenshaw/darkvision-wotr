@@ -135,7 +135,9 @@ namespace WrathAccess.Screens
             Register(new GlobalMapRecruitCountScreen()); // the recruit count picker a unit's Buy raises; layer 16
             Register(new GlobalMapSetGeneralScreen()); // set-general panel (the cart's general slot in the recruit window); layer 16
             Register(new GlobalMapHireGeneralScreen()); // hire-general panel (four candidates); layer 17
-            Register(new PredicateScreen("ctx.tacticalcombat", Loc.T("screen.tactical_combat"), 0, () => RC()?.IsTacticalCombat ?? false));
+            Register(new TacticalCombatScreen()); // crusade battle: base context, the battle-grid cursor (layer 0)
+            Register(new TacticalLeaderCardScreen()); // a general's card in battle (portrait click); layer 16
+            Register(new TacticalResultsScreen()); // battle results / auto-combat prediction; layer 17
             Register(new DialogueScreen()); // in-game conversation (common DialogVM); layer 15, above contexts + service windows
             Register(new LootScreen()); // loot window (container/corpse); layer 15, above contexts + service windows
             Register(new VendorScreen()); // vendor/trade window (VendorVM); layer 15, four trade tables + actions
