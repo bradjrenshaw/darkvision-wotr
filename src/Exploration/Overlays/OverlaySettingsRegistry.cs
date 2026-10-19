@@ -11,12 +11,11 @@ namespace WrathAccess.Exploration.Overlays
     /// SETTINGS MODEL (the redesign): system TUNABLES are SHARED — registered once under
     /// <c>defaults.&lt;system&gt;</c> (surfaced by the Sonar / Log / Exploration tabs) with audio volumes
     /// under <c>audio.volumes</c> (Audio tab). An overlay's subtree (<c>overlays.&lt;id&gt;</c>) holds only
-    /// COMPOSITION: a hidden display name, a cursor customized flag, and per system an <c>enabled</c> toggle +
+    /// COMPOSITION: a hidden display name, a cursor customized flag, and per system a <c>mode</c> choice +
     /// hidden <c>customized</c> flag. Whole-subtree inheritance: Customize() materializes the overlay's own
     /// full copy of a system's tree (same RegisterSettings schema, seeded from the current defaults) under
     /// <c>custom</c>, and the system then reads ONLY that copy; ResetSystem() drops it. The first id in the
-    /// list is the standard overlay (Ctrl+O lands on it first). Old per-overlay tunables are migrated once
-    /// (standard overlay's values seed the defaults). Called from <c>Main.BuildSettings</c>.
+    /// list is the standard overlay (Ctrl+O lands on it first). Called from <c>Main.BuildSettings</c>.
     /// </summary>
     internal static class OverlaySettingsRegistry
     {
@@ -232,9 +231,6 @@ namespace WrathAccess.Exploration.Overlays
             MaterializeCustomizedSubtrees(); // flagged systems get their custom copies (seeded from defaults)
             ModSettings.Reindex();
             ModSettings.ReapplyUnknown();    // applies the saved custom.* values over the seeds
-            MigrateLegacyTunables();         // pre-redesign per-overlay tunables -> shared defaults/volumes
-            MigrateEnabledToMode();          // pre-mode-refactor `enabled` bool -> `mode` choice
-            CursorSettings.MigrateLegacy();  // pre-cursor-refactor defaults.cursor.* -> the cursor tree
             CursorSettings.RefreshVisibility(CursorSettings.Root); // show each slot's loaded mode's subtree
             Publish();
             SyncCursorRoots();
@@ -321,41 +317,6 @@ namespace WrathAccess.Exploration.Overlays
             }
         }
 
-        // One-shot: settings saved before the redesign hold tunables at overlays.<id>.<sys>.<key>.
-        // Seed the shared defaults (and audio volumes) from the STANDARD overlay values, then purge
-        // every overlay legacy tunable key (non-standard divergence is discarded by design).
-        private static void MigrateLegacyTunables()
-        {
-            var ids = Ids();
-            if (ids.Count == 0) return;
-            var std = ids[0];
-            foreach (var proto in Prototypes)
-            {
-                string prefix = "overlays." + std + "." + proto.Key + ".";
-                foreach (var path in ModSettings.UnknownPaths())
-                {
-                    if (!path.StartsWith(prefix)) continue;
-                    var rest = path.Substring(prefix.Length);
-                    if (rest == "mode" || rest == "enabled" || rest == "customized" || rest.StartsWith("custom.")) continue;
-                    string target = rest == "volume"
-                        ? "audio.volumes." + proto.Key
-                        : "defaults." + proto.Key + "." + rest;
-                    var setting = ModSettings.GetSetting<Setting>(target);
-                    if (setting != null && ModSettings.TryGetUnknown(path, out var tok))
-                    {
-                        try { setting.LoadValue(tok); } catch { }
-                    }
-                }
-            }
-            foreach (var id in ids)
-                foreach (var proto in Prototypes)
-                {
-                    string prefix = "overlays." + id + "." + proto.Key + ".";
-                    ModSettings.RemoveUnknownWhere(p =>
-                        p.StartsWith(prefix) && !p.EndsWith(".enabled") && !p.Contains(".custom"));
-                }
-        }
-
         // Build the per-system "mode" choice (replaces the old per-overlay "enabled" bool): the system's
         // SupportedModes as choices, defaulting to Continuous for the on-by-default set, else Off.
         private static ChoiceSetting ModeSetting(OverlaySystem sys)
@@ -371,25 +332,6 @@ namespace WrathAccess.Exploration.Overlays
             // duplicate made every SYSTEM display "Movement mode", nonsense for cursor-independent
             // systems like the log (whose choices are just Off/Continuous).
             return new ChoiceSetting("mode", "Active when", choices, OverlayModes.Id(def), "overlay.play_mode");
-        }
-
-        // Pre-mode-refactor composition flag: map each saved `<sys>.enabled` bool to the new `<sys>.mode`
-        // choice (true => Continuous, false => Off), then drop the orphaned key — keeps existing testers'
-        // on/off setup across the upgrade.
-        private static void MigrateEnabledToMode()
-        {
-            foreach (var path in ModSettings.UnknownPaths())
-            {
-                if (!path.EndsWith(".enabled")) continue;
-                if (!path.StartsWith("overlays.") && !path.StartsWith("defaults.")) continue;
-                var modePath = path.Substring(0, path.Length - ".enabled".Length) + ".mode";
-                var mode = ModSettings.GetSetting<ChoiceSetting>(modePath);
-                if (mode == null || !ModSettings.TryGetUnknown(path, out var tok)) continue;
-                bool on; try { on = tok.ToObject<bool>(); } catch { on = true; }
-                mode.Set(OverlayModes.Id(on ? OverlayMode.Continuous : OverlayMode.Off));
-            }
-            ModSettings.RemoveUnknownWhere(p =>
-                p.EndsWith(".enabled") && (p.StartsWith("overlays.") || p.StartsWith("defaults.")));
         }
 
         // ---- runtime add / remove ----

@@ -82,90 +82,47 @@ namespace WrathAccess.Speech
             Default = new SpeechConfig(speechCategory);
         }
 
-        /// <summary>The schema every speech config shares: a hidden "voice" pick (rendered by
-        /// <see cref="SpeechVoicePicker"/> as a tree over the library's categories) plus the synthesizer
-        /// params subtree (rate/volume/boost; screen readers have no params — the reader owns its voice).
-        /// The default config (<paramref name="inheritFrom"/> null) gets plain settings; an additional
-        /// config gets INHERIT-aware ones (an empty voice = the default's). Hidden carriers absorb the
-        /// pre-2026-10 saved values ("output", "sapi.voice", "handler", "prism.backend") for
-        /// <see cref="MigrateLegacy"/>.</summary>
+        /// <summary>One speech config's schema: the hidden voice pick + the voice settings (rate, pitch,
+        /// volume — each shown only when the resolved voice supports it). An additional config
+        /// (<paramref name="inheritFrom"/> = the default's tree) inherits the default's values until
+        /// overridden, and adds the positional boost (only event speech is ever positioned).</summary>
         public static void BuildConfigSchema(CategorySetting into, CategorySetting inheritFrom = null)
         {
-            bool inherit = inheritFrom != null;
-
             into.Add(new StringSetting("voice", "Voice", "", "speech.voice") { Hidden = true });
-
-            // The synthesizer params (subtree key unchanged from the handler era, so existing rate/
-            // volume/boost settings carry over untouched).
-            var sapi = new CategorySetting("sapi", "SAPI", localizationKey: "speech.sapi");
-            if (inherit) BuildInheritParams(sapi, inheritFrom.Get<CategorySetting>("sapi"));
-            else BuildSapiParams(sapi);
-            sapi.Add(new StringSetting("voice", "Legacy SAPI voice", "") { Hidden = true }); // carrier
-            into.Add(sapi);
-
-            // Legacy migration carriers (StringSettings absorb any saved value; MigrateLegacy converts once).
-            into.Add(new StringSetting("output", "Legacy speech output", "") { Hidden = true });
-            into.Add(new StringSetting("handler", "Legacy handler", "") { Hidden = true });
-            into.Add(new StringSetting("prism.backend", "Legacy prism backend", "") { Hidden = true });
+            var prm = new CategorySetting("params", "Voice settings", localizationKey: "speech.params");
+            if (inheritFrom == null) BuildParams(prm);
+            else
+            {
+                BuildInheritParams(prm, inheritFrom.Get<CategorySetting>("params"));
+                // Playback gain for POSITIONAL speech mixed through the mod's audio, where a synthesizer
+                // at full volume is still quiet after distance attenuation. 100 = as rendered.
+                prm.Add(new IntSetting("boost", "Positional volume boost", 100, 100, 400, 10, "speech.params.boost"));
+            }
+            into.Add(prm);
         }
 
-        private static void BuildSapiParams(CategorySetting into)
+        // Loadstar's own scale: 0..100 maps to the library's 0..1, 50 = the voice's default rate/pitch.
+        private static void BuildParams(CategorySetting into)
         {
-            into.Add(new IntSetting("rate", "Rate", 2, -10, 10, 1, "speech.sapi.rate"));
-            into.Add(new IntSetting("volume", "Volume", 100, 0, 100, 5, "speech.sapi.volume"));
-            // Playback gain above SAPI's 100 ceiling, applied only to POSITIONAL speech mixed through
-            // the mod's own audio — which is otherwise quiet. 100 = no boost.
-            into.Add(new IntSetting("boost", "Volume boost", 100, 100, 400, 10, "speech.sapi.boost"));
+            into.Add(new IntSetting("rate", "Rate", 60, 0, 100, 5, "speech.params.rate"));
+            into.Add(new IntSetting("pitch", "Pitch", 50, 0, 100, 5, "speech.params.pitch"));
+            into.Add(new IntSetting("volume", "Volume", 100, 0, 100, 5, "speech.params.volume"));
         }
 
-        // Inherit-aware mirror of the synthesizer params: each int becomes a NullableIntSetting that
+        // Inherit-aware mirror of the voice settings: each int becomes a NullableIntSetting that
         // follows the default config's same int.
         private static void BuildInheritParams(CategorySetting into, CategorySetting defaultSub)
         {
-            var scratch = new CategorySetting("sapi", "SAPI");
-            BuildSapiParams(scratch);
+            var scratch = new CategorySetting("params", "Voice settings");
+            BuildParams(scratch);
             foreach (var child in scratch.Children)
-            {
                 if (child is IntSetting i)
                     into.Add(new NullableIntSetting(i.Key, i.Label, defaultSub?.Get<IntSetting>(i.Key), i.Min, i.Max, i.Step, i.LocalizationKey));
-                else
-                    into.Add(child);
-            }
-        }
-
-        /// <summary>Convert a config's pre-refactor saved pick into a voice id (run once per config after
-        /// settings load; no-op when nothing legacy was in the file and a voice is already chosen).</summary>
-        public static void MigrateLegacy(CategorySetting tree)
-        {
-            var voice = tree?.Get<StringSetting>("voice");
-            if (voice == null) return;
-            var legacyHandler = tree.Get<StringSetting>("handler");
-            var legacyBackend = tree.Get<StringSetting>("prism.backend");
-            var legacyOutput = tree.Get<StringSetting>("output");
-            var legacySapiVoice = tree.Get<CategorySetting>("sapi")?.Get<StringSetting>("voice");
-            string handler = legacyHandler?.Get();
-            string output = legacyOutput?.Get();
-            string sapiVoice = legacySapiVoice?.Get();
-            if (string.IsNullOrEmpty(handler) && string.IsNullOrEmpty(output)) return;
-
-            if (SpeechVoices.IsInherit(voice.Get()))
-            {
-                string id = !string.IsNullOrEmpty(handler)
-                    ? SpeechVoices.FromLegacyHandler(handler, legacyBackend?.Get(), sapiVoice)
-                    : SpeechVoices.FromLegacyOutput(output, sapiVoice);
-                voice.Set(id);
-                Main.Log?.Log("[speech] migrated legacy pick (handler '" + handler + "', output '" + output + "', sapi voice '" + sapiVoice + "') -> voice '" + id + "'.");
-            }
-            legacyHandler?.Set("");
-            legacyBackend?.Set("");
-            legacyOutput?.Set("");
-            legacySapiVoice?.Set("");
         }
 
         /// <summary>Arm speech after settings load (the persisted pick applies from the first word).</summary>
         public static void Initialize()
         {
-            if (Default?.Tree != null) MigrateLegacy(Default.Tree);
             _initialized = true;
             if (Context != null && Default != null)
             {

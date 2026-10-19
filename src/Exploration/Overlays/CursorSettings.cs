@@ -123,8 +123,6 @@ namespace WrathAccess.Exploration.Overlays
                         ? new IntSetting("speed", "Speed (miles per second)", defaultSpeed, 1, 100, 1, "cursor.speed_miles")
                         : new IntSetting("speed", "Speed (feet per second)", defaultSpeed, 1, 60, 1, "cursor.speed_feet"));
             }
-            if (ctx == WorldMap && key == "tertiary" && slot.GetByKey("connected_seeded") == null)
-                slot.Add(new BoolSetting("connected_seeded", "Connected default applied", false, "cursor.connected_seeded") { Hidden = true });
             var tiled = Ensure(slot, ModeTiled, "Tiled", "cursor.tiled");
             tiled.Inline = true;
             if (tiled.GetByKey("cell_size") == null)
@@ -218,77 +216,6 @@ namespace WrathAccess.Exploration.Overlays
 
         public static bool Flag(CategorySetting ctx, string key, bool fallback = false)
             => ctx?.Get<BoolSetting>(key)?.Get() ?? fallback;
-
-        // ---- migration from the pre-refactor layout ----
-
-        /// <summary>One-shot, post-load: carry the old keys (<c>defaults.cursor.*</c> with its two
-        /// slots' in-area and world-map mode/speed, the grid's world-map tile size) into the new tree,
-        /// then drop them along with the old per-overlay slot copies.</summary>
-        public static void MigrateLegacy()
-        {
-            var root = Root;
-            if (root == null) return;
-            var map = new Dictionary<string, string[]>();
-            foreach (var flag in new[] { "announce_rooms", "wall_slide", "direction_priority", "review_reset", "collision_names", "terrain_sounds", "terrain_interval" })
-                map["defaults.cursor." + flag] = new[] { "cursor.exploration." + flag };
-            foreach (var slot in new[] { "primary", "secondary" })
-            {
-                map["defaults.cursor." + slot + ".mode"] = new[] { "cursor.exploration.movement." + slot + ".mode" };
-                map["defaults.cursor." + slot + ".speed"] = new[] { "cursor.exploration.movement." + slot + ".continuous.speed" };
-                map["defaults.cursor." + slot + ".worldmap_mode"] = new[] { "cursor.worldmap.movement." + slot + ".mode" };
-                map["defaults.cursor." + slot + ".worldmap_speed"] = new[] { "cursor.worldmap.movement." + slot + ".continuous.speed" };
-            }
-            var cells = new List<string>();
-            foreach (var slot in SlotKeys) cells.Add("cursor.worldmap.movement." + slot + ".tiled.cell_size");
-            map["defaults.grid.worldmap_cell_size"] = cells.ToArray();
-            // The grid system no longer owns the in-area tile size (2026-10-04): its saved value seeds
-            // every in-area tiled slot, in the defaults and in each overlay whose cursor copy exists (an
-            // overlay that customized only its grid has no cursor copy to carry a per-overlay size; it
-            // follows the defaults, which got the same value).
-            cells = new List<string>();
-            foreach (var slot in SlotKeys) cells.Add("cursor.exploration.movement." + slot + ".tiled.cell_size");
-            map["defaults.grid.cell_size"] = cells.ToArray();
-            foreach (var path in ModSettings.UnknownPaths())
-            {
-                var m = System.Text.RegularExpressions.Regex.Match(path, @"^overlays\.([^.]+)\.grid\.custom\.cell_size$");
-                if (!m.Success) continue;
-                cells = new List<string>();
-                foreach (var slot in SlotKeys)
-                    cells.Add("overlays." + m.Groups[1].Value + ".cursor.custom.exploration.movement." + slot + ".tiled.cell_size");
-                map[path] = cells.ToArray();
-            }
-
-            int moved = 0;
-            foreach (var pair in map)
-            {
-                if (!ModSettings.TryGetUnknown(pair.Key, out var tok)) continue;
-                foreach (var target in pair.Value)
-                {
-                    var s = ModSettings.GetSetting<Setting>(target);
-                    if (s == null) continue;
-                    try { s.LoadValue(tok); moved++; } catch { }
-                }
-            }
-            ModSettings.RemoveUnknownWhere(p => p.StartsWith("defaults.cursor.") || p == "defaults.grid.worldmap_cell_size"
-                || p == "defaults.grid.cell_size" || p.EndsWith(".grid.custom.cell_size")
-                || (p.StartsWith("overlays.") && (p.Contains(".cursor.primary.") || p.Contains(".cursor.secondary."))));
-            if (moved > 0) Main.Log?.Log("[cursor] migrated " + moved + " pre-refactor cursor settings into the cursor tree");
-            SeedConnected(root);
-            RefreshVisibility(root);
-        }
-
-        // 2026-10-12: the world map's arrow slot defaults to the connected (road-graph) mode. Saved files
-        // hold every value, so an existing save still says "tiled" (the old default) — move it over ONCE,
-        // marked by a hidden flag so a later deliberate "tiled" pick sticks.
-        private static void SeedConnected(CategorySetting root)
-        {
-            var slot = root.Get<CategorySetting>(WorldMap)?.Get<CategorySetting>("movement")?.Get<CategorySetting>("tertiary");
-            var seeded = slot?.Get<BoolSetting>("connected_seeded");
-            var mode = slot?.Get<ChoiceSetting>("mode");
-            if (seeded == null || mode == null || seeded.Get()) return;
-            if (mode.Current?.Id == ModeTiled) mode.Set(ModeConnected);
-            seeded.Set(true);
-        }
 
         // ---- helpers ----
 

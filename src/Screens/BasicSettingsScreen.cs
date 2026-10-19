@@ -51,13 +51,12 @@ namespace WrathAccess.Screens
             {
                 b.BeginGroup(ControlId.Structural(k + "speech"),
                     GraphNodes.Group(() => L("category.speech", "Speech")));
-                var resolved = WrathAccess.Speech.SpeechManager.Default?.ResolvedHandlerKey;
                 foreach (var s in speech.Children)
                 {
                     if (s is CategorySetting cs && cs.Key == "additional") continue; // advanced-only
                     // The voice picker (a tree over the library's categories), then the params that apply.
                     if (WrathAccess.Speech.SpeechVoicePicker.TryEmit(b, s, WrathAccess.Speech.SpeechManager.Default, k + "speech.")) continue;
-                    if (ModSettingsScreen.EmitParamsInline(b, s, resolved, k + "speech.")) continue;
+                    if (ModSettingsScreen.EmitParamsInline(b, s, WrathAccess.Speech.SpeechManager.Default, k + "speech.")) continue;
                     ModSettingNodes.Emit(b, s, k + "speech.");
                 }
                 b.EndGroup();

@@ -174,19 +174,18 @@ namespace WrathAccess.Screens
             }
             else if (key == "speech")
             {
-                // The DEFAULT config (output dropdown + the params of the output it RESOLVES to) first,
+                // The DEFAULT config (voice picker + the settings of the voice it RESOLVES to) first,
                 // then the advanced "Additional speech configurations" group — each config a clone of
                 // the same schema with Rename/Remove, and an Add button at the bottom. All live from
-                // the registry; picking a different output re-renders the params next frame.
+                // the registry; picking a different voice re-renders the params next frame.
                 var speech = ModSettings.Root.Get<CategorySetting>("speech");
                 if (speech != null)
                 {
-                    var resolved = WrathAccess.Speech.SpeechManager.Default?.ResolvedHandlerKey;
                     foreach (var s in speech.Children)
                     {
                         if (s is CategorySetting cs && cs.Key == "additional") continue; // rendered specially below
                         if (WrathAccess.Speech.SpeechVoicePicker.TryEmit(b, s, WrathAccess.Speech.SpeechManager.Default, k)) continue;
-                        if (EmitParamsInline(b, s, resolved, k)) continue;
+                        if (EmitParamsInline(b, s, WrathAccess.Speech.SpeechManager.Default, k)) continue;
                         ModSettingNodes.Emit(b, s, k);
                     }
                 }
@@ -604,16 +603,16 @@ namespace WrathAccess.Screens
         private static CategorySetting SpeechConfigCat(string id)
             => ModSettings.Root.Get<CategorySetting>("speech")?.Get<CategorySetting>("additional")?.Get<CategorySetting>(id);
 
-        // Render an output's param subtree FLAT beside the output dropdown — only when it applies to
-        // the output the config currently resolves to (SAPI knobs while NVDA speaks are hidden).
-        // Returns true when the setting was a param subtree (applicable or not) so the caller skips it.
-        internal static bool EmitParamsInline(GraphBuilder b, Setting s, string resolvedHandlerKey, string prefix)
+        // Render a config's voice settings FLAT beside the voice picker — only the ones the voice it
+        // currently resolves to takes (no rate/volume while a screen reader speaks). Returns true when
+        // the setting was the params subtree so the caller skips it.
+        internal static bool EmitParamsInline(GraphBuilder b, Setting s, WrathAccess.Speech.SpeechConfig config, string prefix)
         {
-            if (!(s is CategorySetting pc)
-                || (pc.Key != "prism" && pc.Key != "sapi" && pc.Key != "clipboard")) return false;
-            if (pc.Key == resolvedHandlerKey)
+            if (!(s is CategorySetting pc) || pc.Key != "params") return false;
+            if (config != null)
                 foreach (var c in pc.Children)
-                    ModSettingNodes.Emit(b, c, prefix + pc.Key + "."); // keys keep the subtree path (stable ids)
+                    if (config.ParamApplies(c.Key))
+                        ModSettingNodes.Emit(b, c, prefix + pc.Key + "."); // keys keep the subtree path (stable ids)
             return true;
         }
 
@@ -622,13 +621,12 @@ namespace WrathAccess.Screens
         {
             string ck = k + "cfg." + id + ".";
             var config = WrathAccess.Speech.SpeechConfigRegistry.Get(id);
-            var resolved = config?.ResolvedHandlerKey;
             b.BeginGroup(ControlId.Structural(ck + "group"), GraphNodes.Group(
                 () => WrathAccess.Speech.SpeechConfigRegistry.Name(id)));
             foreach (var s in cc.Children)
             {
                 if (WrathAccess.Speech.SpeechVoicePicker.TryEmit(b, s, config, ck)) continue;
-                if (EmitParamsInline(b, s, resolved, ck)) continue;
+                if (EmitParamsInline(b, s, config, ck)) continue;
                 ModSettingNodes.Emit(b, s, ck); // the hidden "name" is skipped
             }
             b.AddItem(ControlId.Structural(ck + "rename"),

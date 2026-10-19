@@ -58,8 +58,6 @@ namespace WrathAccess
                 BuildSettings();
                 WrathAccess.Settings.ModSettings.Initialize(
                     System.IO.Path.Combine(UnityEngine.Application.persistentDataPath, "WrathAccess"));
-                MigrateMapBinding(); // one-time: the map's default moved Ctrl+L → Ctrl+V (Ctrl+L = log now)
-                MigrateCursorBindings(); // one-time: the arrows moved off the primary/secondary slots (cursor refactor)
                 // Speech comes up AFTER settings load so the persisted handler/backend choices apply.
                 WrathAccess.Speech.SpeechManager.Initialize();
                 // Overlays are built AFTER load: the saved overlay-id list (incl. user-added ones) is only
@@ -280,6 +278,28 @@ namespace WrathAccess
             catch (Exception e) { Log.Error("[quicksave] " + e); Tts.Speak(Loc.T("save.failed")); }
         }
 
+        // F8 quick-load: the game's own QuickLoadGame (newest quick save; it refuses during character
+        // creation itself). Focus mode only, like F5. Allowed wherever a game is loaded — an area, the
+        // world map, a crusade battle — so a lost fight can be reloaded straight away; never from the
+        // main menu or a loading screen.
+        private static void QuickLoad()
+        {
+            if (!FocusMode.Active) return;
+            var game = Game.Instance;
+            var rc = game?.RootUiContext;
+            if (rc == null || rc.IsMainMenu || !(rc.IsInGame || rc.IsGlobalMap || rc.IsTacticalCombat)) return;
+            var lp = Kingmaker.EntitySystem.Persistence.LoadingProcess.Instance;
+            if (lp != null && lp.IsLoadingScreenActive) return;
+            try
+            {
+                game.SaveManager.UpdateSaveListIfNeeded();
+                if (game.SaveManager.GetNewestQuickslot() == null) { Tts.Speak(Loc.T("load.no_quick_save")); return; }
+                Tts.Speak(Loc.T("load.loading"));
+                game.QuickLoadGame();
+            }
+            catch (Exception e) { Log.Error("[quickload] " + e); Tts.Speak(Loc.T("load.failed")); }
+        }
+
         // Open (toggle) a service window the game's own way: the EventBus reaches whichever ServiceWindowsVM
         // is live — the in-area one (InGameVM) or the world-map one (GlobalMapVM) — so one call works in both.
         private static void OpenWindow(ServiceWindowsType type)
@@ -445,63 +465,6 @@ namespace WrathAccess
             WrathAccess.Speech.SpeechConfigRegistry.Register();
         }
 
-        // The map window's default binding moved Ctrl+L → Ctrl+V (Ctrl+L now opens the log). Saved
-        // configs override code defaults, so an existing install would keep map on Ctrl+L and COLLIDE
-        // with the new log default. Run after settings load: a saved map binding that is still exactly
-        // the old default gets re-pointed at the new one; any custom combo the user chose is kept.
-        // The cursor refactor split the arrows off onto their own slots. A saved binding that still
-        // holds the OLD default pair (arrow + letter) would double-drive two slots at once, so such
-        // bindings fall back to the new default; a user's own rebind is left alone.
-        private static void MigrateCursorBindings()
-        {
-            var olds = new Dictionary<string, (KeyCode arrow, KeyCode letter, bool shift)>
-            {
-                { "explore.cursorUp", (KeyCode.UpArrow, KeyCode.W, false) },
-                { "explore.cursorDown", (KeyCode.DownArrow, KeyCode.S, false) },
-                { "explore.cursorLeft", (KeyCode.LeftArrow, KeyCode.A, false) },
-                { "explore.cursorRight", (KeyCode.RightArrow, KeyCode.D, false) },
-                { "explore.secondaryUp", (KeyCode.UpArrow, KeyCode.W, true) },
-                { "explore.secondaryDown", (KeyCode.DownArrow, KeyCode.S, true) },
-                { "explore.secondaryLeft", (KeyCode.LeftArrow, KeyCode.A, true) },
-                { "explore.secondaryRight", (KeyCode.RightArrow, KeyCode.D, true) },
-            };
-            int n = 0;
-            foreach (var action in InputManager.Actions)
-            {
-                if (!olds.TryGetValue(action.Key, out var o)) continue;
-                var a = new WrathAccess.Input.KeyboardBinding(o.arrow, shift: o.shift).Serialize();
-                var l = new WrathAccess.Input.KeyboardBinding(o.letter, shift: o.shift).Serialize();
-                if (action.Bindings.Count != 2) continue;
-                var s0 = (action.Bindings[0] as WrathAccess.Input.KeyboardBinding)?.Serialize();
-                var s1 = (action.Bindings[1] as WrathAccess.Input.KeyboardBinding)?.Serialize();
-                if ((s0 == a && s1 == l) || (s0 == l && s1 == a))
-                {
-                    action.ClearBindings();
-                    action.AddBinding(o.letter, shift: o.shift);
-                    n++;
-                }
-            }
-            if (n > 0) Log?.Log("[input] cursor refactor: " + n + " slot bindings reset to their new defaults (arrows are the tertiary/quaternary slots now).");
-        }
-
-        private static void MigrateMapBinding()
-        {
-            foreach (var action in InputManager.Actions)
-            {
-                if (action.Key != "window.map") continue;
-                var oldDefault = new WrathAccess.Input.KeyboardBinding(KeyCode.L, ctrl: true);
-                if (action.Bindings.Count == 1
-                    && action.Bindings[0] is WrathAccess.Input.KeyboardBinding kb
-                    && kb.Serialize() == oldDefault.Serialize())
-                {
-                    action.ClearBindings();
-                    action.AddBinding(KeyCode.V, ctrl: true);
-                    Log?.Log("[input] migrated window.map binding Ctrl+L -> Ctrl+V (Ctrl+L is the log now).");
-                }
-                return;
-            }
-        }
-
         private static void RegisterInput()
         {
             // ---- Global: always live, even when focus mode is off (handlers self-gate as needed) ----
@@ -519,6 +482,9 @@ namespace WrathAccess
             // Quick save (the game's own MakeQuickSave). Self-gates to focus mode + a save-allowed mode.
             InputManager.Register("game.quickSave", "Quick save", InputCategory.Global, QuickSave)
                 .AddBinding(KeyCode.F5);
+            // Quick load (the game's own QuickLoadGame), on the game's own F8.
+            InputManager.Register("game.quickLoad", "Quick load", InputCategory.Global, QuickLoad)
+                .AddBinding(KeyCode.F8);
 
             // Mod menu - Ctrl+M, available everywhere (fires in either focus mode). The setup wizard is
             // reached from here (and auto-runs on first launch); no dedicated hotkey.
@@ -529,7 +495,7 @@ namespace WrathAccess
             // switched to a broken engine/backend and went silent can always get a voice back without needing
             // to navigate a menu they can't hear.
             InputManager.Register("speech.resetPrism", "Reset speech to Prism", InputCategory.Global,
-                () => WrathAccess.Speech.SpeechManager.ResetToPrism()).AddBinding(KeyCode.F8);
+                () => WrathAccess.Speech.SpeechManager.ResetToPrism()).AddBinding(KeyCode.F9);
 
             // ---- UI: screen/menu navigation (dispatched into the active navigator) ----
             InputManager.Register("ui.up", "Navigate up", InputCategory.UI).AddBinding(KeyCode.UpArrow).Repeating();
@@ -796,7 +762,7 @@ namespace WrathAccess
             InputManager.Register("scan.debugDumpNames", "Dump object names to log (debug)", InputCategory.Exploration,
                 WrathAccess.Exploration.Scanner.DumpObjectNames).AddBinding(KeyCode.F10).Grouped("scanner");
             InputManager.Register("scan.debugAreaParts", "Read area parts (debug)", InputCategory.Exploration,
-                WrathAccess.Exploration.Scanner.DebugDumpAreaParts).AddBinding(KeyCode.F9).Grouped("scanner");
+                WrathAccess.Exploration.Scanner.DebugDumpAreaParts).AddBinding(KeyCode.F9, ctrl: true).Grouped("scanner");
 
             // Buffers (review channels — see WrathAccess.Buffers): Alt+Left/Right cycle between buffers,
             // Alt+Up/Down move through the current buffer's lines. Alt+arrows are otherwise unused; live in

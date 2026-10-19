@@ -18,17 +18,16 @@ namespace WrathAccess.Screens
     /// the old loose-element layout; content keys carry the step so a page turn re-keys the page — and
     /// Back/Next stops.
     /// Advancing plays the page-turn and lands focus on the new page's content (<c>FocusStop</c>). The
-    /// phase set is dynamic — the engine-settings step drops out for a paramless engine, the voice steps
-    /// appear only in positional mode. Mod-pushed (static open flag); Escape closes.
+    /// phase set is dynamic — the event voice steps appear only when events are spoken. Mod-pushed
+    /// (static open flag); Escape closes.
     /// </summary>
     public sealed class SetupWizardScreen : Screen
     {
         public SetupWizardScreen() { Wrap = true; }
 
-        // Speech-focused since 2026-07-22 (tester feedback): the movement / wall-tones / sonar steps are
-        // GONE — their recommendations are now plain defaults (ally pings off, world-map sonar off; see
-        // ScanEnabled / OverlaySettingsRegistry.DefaultOn) and their tunables live in the settings menu.
-        private enum Step { Backend, HandlerSettings, EventFeedback, EnemyVoice, AllyVoice, UnitlessVoice }
+        // Speech only: movement, wall tones and sonar are plain defaults (see ScanEnabled /
+        // OverlaySettingsRegistry.DefaultOn), tuned in the settings menu.
+        private enum Step { Speech, EventFeedback, EnemyVoice, AllyVoice, UnitlessVoice }
 
         private static bool s_open;
         private static Step s_step;
@@ -39,7 +38,15 @@ namespace WrathAccess.Screens
         public override bool Exclusive => true; // owns the keyboard while open
         public override bool IsActive() => s_open;
 
-        public static void Open() { s_open = true; s_step = Step.Backend; }
+        public static void Open()
+        {
+            s_open = true;
+            s_step = Step.Speech;
+            // Positional events are the default answer: until the wizard has created its event voices
+            // (and unless events were turned off for the game log), apply it so Next-Next-Finish gets it.
+            if (string.IsNullOrEmpty(ModSettings.GetSetting<StringSetting>(EnemySlot)?.Get()) && CurrentMode() == "positional")
+                Apply(events: true);
+        }
         private static void Close()
         {
             s_open = false;
@@ -56,8 +63,7 @@ namespace WrathAccess.Screens
         {
             switch (step)
             {
-                case Step.Backend: return Loc.T("wizard.speech.backend_title");
-                case Step.HandlerSettings: return Loc.T("wizard.speech.settings_title", new { name = SelectedHandlerLabel() });
+                case Step.Speech: return Loc.T("wizard.speech.title");
                 case Step.EventFeedback: return Loc.T("wizard.events.title");
                 case Step.EnemyVoice: return Loc.T("wizard.events.enemy_voice_title");
                 case Step.AllyVoice: return Loc.T("wizard.events.ally_voice_title");
@@ -101,8 +107,7 @@ namespace WrathAccess.Screens
         {
             switch (s_step)
             {
-                case Step.Backend: BuildBackendStep(b, k); break;
-                case Step.HandlerSettings: BuildHandlerSettingsStep(b, k); break;
+                case Step.Speech: BuildSpeechStep(b, k); break;
                 case Step.EventFeedback: BuildEventFeedbackStep(b, k); break;
                 case Step.EnemyVoice: BuildVoiceStep(b, k, EnemySlot, "wizard.events.enemy_voice_help"); break;
                 case Step.AllyVoice: BuildVoiceStep(b, k, AllySlot, "wizard.events.ally_voice_help"); break;
@@ -121,21 +126,25 @@ namespace WrathAccess.Screens
         {
             switch (step)
             {
-                case Step.Backend: return SelectedHandlerLabel();
+                case Step.Speech: return SelectedVoiceLabel();
                 case Step.EventFeedback: return Loc.T("wizard.events." + CurrentMode());
                 default: return "";
             }
         }
 
-        // ---- Step 1: choose the speech output — who speaks (select + sample) ----
+        // ---- Step 1: the voice, with its settings below it (like the settings screen: picking a different
+        //      voice re-renders the settings that voice takes; a screen reader shows none) ----
 
-        private static void BuildBackendStep(GraphBuilder b, string k)
+        private static void BuildSpeechStep(GraphBuilder b, string k)
         {
-            b.AddItem(ControlId.Structural(k + "help"), GraphNodes.Text(() => Loc.T("wizard.speech.backend_help")));
-            b.BeginStop(k + "options"); // the voice tree is its own Tab-stop after the help text
+            b.AddItem(ControlId.Structural(k + "help"), GraphNodes.Text(() => Loc.T("wizard.speech.help")));
+            b.BeginStop(k + "options"); // the picker + settings are their own Tab-stop after the help text
+            var config = SpeechManager.Default;
             var voice = VoiceSetting();
-            if (voice != null)
-                WrathAccess.Speech.SpeechVoicePicker.Emit(b, k, SpeechManager.Default, voice, false, SelectedVoice);
+            if (voice == null) return;
+            WrathAccess.Speech.SpeechVoicePicker.Emit(b, k, config, voice, false, SelectedVoice);
+            var prm = config.Tree?.Get<CategorySetting>("params");
+            if (prm != null) ModSettingsScreen.EmitParamsInline(b, prm, config, k);
         }
 
         private static void SelectedVoice(string id)
@@ -143,26 +152,13 @@ namespace WrathAccess.Screens
             // The sample IS the feedback: interrupt purges the generic voice-changed confirm (and any
             // backlog from rapid switching), so you hear THIS voice demonstrate itself right where you
             // chose it. (Clipboard has no audio — its "sample" lands on the clipboard, which is its nature.)
-            Tts.Speak(Loc.T("wizard.speech.sample", new { name = SelectedHandlerLabel() }), interrupt: true);
+            Tts.Speak(Loc.T("wizard.speech.sample", new { name = SelectedVoiceLabel() }), interrupt: true);
         }
 
-        // ---- Step 2: that engine's own settings (the real controls) ----
-
-        private static void BuildHandlerSettingsStep(GraphBuilder b, string k)
-        {
-            var sub = SelectedHandlerParams();
-            if (sub == null || sub.Children.Count == 0)
-            {
-                b.AddItem(ControlId.Structural(k + "help"), GraphNodes.Text(() => Loc.T("wizard.step_unavailable")));
-                return;
-            }
-            foreach (var s in sub.Children) ModSettingNodes.Emit(b, s, k);
-        }
-
-        // ---- Step: event feedback (one mode choice → events + log + SAPI voices). "Events" not "combat":
+        // ---- Step: event feedback (one mode choice → events + log + event voices). "Events" not "combat":
         //      damage / healing / spellcasts etc. fire in AND out of combat. ----
 
-        private const string EnemySlot = "wizard.enemy_config"; // persisted ids of the wizard's three SAPI configs
+        private const string EnemySlot = "wizard.enemy_config"; // persisted ids of the wizard's three event configs
         private const string AllySlot = "wizard.ally_config";
         private const string UnitlessSlot = "wizard.unitless_config";
         // Every event source bucket the wizard drives. "unitless" = sourceless events (time passing, party-wide
@@ -175,59 +171,39 @@ namespace WrathAccess.Screens
             b.AddItem(ControlId.Structural(k + "help"), GraphNodes.Text(() => Loc.T("wizard.events.help")));
             b.BeginStop(k + "options");
             b.AddItem(ControlId.Structural(k + "positional"), GraphNodes.ChoiceOption(
-                () => Loc.T("wizard.events.positional"), () => CurrentMode() == "positional", ApplyPositional));
-            b.AddItem(ControlId.Structural(k + "screen_reader"), GraphNodes.ChoiceOption(
-                () => Loc.T("wizard.events.screen_reader"), () => CurrentMode() == "screen_reader", ApplyScreenReader));
+                () => Loc.T("wizard.events.positional"), () => CurrentMode() == "positional", () => Apply(events: true)));
             b.AddItem(ControlId.Structural(k + "log"), GraphNodes.ChoiceOption(
-                () => Loc.T("wizard.events.log"), () => CurrentMode() == "log", ApplyLog));
+                () => Loc.T("wizard.events.log"), () => CurrentMode() == "log", () => Apply(events: false)));
         }
 
-        // Positional: events spoken spatially, with DISTINCT enemy vs ally voices for clarity; the duplicate
-        // Combat + Magic game-log groups go off (the events cover them, incl. the spellcast events to come).
-        // Neutrals share the ally voice (everything that isn't an enemy reads in the "ally" voice). Sourceless
-        // (unitless) events get their own voice too — they have no map position, so they read NON-positionally
-        // (the dispatcher never speaks a sourceless event spatially regardless), distinct from the unit voices.
-        private static void ApplyPositional() => ModSettings.Batch(() =>
+        // The game's Combat + Magic log groups stay ON either way (verbose on purpose: alpha feedback on
+        // how much people keep). Events on: spoken in the world with DISTINCT enemy vs ally voices;
+        // neutrals share the ally voice, and sourceless (unitless) events get their own voice — they have
+        // no map position, so they read NON-positionally (the dispatcher never speaks a sourceless event
+        // spatially regardless). Events off: the log alone.
+        private static void Apply(bool events) => ModSettings.Batch(() =>
         {
-            var enemy = EnsureConfig(EnemySlot, "wizard.events.enemy_config_name");
-            var ally = EnsureConfig(AllySlot, "wizard.events.ally_config_name");
-            var unitless = EnsureConfig(UnitlessSlot, "wizard.events.unitless_config_name");
-            SetEventSource("enemy", enabled: true, config: enemy, positional: true);
-            SetEventSource("party", enabled: true, config: ally, positional: true);
-            SetEventSource("neutral", enabled: true, config: ally, positional: true);
-            SetEventSource("unitless", enabled: true, config: unitless, positional: false);
-            SetLogGroup("combat", false);
-            SetLogGroup("magic", false);
-        });
-
-        // Screen reader: events through your normal (default) config, non-positional; Combat + Magic log
-        // stays off (the events convey it, no need to double up).
-        private static void ApplyScreenReader() => ModSettings.Batch(() =>
-        {
-            foreach (var b in SourceBuckets) SetEventSource(b, enabled: true, config: "default", positional: false);
-            SetLogGroup("combat", false);
-            SetLogGroup("magic", false);
-        });
-
-        // Game log: no event speech — the screen reader reads the game's own log instead, so Combat + Magic
-        // log groups go on and the events go off (no duplication).
-        private static void ApplyLog() => ModSettings.Batch(() =>
-        {
-            foreach (var b in SourceBuckets) SetEventSource(b, enabled: false, config: "default", positional: false);
+            if (events)
+            {
+                var enemy = EnsureConfig(EnemySlot, "wizard.events.enemy_config_name");
+                var ally = EnsureConfig(AllySlot, "wizard.events.ally_config_name");
+                var unitless = EnsureConfig(UnitlessSlot, "wizard.events.unitless_config_name");
+                SetEventSource("enemy", enabled: true, config: enemy, positional: true);
+                SetEventSource("party", enabled: true, config: ally, positional: true);
+                SetEventSource("neutral", enabled: true, config: ally, positional: true);
+                SetEventSource("unitless", enabled: true, config: unitless, positional: false);
+            }
+            else
+                foreach (var b in SourceBuckets) SetEventSource(b, enabled: false, config: "default", positional: false);
             SetLogGroup("combat", true);
             SetLogGroup("magic", true);
         });
 
-        // Which mode the live settings reflect (read off the enemy bucket) — a heuristic for the radio
-        // "selected" marker + roadmap summary; the menu's per-source controls remain the source of truth.
+        // Which mode the live settings reflect (read off the enemy bucket) — for the radio "selected"
+        // marker + roadmap summary; the menu's per-source controls remain the source of truth.
         private static string CurrentMode()
-        {
-            var b = ModSettings.GetCategory("events.settings.enemy");
-            if (!(b?.Get<BoolSetting>("enabled")?.Get() ?? true)) return "log";
-            bool positional = b?.Get<BoolSetting>("positional")?.Get() ?? true;
-            var cfg = b?.Get<ChoiceSetting>("speech_config")?.ValueId;
-            return positional && !string.IsNullOrEmpty(cfg) && cfg != "default" ? "positional" : "screen_reader";
-        }
+            => (ModSettings.GetCategory("events.settings.enemy")?.Get<BoolSetting>("enabled")?.Get() ?? true)
+                ? "positional" : "log";
 
         // Set one source bucket's global event output (the per-source defaults the events inherit).
         private static void SetEventSource(string bucket, bool enabled, string config, bool positional)
@@ -247,7 +223,7 @@ namespace WrathAccess.Screens
                 if (child is BoolSetting b) b.Set(on);
         }
 
-        // Reuse the slot's remembered SAPI config if it still exists, else create a fresh SAPI config and
+        // Reuse the slot's remembered config if it still exists, else create a fresh synthesizer config and
         // remember its id (so re-runs reuse/re-tune the same enemy/ally voices, not pile up duplicates).
         private static string EnsureConfig(string slotPath, string nameKey)
         {
@@ -266,25 +242,29 @@ namespace WrathAccess.Screens
             return id;
         }
 
-        // ---- Steps: tune the enemy / ally / sourceless voices (each config's tree + a test line) ----
+        // ---- Steps: the enemy / ally / sourceless voices (the voice picker, its settings, a test line) ----
 
         private static void BuildVoiceStep(GraphBuilder b, string k, string slotPath, string helpKey)
         {
             b.AddItem(ControlId.Structural(k + "help"), GraphNodes.Text(() => Loc.T(helpKey)));
-            var sapi = ConfigParams(slotPath);
-            if (sapi != null)
+            var config = SlotConfig(slotPath);
+            var voice = config?.Tree?.Get<StringSetting>("voice");
+            if (voice != null)
             {
                 b.BeginStop(k + "settings");
-                foreach (var s in sapi.Children) ModSettingNodes.Emit(b, s, k);
+                SpeechVoicePicker.Emit(b, k, config, voice, true, null);
+                var prm = config.Tree.Get<CategorySetting>("params");
+                if (prm != null) ModSettingsScreen.EmitParamsInline(b, prm, config, k);
             }
             b.BeginStop(k + "test").AddItem(ControlId.Structural(k + "test"),
                 GraphNodes.Button(() => Loc.T("wizard.events.test"), () => TestVoice(slotPath)));
         }
 
-        private static CategorySetting ConfigParams(string slotPath)
+        // The wizard-created config behind a slot (null until the positional mode created it).
+        private static SpeechConfig SlotConfig(string slotPath)
         {
             var id = ModSettings.GetSetting<StringSetting>(slotPath)?.Get();
-            return string.IsNullOrEmpty(id) ? null : SpeechConfigRegistry.Get(id)?.Tree?.Get<CategorySetting>("sapi");
+            return string.IsNullOrEmpty(id) ? null : SpeechConfigRegistry.Get(id);
         }
 
         private static void TestVoice(string slotPath)
@@ -295,15 +275,13 @@ namespace WrathAccess.Screens
 
         // ---- navigation ----
 
-        // The active step sequence (dynamic — the engine-settings step drops out for a paramless engine,
+        // The active step sequence (dynamic — the event voice steps appear only when events are spoken,
         // and future phases just append here).
         private static Step[] ActiveSteps()
         {
-            var steps = new List<Step> { Step.Backend };
-            if (HasHandlerSettings()) steps.Add(Step.HandlerSettings);
-            steps.Add(Step.EventFeedback);
-            // tune the three SAPI voices — enemy, ally, and the sourceless (unitless) voice
-            if (CurrentMode() == "positional") { steps.Add(Step.EnemyVoice); steps.Add(Step.AllyVoice); steps.Add(Step.UnitlessVoice); }
+            var steps = new List<Step> { Step.Speech, Step.EventFeedback };
+            // tune the three event voices — enemy, ally, and the sourceless (unitless) voice
+            if (CurrentMode() != "log") { steps.Add(Step.EnemyVoice); steps.Add(Step.AllyVoice); steps.Add(Step.UnitlessVoice); }
             return steps.ToArray();
         }
 
@@ -348,22 +326,10 @@ namespace WrathAccess.Screens
         private static StringSetting VoiceSetting() => SpeechManager.Default?.Tree?.Get<StringSetting>("voice");
 
         // The chosen voice's display label (what it resolved to, else the pick itself).
-        private static string SelectedHandlerLabel()
+        private static string SelectedVoiceLabel()
         {
             var name = SpeechManager.Default?.ResolvedVoiceName;
             return string.IsNullOrEmpty(name) ? (SpeechManager.Default?.VoiceLabel ?? "") : name;
-        }
-
-        // The chosen voice's params subtree (rate/volume/boost for a synthesizer; a screen reader has
-        // none, so the settings step drops out for it).
-        private static CategorySetting SelectedHandlerParams()
-            => SpeechManager.Default?.ResolvedHandlerKey == "sapi"
-                ? SpeechManager.Default?.Tree?.Get<CategorySetting>("sapi") : null;
-
-        private static bool HasHandlerSettings()
-        {
-            var sub = SelectedHandlerParams();
-            return sub != null && sub.Children.Count > 0;
         }
     }
 }

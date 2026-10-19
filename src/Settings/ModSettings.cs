@@ -10,9 +10,14 @@ namespace WrathAccess.Settings
     /// The mod's settings tree + JSON persistence (ported from SayTheSpire2). Build the <see cref="Root"/>
     /// tree, then <see cref="Initialize"/> with a persistent directory: it loads <c>settings.json</c>
     /// (a flat <c>{ fullPath: value }</c> map), applies saved values over the in-code defaults, and saves
-    /// back. Every <c>Set</c> auto-saves (<see cref="MarkDirty"/>). Keys from another mod version are
-    /// preserved across save (forward-compat); a corrupt file falls back to defaults without overwriting
-    /// blindly. Stored under <c>Application.persistentDataPath</c> so it survives a mod redeploy.
+    /// back. Every <c>Set</c> auto-saves (<see cref="MarkDirty"/>). Saved keys with no setting yet are
+    /// held until <see cref="ReapplyUnknown"/> (subtrees built after load) and kept across save; a corrupt
+    /// file falls back to defaults without overwriting blindly. Stored under
+    /// <c>Application.persistentDataPath</c> so it survives a mod redeploy.
+    ///
+    /// No migrations: a file from another <see cref="SchemaVersion"/> is set aside as
+    /// <c>settings.old.json</c> and everything starts from defaults. Bump the version whenever the
+    /// schema changes in a way old values would break.
     /// </summary>
     public static class ModSettings
     {
@@ -22,6 +27,10 @@ namespace WrathAccess.Settings
         private static string _path;
         private static readonly Dictionary<string, Setting> _byPath = new Dictionary<string, Setting>();
         private static readonly Dictionary<string, JToken> _unknownKeys = new Dictionary<string, JToken>();
+
+        /// <summary>The settings file format. A saved file with any other version is discarded.</summary>
+        public const int SchemaVersion = 1;
+        private const string VersionKey = "settings_version";
 
         public static void Initialize(string settingsDir)
         {
@@ -77,8 +86,18 @@ namespace WrathAccess.Settings
             {
                 var doc = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(File.ReadAllText(_path));
                 if (doc == null) return;
+                int version = doc.TryGetValue(VersionKey, out var v) && v.Type == JTokenType.Integer ? v.ToObject<int>() : 0;
+                if (version != SchemaVersion)
+                {
+                    var old = Path.Combine(Path.GetDirectoryName(_path), "settings.old.json");
+                    File.Copy(_path, old, overwrite: true);
+                    Main.Log?.Log("[settings] file is version " + version + ", not " + SchemaVersion
+                        + ": starting from defaults (the old file is kept as settings.old.json)");
+                    return;
+                }
                 foreach (var kv in doc)
                 {
+                    if (kv.Key == VersionKey) continue;
                     if (_byPath.TryGetValue(kv.Key, out var s)) s.LoadValue(kv.Value);
                     else _unknownKeys[kv.Key] = kv.Value; // unknown (other version) — keep it across save
                 }
@@ -95,20 +114,6 @@ namespace WrathAccess.Settings
             foreach (var kv in _unknownKeys)
                 if (_byPath.TryGetValue(kv.Key, out var s)) { s.LoadValue(kv.Value); applied.Add(kv.Key); }
             foreach (var k in applied) _unknownKeys.Remove(k);
-        }
-
-        // ---- unknown-key access (schema migrations read old paths out of the preserved set) ----
-
-        public static List<string> UnknownPaths() => new List<string>(_unknownKeys.Keys);
-
-        public static bool TryGetUnknown(string path, out JToken token) => _unknownKeys.TryGetValue(path, out token);
-
-        public static void RemoveUnknownWhere(Func<string, bool> predicate)
-        {
-            var doomed = new List<string>();
-            foreach (var k in _unknownKeys.Keys)
-                if (predicate(k)) doomed.Add(k);
-            foreach (var k in doomed) _unknownKeys.Remove(k);
         }
 
         private static int _batchDepth;
@@ -130,7 +135,7 @@ namespace WrathAccess.Settings
             if (_path == null) return;
             try
             {
-                var dict = new Dictionary<string, object>();
+                var dict = new Dictionary<string, object> { [VersionKey] = SchemaVersion };
                 foreach (var kv in _byPath)
                 {
                     var boxed = kv.Value.BoxedValue;

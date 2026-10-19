@@ -8,7 +8,7 @@ namespace WrathAccess.Speech
     /// The user's ADDITIONAL speech configurations — beyond the default (the root Speech settings) — for
     /// the events system to speak specific things through (e.g. enemy damage in a different voice). Mirrors
     /// the overlay roster: a hidden id "list" under <c>speech.additional</c>, created PRE-load so the saved
-    /// set is restored, then each config's subtree (a hidden name + the shared handler/params schema) built
+    /// set is restored, then each config's subtree (a hidden name + the shared voice/params schema) built
     /// POST-load with <see cref="ModSettings.ReapplyUnknown"/> filling values saved before the subtree
     /// existed. Add/Remove/Rename at runtime. Each config resolves to a <see cref="SpeechConfig"/>.
     /// </summary>
@@ -31,8 +31,6 @@ namespace WrathAccess.Speech
             foreach (var id in Ids()) BuildConfig(id);
             ModSettings.Reindex();
             ModSettings.ReapplyUnknown();
-            // Pre-refactor files stored a handler (+ prism backend) per config; convert to an output pick.
-            foreach (var id in Ids()) SpeechManager.MigrateLegacy(ConfigCat(id));
         }
 
         public static IReadOnlyList<string> Ids() => IdList();
