@@ -3,8 +3,9 @@
 Launch Pathfinder: Wrath of the Righteous. Only PC is supported; console mode (controller support)
 is not implemented yet. If the game has been running for a while and nothing is happening, press
 Enter on the keyboard and it should load you into the main menu. The first time you launch, a setup
-wizard walks you through some of the mod's features and lets you set your speech rate and preferred
-exploration features (sonar, wall tones, and so on).
+wizard lets you choose your speech engine and voice, and how combat and world events are spoken.
+If speech ever goes silent or ends up on the wrong voice, **F9** resets it to your screen reader.
+**F5** quick saves and **F8** quick loads, as in the game.
 
 This page explains how the mod works. For a hands-on guided tour of the opening dungeon, see
 [The Caves Beneath Kenabres](walkthrough.md). For the full key list, see [Controls](controls.md).
@@ -21,13 +22,18 @@ Typeahead is supported — just start typing and the current panel filters to th
 
 ## The in-game UI
 
-The in-game UI is a set of panels you can Tab between:
+In an area, the keyboard starts on the world itself: the movement keys move the cursor and the
+letter keys run the scanner and party commands described below. Press **Tab** to bring up the
+in-game HUD, a set of panels you Tab between:
 
-- **Game** — where you enter most game commands (cursor movement, the scanner, and so on).
-- **Action bar** — use and target your character's abilities.
+- **Action bar** — use and target your character's abilities, spells, and items.
+- **Turn** — in turn-based combat only: the initiative order and turn actions.
 - **Menu** — the game's menu bar: alter AI behaviour and access functions such as rest and
   formation.
 - **Windows** — your character sheet, spellbook, and the rest.
+
+Tabbing past the last panel returns you to the world. While the HUD has focus, the arrows navigate
+it, but the other exploration keys keep working.
 
 ## Cursors and the scanner
 
@@ -37,17 +43,23 @@ cursor** and the **review cursor**.
 
 ### The movement cursor
 
-Use **W, A, S, D** to move the cursor around the environment. In **continuous** mode it travels at a
-set speed (15 feet/second by default) while held; in **tiled** mode it steps in 5-foot increments,
-as if reading a tactical grid. Tile size is adjustable in settings. Every sound from the game and
-mod is positioned relative to this cursor — treat it like an audio camera.
+The cursor has four sets of movement keys. By default, **W, A, S, D** glide it continuously at 15
+feet per second while held, **Shift+W, A, S, D** glide twice as fast, and the **arrow keys** step it
+one 5-foot tile at a time, as if reading a tactical grid. **Shift+arrows** are free for you to
+assign. Each set's mode (continuous, tiled, or none), speed, and tile size can be changed under
+**Settings → All settings → Cursor**. Every sound from the game and mod is positioned relative to
+this cursor — treat it like an audio camera.
+
+Directions are relative to the way you're facing, which starts at north. **Q** and **E** turn
+you while held, and **Shift+Q / Shift+E** turn to the next 45-degree step; **Alt+R** turns you back
+to north.
 
 When the cursor is over an object, release the direction and you'll hear its name and information.
 **Enter** left-clicks it (attack, loot, open, …). **Backspace** moves your selected party members to
 the cursor. **C** snaps the cursor to the party leader. The cursor follows slopes and stairs
 automatically, so you never adjust its height by hand.
 
-Two optional movement aids live under **Settings → Exploration → Cursor**: **Slide along walls**
+Two optional movement aids live under **Settings → All settings → Cursor**: **Slide along walls**
 makes a blocked glide slip along the wall's surface (funnelling through doorways), and **First-held
 direction has priority** makes a held diagonal turn into a gap the moment it opens — hold the
 direction you actually want first, add the second to follow the wall.
@@ -78,12 +90,24 @@ to your cursor: a **straight line** is walkable directly to it; a **path around*
 wall is between you and it. **Semicolon** replays the ping for the current review item on demand,
 and the audio glossary (Ctrl+M → Help → Audio glossary) plays all four with explanations. If you'd
 like the cycles to snap back to the nearest thing whenever you move, enable **Cursor movement resets
-review cycles** under Settings → Exploration → Cursor.
+review cycles** under Settings → All settings → Cursor.
+
+**Alt+1** to **Alt+6** put the review cursor straight on party member 1–6, and **J** cycles
+*strategic hints*: enemy spawn points that haven't fired yet, and the places enemies are heading for
+(the buildings raiders want to burn, say). Strategic hints are an Enhancement — something a sighted
+player reads off the screen at a glance — and can be turned off in settings.
 
 Unexplored space (**L**) deserves a note: it cycles the openings where walkable ground you haven't
 revealed yet borders ground you have — the places where the map can still grow. If you're ever
 unsure where to go next, press **L**, jump the cursor there with **Slash**, and send your party with
 **Backspace**.
+
+### Bookmarks
+
+**Alt+B** opens your bookmarks for the area. You can bookmark the cursor's position, or pin a
+bookmark to the review item (it then follows that thing if it moves), and give each a name. The
+area's bookmarks are listed below; Enter on one puts the review cursor on it, and Delete removes it.
+Bookmarks also appear as their own scanner category, and they're saved across sessions.
 
 ## Buffers
 
@@ -157,10 +181,19 @@ mode. Aim with either cursor: move the movement cursor onto a target and press *
 review cursor on a target and press **I**. **Escape** cancels targeting (when you're not targeting,
 Escape opens the game menu instead).
 
-You can also set a **default attack**: press **Backspace** on an eligible action-bar ability (an
-at-will ability or cantrip, like Acid Splash) and attacking an enemy with Enter or I casts it
-instead of swinging your weapon — the same auto-use feature the sighted game offers on right-click.
-The slot announces "default attack" while one is set; Backspace again clears it.
+The number keys use the action bar's slots directly, as in the game: **1** to **9**, **0**,
+**Minus** and **Equals** for the first twelve slots, and with **Shift** for the third row. A spell or
+ability that needs a target enters targeting as above. One that takes effect immediately (a
+self-buff, a potion, a toggle) asks first: the first press names it, and for an area effect who it
+would hit, and pressing it again within a few seconds uses it.
+
+**Backspace** on an action-bar slot opens its menu: the spell's variants and conversions where it
+has them (a cleric's spontaneous Cure, for example), and **Set default attack** for an eligible
+ability (an at-will ability or cantrip, like Acid Splash). With a default attack set, attacking an
+enemy with Enter or I casts it instead of swinging your weapon — the same auto-use feature the
+sighted game offers on right-click. The slot announces "default attack" while one is set, and the
+same menu clears it. **Backslash** picks a slot up and puts it down elsewhere on the bar (or drags a
+spell or ability onto it from the lists below the bar), and **Delete** clears a slot.
 
 ## Your character windows
 
@@ -175,7 +208,9 @@ a shortcut yet; open it from the Windows panel of the in-game UI.
 In the inventory, **Enter** on an item equips or uses it the default way, and **Backspace** opens
 its menu — equip to a specific slot (including **Equip in off hand**), drop, split, and so on.
 **Backslash** is a keyboard drag: press it on an item to pick it up, then press it again on a slot
-to place it there — the way to move gear directly between equipment slots. Splitting a stack (or
+to place it there — the way to move gear directly between equipment slots. **Space** on an item
+opens the game's Information window, with the item first and, where it applies, what you have
+equipped in its place as further panels to compare against. Splitting a stack (or
 dropping part of one) opens an **amount window**: focus lands on the slider, arrows adjust the
 count, and Enter on the action button confirms.
 
@@ -191,7 +226,9 @@ A vendor window is a series of labelled panels you Tab between: your inventory, 
 buying cart, your selling cart, the bulk-sell options, the running deal total, and close. **Enter**
 on an item moves it the sensible way for its panel (buying from the store, selling from your
 inventory, returning from a cart), **Backspace** offers moving the whole stack, and the deal button
-confirms the trade. Moving part of a stack opens the same amount window as splitting does.
+confirms the trade. Moving part of a stack opens the same amount window as splitting does. Both your
+inventory and the store start with the game's filters: a search field, a sort order, and item-type
+filters.
 
 ## Looting
 
@@ -213,6 +250,39 @@ cycles every point nearest first, **M** the points connected to where you are, a
 locations you can actually reach (hold **Shift** to go backwards). Locations you can't enter, or that
 travel is restricted to, are announced as such, and any book events or encounters along the way are
 accessible.
+
+The **arrow keys** walk the roads. From the place or junction under the cursor, an arrow names the
+road leaving in that direction: where it leads, how many miles, and whether it's closed or not yet
+explored. Press the same arrow again to move the cursor there, or two arrows together for a
+diagonal. Junctions are stops too, read as a *fork* or a *bend* with their roads. Roads you haven't
+explored can't be picked from the location list, so the arrows are how you travel them: from where
+your party is standing, the second press asks whether to travel down that road (quoting the journey
+time), and Cancel just moves the cursor. **W, A, S, D** glide the cursor freely instead.
+
+**Tab** reaches the map's panels: the toolbar (the date, crusade morale, Skip Day, switching between
+party and army, and the crusade's stats) and, once you have armies, the army list and the selected
+army's details. Your armies are on **Comma** and enemy armies on **Period**; **I** on one of your
+armies selects it, and **Y** reads an army's information. The crusade's windows (recruiting,
+buying resources, generals) are accessible too.
+
+## Crusade battles
+
+When armies meet, the battle plays out on a 9 by 7 grid. The same cursor keys step one cell at a time,
+and each cell reads the squad standing there and its strength, whether it's in reach of your acting
+squad, and for an enemy squad the game's prediction of what an attack would do ("108 to 243 damage,
+1 to 2 killed"). Cells are named like a chessboard — columns A to I from left to right, rows 1 to 7
+from the bottom — as the battlefield appears on screen. **Period** and **Comma** cycle enemy squads
+and your own; **Enter** orders your acting squad to the cursor's cell (moving, or attacking what's
+there), and **I** against the reviewed squad. **Tab** reaches the acting squad's actions, your
+general's actions and spellbook, the turn order, and the battle controls (auto-combat, speed,
+retreat). Turns, damage, and deaths are read out as they happen.
+
+## Camera and low vision
+
+The **Alt** keys drive the game's camera for players with some vision: **Alt+W, A, S, D** pan,
+**Alt+Q / Alt+E** rotate, and **Alt+Page Up / Page Down** zoom. Under **Settings → All settings →
+Vision**, **Camera follows the cursor** keeps the camera on the cursor wherever it goes, with the
+offset, angle, zoom, and smoothing you choose (the same Alt keys adjust them while it's on).
 
 ## Tutorials
 

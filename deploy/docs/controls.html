@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-039b1acf.js";
+            window.path_to_searchindex_js = "searchindex-d9ea1601.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6d5d962f.js"></script>
@@ -184,6 +184,9 @@ clashes) or clear one. The mod menu always shows the complete, current list, so 
 truth if a binding here ever drifts.</p>
 <p>Press <strong>Ctrl+Shift+A</strong> at any time to toggle accessibility focus mode (the mod takes over the
 keyboard from the game).</p>
+<p>Many exploration keys are shared between the area, the map screen, the world map, and crusade
+battles: the same key does the equivalent thing in each place. The sections for the map screens and
+battles list only what differs.</p>
 <h2 id="global"><a class="header" href="#global">Global</a></h2>
 <p>These work everywhere.</p>
 <div class="table-wrapper">
@@ -193,8 +196,10 @@ keyboard from the game).</p>
 </thead>
 <tbody>
 <tr><td>Ctrl+Shift+A</td><td>Toggle focus mode</td></tr>
-<tr><td>Ctrl+M</td><td>Open the mod menu (settings, setup wizard)</td></tr>
+<tr><td>Ctrl+M</td><td>Open the mod menu (settings, setup wizard, help)</td></tr>
 <tr><td>F5</td><td>Quick save</td></tr>
+<tr><td>F8</td><td>Quick load (the newest quick save)</td></tr>
+<tr><td>F9</td><td>Reset speech to the automatic voice (your screen reader) — a way out if speech goes silent</td></tr>
 </tbody>
 </table>
 </div>
@@ -209,30 +214,67 @@ keyboard from the game).</p>
 <tr><td>Arrow keys</td><td>Navigate the focused panel / adjust the focused control</td></tr>
 <tr><td>Tab / Shift+Tab</td><td>Next / previous region or panel</td></tr>
 <tr><td>Enter (or Keypad Enter)</td><td>Activate the focused control</td></tr>
-<tr><td>Backspace</td><td>Secondary action (right-click: clear a key binding, open an item’s menu, set an action-bar ability as your default attack)</td></tr>
-<tr><td>Backslash</td><td>Pick up / place the focused item (keyboard drag — e.g. move gear between equipment slots)</td></tr>
+<tr><td>Backspace</td><td>Secondary action (right-click: clear a key binding, open an item’s menu, open an action-bar slot’s menu)</td></tr>
+<tr><td>Backslash</td><td>Pick up / place the focused item (keyboard drag — e.g. move gear between equipment slots, or abilities onto the action bar)</td></tr>
+<tr><td>Delete</td><td>Remove (clear an action-bar slot, delete a bookmark)</td></tr>
 <tr><td>Escape</td><td>Back / close</td></tr>
-<tr><td>Space (or F1)</td><td>Read tooltip / inline links</td></tr>
+<tr><td>Space (or F1)</td><td>Read tooltip / inline links; on an item, open the game’s Information window</td></tr>
 <tr><td>Home / End</td><td>Jump to first / last item</td></tr>
 <tr><td>Ctrl+Up / Ctrl+Down</td><td>Previous / next region within a sheet</td></tr>
+<tr><td>Letters</td><td>Typeahead: jump to the matching entry (Escape clears the search)</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="exploration--cursor"><a class="header" href="#exploration--cursor">Exploration — cursor</a></h2>
+<h2 id="in-an-area--the-hud"><a class="header" href="#in-an-area--the-hud">In an area — the HUD</a></h2>
+<p>In an area, the keyboard starts on the world: the arrows move the cursor. <strong>Tab</strong> brings up the
+in-game HUD (action bar, the turn panel in turn-based combat, the menu bar, and the windows list), and
+Tabbing past its last panel returns you to the world. While the HUD has focus, the arrows navigate it
+and the rest of the exploration keys below keep working.</p>
+<h3 id="action-bar-hotkeys"><a class="header" href="#action-bar-hotkeys">Action-bar hotkeys</a></h3>
+<p>These use the action bar’s slots directly, as the game’s own number keys do. Using a self-cast
+ability, item, or toggle asks first: the first press names it (and, for an area effect, who it would
+hit), and a second press within a few seconds uses it.</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Key</th><th>Action</th></tr>
 </thead>
 <tbody>
-<tr><td>W A S D (or arrows)</td><td>Move the movement cursor (relative to your facing)</td></tr>
-<tr><td>Shift + W A S D (or Shift+arrows)</td><td>Move the secondary cursor</td></tr>
+<tr><td>1 … 9, 0, Minus, Equals</td><td>Action bar slots 1–12</td></tr>
+<tr><td>Shift + 1 … Equals</td><td>Slots 1–12 of the third action-bar row</td></tr>
+</tbody>
+</table>
+</div>
+<p>The second row and slots 13–14 have no default key; bind them under <strong>Settings → Input</strong> if you want
+them.</p>
+<h2 id="exploration--cursor"><a class="header" href="#exploration--cursor">Exploration — cursor</a></h2>
+<p>The cursor has four sets of movement keys, each with its own movement mode, set under
+<strong>Settings → All settings → Cursor</strong>. By default:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Key</th><th>Action</th></tr>
+</thead>
+<tbody>
+<tr><td>W A S D</td><td>Move the cursor, gliding at 15 feet per second (relative to your facing)</td></tr>
+<tr><td>Shift + W A S D</td><td>Move the cursor faster, at 30 feet per second</td></tr>
+<tr><td>Arrow keys</td><td>Step the cursor one 5-foot tile at a time</td></tr>
+<tr><td>Shift + arrow keys</td><td>Unassigned (pick a mode for it in the Cursor settings)</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Key</th><th>Action</th></tr>
+</thead>
+<tbody>
 <tr><td>Q / E</td><td>Turn your facing left / right (continuous while held)</td></tr>
 <tr><td>Shift+Q / Shift+E</td><td>Turn your facing to the next 45° step</td></tr>
 <tr><td>Enter</td><td>Interact at the cursor (left-click)</td></tr>
 <tr><td>Backspace</td><td>Move the selected party to the cursor</td></tr>
-<tr><td>C</td><td>Recenter the cursor on the party leader</td></tr>
-<tr><td>Space</td><td>Toggle pause; during a cutscene, skip it</td></tr>
+<tr><td>C</td><td>Bring the cursor back to the party leader</td></tr>
+<tr><td>Space</td><td>Toggle pause (in turn-based combat, end the turn); during a cutscene, skip it</td></tr>
 <tr><td>Z</td><td>Where am I (area, indoors, current room, whether the spot is unexplored, and rough map position)</td></tr>
 <tr><td>X</td><td>Describe the scanner target (the mod’s authored visual description of the review item, where one exists)</td></tr>
 <tr><td>Shift+X</td><td>Describe the current room (the mod’s authored room description, where one exists)</td></tr>
@@ -250,7 +292,7 @@ keyboard from the game).</p>
 <tr><td>Ctrl+A</td><td>Select the whole party</td></tr>
 <tr><td>Ctrl+1 … Ctrl+6</td><td>Select party member 1–6 (press again for their pet / mount)</td></tr>
 <tr><td>H</td><td>Hold position (toggle)</td></tr>
-<tr><td>G</td><td>Stop</td></tr>
+<tr><td>G</td><td>Stop (also cancels a pending multi-turn order)</td></tr>
 <tr><td>Ctrl+S</td><td>Toggle stealth</td></tr>
 <tr><td>Ctrl+D</td><td>Toggle AI control</td></tr>
 <tr><td>Ctrl+R</td><td>Rest — arms camp placement; aim with the cursor and press Enter</td></tr>
@@ -280,16 +322,17 @@ keyboard from the game).</p>
 <tr><td>Ctrl+Page Down / Ctrl+Page Up</td><td>Next / previous category</td></tr>
 <tr><td>Shift+Page Down / Shift+Page Up</td><td>Next / previous subcategory</td></tr>
 <tr><td>I</td><td>Interact with the review item</td></tr>
-<tr><td>Slash (or Home)</td><td>Move the movement cursor to the review item</td></tr>
+<tr><td>Slash (or Home)</td><td>Move the cursor to the review item</td></tr>
 <tr><td>Semicolon</td><td>Ping the review item: one of four sounds for sight and route from the cursor (straight line / path around / unreachable / blocked sight — hear them in the audio glossary)</td></tr>
 <tr><td>K</td><td>Announce cursor position</td></tr>
 <tr><td>Shift+K</td><td>Announce party</td></tr>
 <tr><td>Y</td><td>Inspect the review-cursor unit</td></tr>
 <tr><td>’ (apostrophe)</td><td>Inspect the unit under the cursor</td></tr>
+<tr><td>Alt+B</td><td>Bookmarks: bookmark the cursor’s position or the review item, and list this area’s bookmarks</td></tr>
 </tbody>
 </table>
 </div>
-<p>Quick review-cursor cycles (hold <strong>Shift</strong> to go backwards):</p>
+<p>Quick review-cursor cycles, nearest first (hold <strong>Shift</strong> to go backwards):</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -303,12 +346,14 @@ keyboard from the game).</p>
 <tr><td>M</td><td>Next interactable / object</td></tr>
 <tr><td>V</td><td>Next room exit</td></tr>
 <tr><td>L</td><td>Next unexplored space (openings where the map can still be revealed)</td></tr>
+<tr><td>J</td><td>Next strategic hint: enemy spawn points and the places enemies are heading for (an Enhancement; see Settings)</td></tr>
+<tr><td>Alt+1 … Alt+6</td><td>Review party member 1–6 (press again for their pet / mount)</td></tr>
 </tbody>
 </table>
 </div>
 <p>Every cycle landing plays the same four-way sight-and-route ping as Semicolon, so you always hear
-whether the thing is directly walkable-to. Points of interest are reviewed on the map screen (below),
-not in the area.</p>
+whether the thing is directly walkable-to. Points of interest (the game’s map markers) are reviewed
+on the map screen (below), not in the area.</p>
 <h2 id="exploration--buffers"><a class="header" href="#exploration--buffers">Exploration — buffers</a></h2>
 <div class="table-wrapper">
 <table>
@@ -333,13 +378,15 @@ not in the area.</p>
 <tr><td>Ctrl+F2</td><td>Sonar: cycle mode</td></tr>
 <tr><td>Shift+F1</td><td>Wall tones: play while held</td></tr>
 <tr><td>Shift+F2</td><td>Sonar: play while held</td></tr>
-<tr><td>C</td><td>Recenter the overlay on the player</td></tr>
-<tr><td>Keypad 5</td><td>Announce the overlay cursor</td></tr>
+<tr><td>Keypad 5</td><td>Announce the cursor</td></tr>
 <tr><td>Ctrl+Period / Ctrl+Comma</td><td>Follow the surface down / up (multi-level areas)</td></tr>
 </tbody>
 </table>
 </div>
 <h2 id="exploration--camera"><a class="header" href="#exploration--camera">Exploration — camera</a></h2>
+<p>These keys drive the game’s camera, for players with some vision. With <strong>Camera follows the cursor</strong>
+turned on (<strong>Settings → All settings → Vision</strong>), they adjust where the camera sits relative to the
+cursor instead.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -348,13 +395,16 @@ not in the area.</p>
 <tbody>
 <tr><td>Alt + W A S D</td><td>Pan the camera</td></tr>
 <tr><td>Alt+Q / Alt+E</td><td>Rotate the camera left / right</td></tr>
+<tr><td>Alt+Page Up / Alt+Page Down</td><td>Zoom in / out</td></tr>
+<tr><td>Alt+R</td><td>Reset the camera, and turn your facing back to north</td></tr>
 <tr><td>Alt+C</td><td>Read the compass (camera facing)</td></tr>
 <tr><td>Alt+F</td><td>Follow the selected character</td></tr>
 </tbody>
 </table>
 </div>
 <h2 id="character-windows"><a class="header" href="#character-windows">Character windows</a></h2>
-<p>Toggle these directly, in an area or on the world map (press again to close).</p>
+<p>Toggle these directly, in an area or on the world map (press again to close). They also work from
+inside any of these windows, to switch straight to another one.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -370,51 +420,107 @@ not in the area.</p>
 </tbody>
 </table>
 </div>
-<p>The encyclopedia doesn’t have a shortcut yet — open it from the Windows panel of the in-game UI.</p>
+<p>The encyclopedia doesn’t have a shortcut yet — open it from the Windows panel of the in-game HUD.</p>
 <h2 id="the-map-screen"><a class="header" href="#the-map-screen">The map screen</a></h2>
-<p><strong>Ctrl+V</strong> opens the accessible area map: your own faster map cursor over the whole area, plus the
-map’s curated markers. Movement and most review keys work as in the area; the differences:</p>
+<p><strong>Ctrl+V</strong> opens the accessible area map: a map cursor that moves three times as fast as the area
+cursor, plus the map’s curated markers. Movement and most review keys work as in the area; the
+differences:</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Key</th><th>Action</th></tr>
 </thead>
 <tbody>
-<tr><td>W A S D (or arrows)</td><td>Move the map cursor (faster than the area cursor)</td></tr>
 <tr><td>Comma / Period</td><td>Next party member / enemy</td></tr>
 <tr><td>N</td><td>Next person — neutral NPCs and bystanders together, including people you’ve met who are currently hidden by fog (see the Enhancements setting)</td></tr>
 <tr><td>B</td><td>Next map marker (quest points, exits, loot, people — the game’s points of interest)</td></tr>
 <tr><td>M</td><td>Next exit marker</td></tr>
 <tr><td>Slash (or Home)</td><td>Move the map cursor to the review item</td></tr>
+<tr><td>Enter</td><td>Move the area cursor to the map cursor</td></tr>
+<tr><td>Backspace</td><td>Send the selected party to the map cursor</td></tr>
 <tr><td>K</td><td>Read the map cursor</td></tr>
+<tr><td>Z</td><td>Where am I, at the map cursor</td></tr>
+<tr><td>X / Shift+X</td><td>Describe the room at the map cursor</td></tr>
 <tr><td>Escape</td><td>Close the map</td></tr>
 </tbody>
 </table>
 </div>
 <h2 id="world-map"><a class="header" href="#world-map">World map</a></h2>
-<p>The world map has its own cursor, scanner, and sonar.</p>
+<p>The world map has its own cursor, scanner, and sonar. The arrow keys follow the roads: from the place
+or junction under the cursor, an arrow first names the road leaving in that direction (where it leads,
+how far, and whether it’s closed or unexplored), and the same arrow again moves the cursor to the far
+end. Press two arrows together for a diagonal. W A S D glide freely across the map.</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Key</th><th>Action</th></tr>
 </thead>
 <tbody>
+<tr><td>Arrow keys</td><td>Follow a road (press once to preview, again to move)</td></tr>
+<tr><td>W A S D</td><td>Move the map cursor freely</td></tr>
+<tr><td>Shift + W A S D</td><td>Move the map cursor freely, faster</td></tr>
 <tr><td>Page Down / Page Up</td><td>Next / previous point</td></tr>
 <tr><td>Ctrl+Page Down / Ctrl+Page Up</td><td>Next / previous category</td></tr>
-<tr><td>I</td><td>Travel to / enter the selected point</td></tr>
+<tr><td>I</td><td>Travel to / enter the selected point (on one of your armies: select it)</td></tr>
 <tr><td>B / Shift+B</td><td>Next / previous point, nearest first</td></tr>
 <tr><td>M / Shift+M</td><td>Next / previous connected point</td></tr>
 <tr><td>N / Shift+N</td><td>Next / previous reachable location</td></tr>
 <tr><td>Period / Shift+Period</td><td>Next / previous enemy army</td></tr>
 <tr><td>Comma / Shift+Comma</td><td>Next / previous ally army</td></tr>
+<tr><td>Y</td><td>The reviewed army’s information</td></tr>
 <tr><td>Ctrl+O</td><td>Cycle the map overlay</td></tr>
-<tr><td>W A S D (or arrows)</td><td>Move the map cursor</td></tr>
-<tr><td>Shift + W A S D (or Shift+arrows)</td><td>Move the secondary map cursor</td></tr>
 <tr><td>Enter</td><td>Act on the cursor</td></tr>
 <tr><td>C</td><td>Move the cursor to the party</td></tr>
 <tr><td>K</td><td>Read the cursor</td></tr>
-<tr><td>Slash</td><td>Move the cursor to the review point</td></tr>
+<tr><td>Slash (or Home)</td><td>Move the cursor to the review point</td></tr>
+<tr><td>Tab</td><td>The map’s panels: the toolbar (date, morale, Skip Day, party / army mode, crusade stats) and, with an army selected, the army list and the army’s details</td></tr>
 <tr><td>Escape</td><td>Open the menu</td></tr>
+</tbody>
+</table>
+</div>
+<p>Following a road out from where your party (or army) is standing is how you travel down a road you
+haven’t explored yet: the second arrow press then asks whether to travel there, quoting the journey
+time, and Cancel only moves the cursor.</p>
+<h2 id="crusade-battles"><a class="header" href="#crusade-battles">Crusade battles</a></h2>
+<p>Battles take place on the game’s 9 by 7 grid. The cursor steps one cell at a time and reads the cell:
+the squad standing there and its strength, whether it’s in reach, and for an enemy squad the game’s
+prediction of what an attack would do. Cells are named like a chessboard, columns A to I left to right
+and rows 1 to 7 from the bottom, as you see the battlefield.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Key</th><th>Action</th></tr>
+</thead>
+<tbody>
+<tr><td>W A S D (or arrows)</td><td>Move one cell</td></tr>
+<tr><td>Period / Comma</td><td>Next enemy squad / next of your own squads (Shift goes backwards)</td></tr>
+<tr><td>Slash (or Home)</td><td>Move the cursor to the reviewed squad</td></tr>
+<tr><td>Enter</td><td>Order the acting squad to the cursor’s cell (move, or attack what’s there)</td></tr>
+<tr><td>I</td><td>Order the acting squad against the reviewed squad</td></tr>
+<tr><td>Y</td><td>The reviewed squad’s information</td></tr>
+<tr><td>C</td><td>Bring the cursor back to the acting squad</td></tr>
+<tr><td>Escape</td><td>Cancel a spell that’s waiting for a target; otherwise open the game menu</td></tr>
+<tr><td>Tab</td><td>The battle’s panels: the acting squad’s actions, your general’s actions and spellbook, the turn order, and the battle controls (auto-combat, speed, retreat)</td></tr>
+<tr><td>Ctrl+L</td><td>The battle log</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="formation-editor"><a class="header" href="#formation-editor">Formation editor</a></h2>
+<p>Opened from the in-game menu bar. Pick a formation from the list, then Tab to the editing field: a
+cursor over the formation where you pick party members up and put them down. Only the custom
+formations can be edited; the automatic one arranges itself.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Key</th><th>Action</th></tr>
+</thead>
+<tbody>
+<tr><td>W A S D</td><td>Move the cursor one step</td></tr>
+<tr><td>Enter</td><td>Pick up the member at the cursor; press again to put them down</td></tr>
+<tr><td>Comma / Shift+Comma</td><td>Hear the next / previous party member’s place (the cursor stays put)</td></tr>
+<tr><td>Slash</td><td>Move the cursor to the member you just heard</td></tr>
+<tr><td>C</td><td>Move the cursor to the centre</td></tr>
+<tr><td>Ctrl+1 … Ctrl+6</td><td>Pick up party member 1–6 (press again for their pet / mount)</td></tr>
 </tbody>
 </table>
 </div>

@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-039b1acf.js";
+            window.path_to_searchindex_js = "searchindex-d9ea1601.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6d5d962f.js"></script>
@@ -180,8 +180,8 @@
                         <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p>Wrath Access is a screen-reader accessibility mod for <strong>Pathfinder: Wrath of the Righteous</strong>, for
 blind and visually-impaired players. It speaks the game’s menus, character creation, dialogue,
-exploration, and turn-based combat, and adds custom keyboard navigation over the game’s UI, spatial
-audio for the world around you, and review “buffers” for inspecting characters in detail.</p>
+exploration, combat, and the crusade, and adds custom keyboard navigation over the game’s UI,
+spatial audio for the world around you, and review “buffers” for inspecting characters in detail.</p>
 <blockquote>
 <p><strong>Status: alpha.</strong> A great deal works, but expect rough edges and gaps. Please report bugs (see
 the links below) — that’s what the alpha is for. Only PC is supported; console mode (controller
@@ -189,19 +189,23 @@ support) is not implemented.</p>
 </blockquote>
 <h2 id="what-works"><a class="header" href="#what-works">What works</a></h2>
 <ul>
-<li><strong>Speech</strong> through your screen reader (NVDA, JAWS, etc.) via Prism, with a Windows SAPI fallback.</li>
+<li><strong>Speech</strong> through your screen reader (NVDA, JAWS, etc.) or a Windows voice (SAPI 5, OneCore,
+SAPI 4), picked from a list of what’s installed.</li>
 <li><strong>Custom keyboard navigation</strong> in mouse mode, with key-repeat matching your OS settings.</li>
 <li><strong>Main menu</strong>, the <strong>New Game</strong> flow, and <strong>character creation / level-up</strong>.</li>
 <li><strong>Settings</strong> (checkboxes, sliders, dropdowns) and <strong>rebindable key bindings</strong>.</li>
 <li>A <strong>mod menu</strong> (Ctrl+M) with the mod’s own settings and a <strong>first-run setup wizard</strong> that walks
-you through speech, movement, wall tones, sonar, and event feedback.</li>
+you through speech and event feedback.</li>
 <li><strong>Exploration</strong>: a movement cursor, a categorized <strong>scanner</strong> of everything in the area, a
-<strong>sonar</strong> and other spatial-audio overlays, <strong>wall tones</strong>, room/area awareness, and <strong>world-map
-travel</strong>.</li>
+<strong>sonar</strong> and other spatial-audio overlays, <strong>wall tones</strong>, room/area awareness with hand-written
+room descriptions, and bookmarks.</li>
+<li>The <strong>world map</strong>: road-by-road travel on the arrow keys, the location list, and the crusade —
+armies, recruiting, resources, and <strong>crusade battles</strong> on their grid.</li>
 <li><strong>Dialogue</strong>, book events, tutorial popups, and the in-game log / barks.</li>
-<li><strong>Turn-based combat</strong> and <strong>targeting</strong> (abilities, resting).</li>
+<li><strong>Turn-based combat</strong> and <strong>targeting</strong> (abilities, the action-bar number keys, resting).</li>
 <li><strong>Service windows</strong>: inventory, character sheet, spellbook, journal, encyclopedia, local map.</li>
-<li><strong>Vendors / trade</strong>, looting, resting, party selection, and the group manager.</li>
+<li><strong>Vendors / trade</strong>, looting, resting, party selection, formations, and the group manager.</li>
+<li>A <strong>follow-cursor camera</strong> for players with some vision.</li>
 <li><strong>Review buffers</strong> (Alt+arrows) for reading a unit’s details line by line — name, HP, AC, and
 every buff / debuff / condition.</li>
 </ul>

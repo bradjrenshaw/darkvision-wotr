@@ -24,9 +24,10 @@ pathfind to their commanded destination automatically — that's how the game wo
 Alternatively, use the scanner or the quick keys (**Period**, **Comma**, and so on) to find what you
 want and press **I**.
 
-Press **B** to cycle the area's points of interest. These aren't interactable objects — they're map
-markers — but pressing **Slash** on one jumps your cursor to it; then find the object nearby and
-command your party to move or interact.
+The game's map markers (points of interest) live on the map screen: press **Ctrl+V** to open it and
+**B** to cycle them. These aren't interactable objects, but pressing **Slash** on one jumps the map
+cursor to it, and **Enter** brings your area cursor there when you close the map; then find the
+object nearby and command your party to move or interact.
 
 To complete the introduction, interact with 2 of the 3 festival attractions (the drinking contest,
 the dart-throwing competition, or the training dummy). After that you're thrown into the first real
@@ -34,9 +35,8 @@ dungeon.
 
 ## Into the caves
 
-You start in a small room in the northern part of the area. Press **C** to make sure the cursor is at
-your character's location (after an area transition it can land in odd spots; this is being worked
-on). Use **W, A, S, D** to look around — notice how the wall tones change volume as you near a wall.
+You start in a small room in the northern part of the area. Press **C** any time to bring the cursor
+back to your character's location. Use **W, A, S, D** to look around — notice how the wall tones change volume as you near a wall.
 
 This room isn't a neat rectangle. Pathfinder is a 3-D game, so rooms are realistically modelled,
 curves and all. It's simplified by the camera angle, but worth keeping in mind.

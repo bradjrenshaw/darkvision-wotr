@@ -64,12 +64,14 @@ whole party), then give the order:
   single character walks over; the whole party moves as a group.
 - **Attack** — put the movement cursor on an enemy and press Enter, or pick the enemy with the review
   cursor (Period cycles enemies) and press I. Your character closes to reach and attacks.
-- **Use an ability or spell** — Tab to the action bar, choose it, and the game enters targeting; aim
-  with the movement cursor (Enter) or the review cursor (I).
+- **Use an ability or spell** — press its action-bar number key (1 to 9, 0, Minus, Equals), or Tab
+  to the action bar and choose it; the game enters targeting, and you aim with the movement cursor
+  (Enter) or the review cursor (I).
 
 Two refinements worth knowing. A **default attack**: press Backspace on an eligible action-bar
-ability (an at-will ability or a cantrip) and your attack orders cast it instead of swinging — handy
-for casters who'd rather throw Acid Splash than poke with a dagger; Backspace again clears it. And
+ability (an at-will ability or a cantrip) and choose **Set default attack**, and your attack orders
+cast it instead of swinging — handy for casters who'd rather throw Acid Splash than poke with a
+dagger; the same menu clears it. And
 **touch spells**: after casting a touch spell you hold the charge, and the interact keys (Enter on
 the cursor, I on the review target) deliver it to a valid target.
 

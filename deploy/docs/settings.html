@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-039b1acf.js";
+            window.path_to_searchindex_js = "searchindex-d9ea1601.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6d5d962f.js"></script>
@@ -187,28 +187,34 @@ and links to the Discord and Patreon.</p>
 time. It walks you through the most important choices as a series of steps with a roadmap header you
 can jump around in:</p>
 <ul>
-<li><strong>Speech</strong> — which speech output to use (your screen reader, or Windows SAPI) and its rate /
-volume.</li>
-<li><strong>Movement</strong> — continuous vs. tiled cursor movement, speed, and tile size.</li>
-<li><strong>Wall tones</strong> and <strong>sonar</strong> — whether they play, and which kinds of things the sonar pings.</li>
-<li><strong>Event feedback</strong> — whether combat and world events (damage, healing, spellcasting, …) are spoken
-aloud, and how, including distinct voices for enemies, allies, neutrals, and sourceless events.</li>
+<li><strong>Speech</strong> — the voice that reads the mod (your screen reader, or a Windows voice), with that
+voice’s rate, pitch, and volume right below it when it has them.</li>
+<li><strong>Event feedback</strong> — how you hear what happens in the world (attacks, damage, healing, spells):
+<strong>positional spoken events</strong> (the default) says each event where it happens, in distinct voices
+for enemies, allies, and sourceless events, alongside the game’s own combat and magic log
+messages; <strong>game log only</strong> reads just those log messages. With positional events on, the next
+steps let you choose and tune each of the three voices.</li>
 </ul>
 <p>The wizard’s presets configure many settings at once; anything it sets can still be fine-tuned
-afterward.</p>
+afterward. Cursor movement, wall tones, and the sonar are set up in the settings below.</p>
 <h2 id="the-simple-settings-screen"><a class="header" href="#the-simple-settings-screen">The simple settings screen</a></h2>
 <p>The mod menu’s <strong>Settings</strong> entry opens a small, curated screen with the controls most people
 actually want, grouped as:</p>
 <ul>
-<li><strong>Speech</strong> — the speech output (Auto = your screen reader, a specific screen reader, SAPI, or
-Clipboard) and the tuning that applies to it: rate, volume, and voice.</li>
+<li><strong>Speech</strong> — the <strong>voice</strong>: Automatic (your screen reader, or the default Windows voice), or a
+specific choice from a tree of what’s installed — screen readers, SAPI 5, OneCore, and SAPI 4
+voices, or the clipboard. Only voices actually available on your PC are listed. Below it, the
+settings that voice takes: rate, pitch, and volume (a screen reader has none — your screen
+reader’s own settings apply). <strong>F9</strong> anywhere puts it back on
+Automatic.</li>
 <li><strong>Audio cues</strong> — the master volume, then one node per sound system (sonar, slope, wall tones, fog,
 objects): when it’s active (off / when moving / continuous) and its volume. The sonar node also
 carries per-type <strong>Play sound</strong> switches — which kinds of things ping.</li>
 <li><strong>Announcements</strong> — “how much does it talk” presets: menu verbosity, scanner detail, the
 <strong>direction type</strong> (compass in 8 or 16 points, short spoken-letter forms, relative to your facing,
 or clock face), log detail, and event speech level.</li>
-<li><strong>Cursor</strong> — movement speed, room-change announcements, and the path/AoE speech toggles.</li>
+<li><strong>Cursor</strong> — the main movement speed, room-change announcements, and the path/AoE speech
+toggles.</li>
 <li><strong>Input</strong> — every mod action as a rebindable binding, with a clash warning on capture.</li>
 </ul>
 <p>Everything here is a view over the same settings the full screen edits — nothing is duplicated, and
@@ -216,38 +222,82 @@ hand-tuning in the full screen is never lost (a preset that no longer matches re
 <h2 id="all-settings"><a class="header" href="#all-settings">All settings</a></h2>
 <p>The <strong>All settings</strong> button at the bottom opens the full tabbed browser:</p>
 <ul>
-<li><strong>Audio</strong> — master volume and every system volume.</li>
-<li><strong>Enhancements</strong> — deliberate, opt-outable departures from what a sighted player gets, where that
-materially helps a blind player. First entry: <strong>Neutral NPCs ignore fog of war</strong> — people you have
-met stay locatable on the map even while fog currently hides them (on by default; turn it off for
-strict sighted parity).</li>
-<li><strong>Events</strong> — one entry per event the mod can announce (damage, healing, buffs, deaths, …), with
+<li>
+<p><strong>Audio</strong> — master volume and every system volume; the audio backend (Loadstar, the low-latency
+default, or NAudio if you have trouble with it) and its latency; where the game’s own sounds are
+heard from (the cursor, the party leader, or the camera); and stereo / headphone tuning.</p>
+</li>
+<li>
+<p><strong>Cursor</strong> — the cursor in an area, and on the world map. For each, the four
+sets of movement keys (W A S D, Shift+W A S D, the arrows, and Shift+arrows), each with its movement
+mode (continuous, tiled, or none; the world map adds <em>connected</em>, which follows the roads) and that
+mode’s speed or tile size. The area context also holds the cursor’s behaviours: room-change
+announcements, <strong>Slide along walls</strong>, <strong>First-held direction has priority</strong>, <strong>Cursor movement
+resets review cycles</strong>, and <strong>Play terrain sound under cursor</strong> (the game’s own footstep sound for
+the ground under the moving cursor — grass, stone, wood, water).</p>
+</li>
+<li>
+<p><strong>Enhancements</strong> — deliberate, opt-outable departures from what a sighted player gets, where that
+materially helps a blind player:</p>
+<ul>
+<li><strong>Neutral NPCs ignore fog of war</strong> and <strong>Companions ignore fog of war</strong> — people you have met
+stay locatable in the scanner and on the map even while fog currently hides them.</li>
+<li><strong>Strategic hints</strong> — the J cycle: enemy spawn points and enemy objectives.</li>
+<li><strong>Achievements stay enabled with mods active</strong> — the game normally switches Steam achievements
+off whenever any mod is loaded. <strong>Claim achievements already earned</strong> awards the story
+achievements you reached before turning this on.</li>
+</ul>
+<p>All are on by default; turn any off for strict sighted parity.</p>
+</li>
+<li>
+<p><strong>Events</strong> — one entry per event the mod can announce (damage, healing, buffs, deaths, …), with
 per-source settings (party / enemy / neutral / sourceless) and the speech configuration each uses;
 plus <strong>additional speech configurations</strong> so events can speak in different voices, positioned in
-the world where the engine supports it.</li>
-<li><strong>Exploration</strong> — the shared cursor behaviour (speed, wall slide, first-held direction priority,
-review-cycle reset) and each sensing system’s defaults (grid, spatial, slope, wall tones, object
-and fog cues, path info).</li>
-<li><strong>Input</strong> — the same rebindable bindings as the simple screen.</li>
-<li><strong>Log</strong> — which game-log message types are spoken, with presets (Default RTWP / Default Turn
-Based / Nothing).</li>
-<li><strong>Overlays</strong> — the spatial-audio overlay roster: each overlay’s composition and per-system
-overrides, plus add / rename / remove.</li>
-<li><strong>Scanner</strong> — what the scanner lists (per-type Listed switches), the sonar sound assigned to each
+the world where the engine supports it.</p>
+</li>
+<li>
+<p><strong>Exploration</strong> — each sensing system’s defaults (tile readout, spatial, slope, wall tones,
+object and fog cues, path info). The sonar has its own <strong>Sonar</strong> settings under Scanner, including
+its mode: a <em>sweep</em>, or <em>pulse</em>, where each thing repeats its own tone faster as it gets closer.</p>
+</li>
+<li>
+<p><strong>Input</strong> — the same rebindable bindings as the simple screen.</p>
+</li>
+<li>
+<p><strong>Log</strong> — which game-log message types are spoken, with presets (Default RTWP / Default Turn
+Based / Nothing).</p>
+</li>
+<li>
+<p><strong>Overlays</strong> — the spatial-audio overlay roster: each overlay’s composition and per-system
+overrides, plus add / rename / remove.</p>
+</li>
+<li>
+<p><strong>Scanner</strong> — what the scanner lists (per-type Listed switches), the sonar sound assigned to each
 entity type, <strong>scan announcements</strong> (which parts of an item’s line are spoken — name, type, health,
 location and its distance / direction / height sub-toggles) with per-type overrides, and the
 <strong>review cursor sounds</strong>: which sound each of the four sight-and-route outcomes plays (any can be
-Silent).</li>
-<li><strong>Speech</strong> — the default speech output and its tuning, plus the additional speech configurations
-used by events.</li>
-<li><strong>UI</strong> — announcement verbosity for menus and controls, with per-element-type overrides.</li>
+Silent).</p>
+</li>
+<li>
+<p><strong>Speech</strong> — the default speech output and its tuning, plus the additional speech configurations
+used by events.</p>
+</li>
+<li>
+<p><strong>UI</strong> — announcement verbosity for menus and controls, with per-element-type overrides.</p>
+</li>
+<li>
+<p><strong>Vision</strong> — for players with some sight: <strong>Camera follows the cursor</strong>, with its sideways and
+forward offsets, angle, preferred zoom, and smoothing.</p>
+</li>
 </ul>
 <p>Every tab has a <strong>Reset to defaults</strong> for just that tab, and a reset-everything below it.</p>
 <h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
 <ul>
-<li>Your Wrath Access settings are stored separately from the game’s, so <strong>updating the mod never
-resets them</strong>, and you can reset any single category back to its defaults without touching the
-rest.</li>
+<li>Your Wrath Access settings are stored separately from the game’s, so an ordinary update keeps
+them, and you can reset any single category back to its defaults without touching the rest.</li>
+<li>While the mod is in alpha, an update that reorganizes the settings starts everyone from the
+defaults instead of converting old values (the setup wizard runs again too). Your old settings
+file is kept as <code>settings.old.json</code> beside the new one.</li>
 <li>The first-launch flag is independent of the settings, so a full “reset all” won’t re-trigger the
 setup wizard.</li>
 </ul>

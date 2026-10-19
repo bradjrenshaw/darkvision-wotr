@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-039b1acf.js";
+            window.path_to_searchindex_js = "searchindex-d9ea1601.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6d5d962f.js"></script>
@@ -180,12 +180,38 @@
                         <h1 id="change-log"><a class="header" href="#change-log">Change Log</a></h1>
 <p>This page tracks notable, player-facing changes. The mod is in <strong>alpha</strong>, so it moves quickly; for
 the exact history see the <a href="https://github.com/bradjrenshaw/wotr-access/commits/main">commit log</a>.</p>
-<h2 id="alpha"><a class="header" href="#alpha">Alpha</a></h2>
-<p>The current alpha already covers a large slice of the game:</p>
+<h2 id="010--first-public-alpha"><a class="header" href="#010--first-public-alpha">0.1.0 — first public alpha</a></h2>
 <ul>
-<li>Speech through your screen reader (Prism) with a Windows SAPI fallback, and custom keyboard
-navigation in mouse mode. Speech outputs are configurable per use (rate, volume, voice — including
-OneCore), and event voices can be positioned in the world.</li>
+<li><strong>New installer</strong>: WrathAccessInstaller.exe finds your game, installs, updates and uninstalls the
+mod, and keeps itself up to date.</li>
+<li><strong>The crusade</strong>: the world map’s toolbar and crusade stats, armies (selecting, the army list and
+details), recruiting, buying resources, generals, and <strong>crusade battles</strong> on their grid, with the
+game’s attack predictions.</li>
+<li><strong>World-map roads on the arrow keys</strong>: preview and follow each road from a place or junction,
+including travelling down unexplored roads.</li>
+<li><strong>Action-bar number keys</strong> (1 to Equals, and Shift for the third row), the action-bar slot menu
+(spell conversions and the default attack), and keyboard drag and delete on the bar.</li>
+<li><strong>F8 quick load</strong>, alongside F5 quick save.</li>
+<li><strong>Bookmarks</strong> (Alt+B), <strong>strategic hints</strong> (J), and <strong>Alt+1–6</strong> to review a party member.</li>
+<li><strong>Speech and audio</strong>: a voice picker listing every installed screen reader and Windows voice; F9 to
+reset speech; a low-latency audio engine (Loadstar), a latency setting, and a sonar <em>pulse</em> mode.</li>
+<li>The cursor’s four sets of movement keys, each with its own mode (the arrows step tile by tile by
+default), and optional terrain footstep sounds under the cursor.</li>
+<li>A <strong>follow-cursor camera</strong> for low-vision players (the Vision settings), with zoom and reset keys.</li>
+<li><strong>Settings start fresh</strong> in this version: earlier settings are not carried over (the old file is
+kept as settings.old.json), and the setup wizard runs again. Voices now have a pitch setting, and
+the wizard’s enemy, ally and sourceless voice steps include the voice picker.</li>
+<li><strong>Achievements</strong> stay enabled with the mod (an Enhancement), with a way to claim ones you missed.</li>
+<li>Mythic rank-ups, the character-creation appearance step, item Information windows with equipped-item
+comparisons, vendor search and filters, and the retraining windows.</li>
+<li>Hand-written room descriptions for many more areas.</li>
+</ul>
+<h2 id="earlier-alpha-builds"><a class="header" href="#earlier-alpha-builds">Earlier alpha builds</a></h2>
+<p>The earlier alpha builds already covered a large slice of the game:</p>
+<ul>
+<li>Speech through your screen reader or a Windows voice, and custom keyboard navigation in mouse
+mode. Speech outputs are configurable per use (rate, volume, voice — including OneCore), and event
+voices can be positioned in the world.</li>
 <li>Main menu, the New Game flow, and character creation / level-up.</li>
 <li>A mod menu (Ctrl+M) with simple and full settings, a first-run setup wizard, and an audio glossary.</li>
 <li>Exploration: the movement cursor (with turnable facing on Q/E), the categorized scanner and review
