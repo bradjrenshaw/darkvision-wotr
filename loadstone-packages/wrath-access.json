@@ -176,7 +176,7 @@
   "packaging": {
     "artifacts": [
       {
-        "file": "../dist/WrathAccess.zip"
+        "file": "../release/assets/WrathAccess.zip"
       }
     ]
   }

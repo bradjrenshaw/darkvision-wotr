@@ -2,7 +2,7 @@ bin/
 obj/
 .vs/
 *.user
-dist/
+release/
 
 # mdbook build output (the book is built by CI / build_docs.ps1, not committed)
 docs_src/book/
