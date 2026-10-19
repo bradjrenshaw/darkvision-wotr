@@ -1,3 +1,7 @@
 [submodule "external/loadstar"]
 	path = external/loadstar
 	url = https://github.com/bradjrenshaw/loadstar.git
+[submodule "external/loadstone"]
+	path = external/loadstone
+	url = https://github.com/bradjrenshaw/loadstone.git
+	ignore = dirty

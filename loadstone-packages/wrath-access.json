@@ -20,6 +20,15 @@
       "branch": "main"
     }
   },
+  "launch": [
+    {
+      "step": "open-url",
+      "when": {
+        "distribution": "steam"
+      },
+      "url": "steam://rungameid/${steam.appId}"
+    }
+  ],
   "install": [
     {
       "step": "extract-archive",
@@ -86,6 +95,10 @@
           "to": "${game.modifications}/WrathAccess/Assemblies"
         },
         {
+          "from": "deploy/Module/**",
+          "to": "${game.modifications}/WrathAccess/Module"
+        },
+        {
           "from": "deploy/docs/**",
           "to": "${game.modifications}/WrathAccess/docs"
         },
@@ -96,6 +109,10 @@
         {
           "from": "vendor/prism.dll",
           "to": "${gameDir}/prism.dll"
+        },
+        {
+          "from": "vendor/loadstar.dll",
+          "to": "${gameDir}/loadstar.dll"
         }
       ]
     },
@@ -129,7 +146,11 @@
       "checks": [
         {
           "fileExists": "${game.modifications}/WrathAccess/Assemblies/WrathAccess.dll",
-          "message": "The download didn't contain WrathAccess.dll (deploy/Assemblies) \u2014 the repo may be mid-build."
+          "message": "The download didn't contain WrathAccess.dll (deploy/Assemblies) — the repo may be mid-build."
+        },
+        {
+          "fileExists": "${game.modifications}/WrathAccess/Module/WrathAccess.Module.dll",
+          "message": "The download didn't contain WrathAccess.Module.dll (deploy/Module) — the repo may be mid-build."
         }
       ]
     }

@@ -17,13 +17,18 @@ separately, so updating never resets them.
 
 1. Download the installer:
    **[WrathAccessInstaller.exe](https://github.com/bradjrenshaw/wotr-access/releases/latest/download/WrathAccessInstaller.exe)**
-2. Run it. Check the game directory is right (it auto-detects your Steam install; use Browse if
-   not), then choose **Install alpha** — it downloads the latest build straight from GitHub.
-3. Start the game.
+   and run it from anywhere — there is nothing to install. Windows SmartScreen may warn about an
+   unrecognized app the first time; choose **More info**, then **Run anyway**.
+2. Check the game directory is right (it auto-detects your Steam install; use **Browse** if not),
+   then press **Install** and pick a version. The newest release is selected; the
+   **dev channel (latest from the main branch)** at the end of the list installs the very latest
+   build instead.
+3. Press **Launch game**, or start the game as usual.
 
-To **update**, just run the installer again and choose **Install alpha** — you only download the
-installer itself once. It's a small accessible app, with a `--cli` keyboard/console mode if you
-prefer.
+To **update**, run the installer again: it says when an update is available, and the button reads
+**Update**. The installer keeps itself up to date too. **Uninstall** removes everything it
+installed. The installer is [Loadstone](https://github.com/bradjrenshaw/loadstone), an accessible
+mod manager, set up for Wrath Access alone.
 
 ## With Git
 

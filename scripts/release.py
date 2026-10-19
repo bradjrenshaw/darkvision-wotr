@@ -2,12 +2,19 @@
 
 Produces, under dist/:
   WrathAccess.zip           — the mod payload the installer downloads/extracts:
-                              WrathAccess/ (the native-mod folder) + game/ (prism.dll)
-  WrathAccessInstaller.exe  — the Rust installer (cargo build --release)
+                              WrathAccess/ (the native-mod folder) + game/ (prism.dll, loadstar.dll)
+  WrathAccessInstaller.exe  — the standalone installer: Loadstone (external/loadstone) built with the
+                              single-mod profile installer/loadstone-profile.json baked in
+  loadstone-release.json    — the release manifest Loadstone installs from: the install steps frozen
+                              from loadstone-packages/wrath-access.json, the zip's SHA-256, and the
+                              installer's hash + Loadstone version (so installers self-update)
 
-Release = `gh release create vX.Y.Z dist/WrathAccess.zip dist/WrathAccessInstaller.exe`
-(keep the tag in sync with Version in OwlcatModificationManifest.json — the
-installer reads the installed manifest's Version to offer updates).
+usage: python scripts/release.py [notes.md]   (optional release notes, embedded in the manifest)
+
+Release = `gh release create vX.Y.Z dist/WrathAccess.zip dist/WrathAccessInstaller.exe dist/loadstone-release.json`
+(the tag is Version in OwlcatModificationManifest.json; Loadstone compares release tags by semver).
+The installer build needs Visual Studio (C++ workload), CMake and Rust; the first build also
+compiles a static wxWidgets once (cached under %LOCALAPPDATA%/loadstone).
 """
 
 import glob
@@ -15,10 +22,12 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import zipfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST = os.path.join(REPO, "dist")
+LOADSTONE = os.path.join(REPO, "external", "loadstone")
 STAGE = os.path.join(DIST, "stage")
 
 
@@ -79,15 +88,35 @@ def main():
     zip_path = make_zip()
     shutil.rmtree(STAGE)
 
-    run(["cargo", "build", "--release"], cwd=os.path.join(REPO, "installer"))
-    shutil.copy2(os.path.join(REPO, "installer", "target", "release", "wrath-access-installer.exe"),
-                 os.path.join(DIST, "WrathAccessInstaller.exe"))
+    if not os.path.isfile(os.path.join(LOADSTONE, "Cargo.toml")):
+        run(["git", "submodule", "update", "--init", "external/loadstone"])
+
+    # The branded installer: Loadstone's own Windows build (static wxWidgets + static C runtime, so
+    # no Visual C++ Redistributable needed) with our single-mod profile embedded.
+    run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+         os.path.join(LOADSTONE, "scripts", "build_windows_app.ps1"),
+         "-ProfilePath", os.path.join(REPO, "installer", "loadstone-profile.json"),
+         "-Name", "WrathAccessInstaller", "-Out", DIST])
 
     with open(os.path.join(REPO, "OwlcatModificationManifest.json"), encoding="utf-8-sig") as f:
         version = json.load(f)["Version"]
+
+    # The release manifest: validates loadstone-packages/wrath-access.json and hashes the artifacts.
+    run(["cargo", "build", "--release", "-p", "loadstone-cli"], cwd=LOADSTONE)
+    package = [os.path.join(LOADSTONE, "target", "release", "loadstone.exe"), "package",
+               "--manifest", os.path.join(REPO, "loadstone-packages", "wrath-access.json"),
+               "--version", "v" + version,
+               "--artifact", zip_path,
+               "--installer", os.path.join(DIST, "WrathAccessInstaller.exe"),
+               "--out", os.path.join(DIST, "loadstone-release.json")]
+    if len(sys.argv) > 1:
+        package += ["--notes-file", sys.argv[1]]
+    run(package)
+
     print("\nDone. Artifacts in dist/:")
-    print("  WrathAccess.zip + WrathAccessInstaller.exe")
-    print("Publish: gh release create v%s dist/WrathAccess.zip dist/WrathAccessInstaller.exe" % version)
+    print("  WrathAccess.zip + WrathAccessInstaller.exe + loadstone-release.json")
+    print("Publish: gh release create v%s dist/WrathAccess.zip dist/WrathAccessInstaller.exe "
+          "dist/loadstone-release.json" % version)
 
 
 if __name__ == "__main__":

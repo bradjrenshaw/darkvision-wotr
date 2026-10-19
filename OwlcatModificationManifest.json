@@ -1,6 +1,6 @@
 {
   "UniqueName": "WrathAccess",
-  "Version": "0.0.1",
+  "Version": "0.1.0",
   "DisplayName": "Wrath Access",
   "Description": "Screen-reader accessibility for Pathfinder: Wrath of the Righteous, for blind and visually-impaired players: speaks menus, character creation, dialogue, exploration, and turn-based combat, with custom keyboard navigation.",
   "Author": "Bradley Renshaw",

@@ -2,7 +2,6 @@ bin/
 obj/
 .vs/
 *.user
-installer/target/
 dist/
 
 # mdbook build output (the book is built by CI / build_docs.ps1, not committed)

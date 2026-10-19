@@ -4,9 +4,14 @@
   "id": "pathfinder-wotr",
   "name": "Pathfinder: Wrath of the Righteous",
   "detect": {
-    "steam": { "dirName": "Pathfinder Second Adventure" },
+    "steam": {
+      "appId": "1184370",
+      "dirName": "Pathfinder Second Adventure"
+    },
     "gog": {},
-    "markers": ["Wrath.exe"]
+    "markers": [
+      "Wrath.exe"
+    ]
   },
   "userData": {
     "windows": "${localLow}/Owlcat Games/Pathfinder Wrath Of The Righteous"
