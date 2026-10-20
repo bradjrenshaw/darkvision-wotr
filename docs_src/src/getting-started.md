@@ -69,20 +69,31 @@ sound marks the cursor entering or leaving fog of war.
 
 ### The review cursor
 
-The scanner cycles through everything visible to you. Use **Page Up / Page Down** to move through
-items in the current category and subcategory (by default, *Everything* in the area). **Ctrl+Page
-Up/Down** switches category; **Shift+Page Up/Down** switches subcategory. The currently selected
-scanner item is the **review cursor**.
+The **review cursor** is a second cursor for looking at things without moving: it points at one thing
+in the area, and you act on it from wherever you are. The quickest way to find something is to cycle
+the review cursor by kind. Each press jumps to the next nearest thing of that kind:
 
-Press **I** to interact with the review item (a left-click) — handy for targeting abilities and
-spells without moving the movement cursor. **Slash** jumps the movement cursor to the review cursor.
+- **Period**: enemies
+- **Comma**: your party and allies
+- **N**: neutral NPCs (people worth talking to)
+- **B**: bystanders (background people)
+- **M**: interactables and objects (doors, chests, levers, and so on)
+- **V**: exits from the room you're in
+- **L**: unexplored space
 
-You can also cycle the review cursor by kind, nearest first: **Period** for enemies, **Comma** for
-allies, **M** for interactables, **N** for neutral NPCs, **B** for bystanders, **V** for room exits,
-**L** for unexplored space. Hold **Shift** to go backwards. The N/B split separates the people worth
-talking to from the background crowd: **neutrals** (N) are NPCs a click gets a real conversation or
-scripted interaction from — quest-givers, vendors — while **bystanders** (B) only bark a one-liner,
-or nothing at all. An NPC whose conversation unlocks later moves from B to N when it does.
+Hold **Shift** with any of them to go backwards. Once you've found something, press **I** to interact
+with it (a left-click), or **Slash** to move the movement cursor onto it. **I** is also handy for
+targeting abilities and spells without moving the movement cursor.
+
+The N/B split separates the people worth talking to from the background crowd: **neutrals** (N) are
+NPCs a click gets a real conversation or scripted interaction from — quest-givers, vendors — while
+**bystanders** (B) only bark a one-liner, or nothing at all. An NPC whose conversation unlocks later
+moves from B to N when it does.
+
+To browse everything instead, use the **scanner**: **Page Up / Page Down** move through the items in
+the current category and subcategory (by default, *Everything* in the area), **Ctrl+Page Up/Down**
+switches category, and **Shift+Page Up/Down** switches subcategory. Whatever the scanner lands on
+becomes the review cursor, so **I** and **Slash** work on it the same way.
 
 Every cycle landing plays one of **four sight-and-route sounds**, telling you how the thing relates
 to your cursor: a **straight line** is walkable directly to it; a **path around** exists but bends;

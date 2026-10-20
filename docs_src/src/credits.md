@@ -1,9 +1,35 @@
 # Credits
 
-Wrath Access is built and maintained by **bradjrenshaw**.
+## Private Alpha Testers
 
-Huge thanks to everyone testing the alpha — your feedback, bug reports, and patience shape the mod
-directly.
+Huge thanks to all of the private testers who tested the initial alpha. Your feedback has made the mod what it is and it is a vastly better mod as a result.
+
+* [Aaron_Stormer](https://github.com/aaronr7734/)
+* [Austin Hicks](https://github.com/ahicks92/)
+* [Alex19EP](https://github.com/alex19EP/)
+* Baelor the Bard
+* [Burningbeard/EarthbounddPromoter](https://github.com/EarthboundPromoter/)
+* Cctraveler
+* [FlatArther](https://github.com/flat-arther/)
+* [Neurrone](https://github.com/Neurrone/)
+* [Oleg/Amerikrainian](https://github.com/amerikrainian/)
+* [Rashad Naqeeb](https://github.com/rashadnaqeeb/)
+* [Shane](https://github.com/shane12300/)
+* [Zack/Zkline](https://github.com/BlindGuyNW/)
+
+## Patreon
+Huge thanks as always to all of my Patreon supporters
+
+* Ahmad Abukhdair
+* alex19EP
+* Chris Shaw
+* Garrett Burgess
+* Haru
+* JohnDoe
+* Minionslayer
+* Nancy Feldman
+* rashad naqeeb
+* Todd Shaughnessy
 
 ## Third-party components
 

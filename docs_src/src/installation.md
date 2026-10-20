@@ -22,7 +22,7 @@ separately, so updating never resets them.
 2. Check the game directory is right (it auto-detects your Steam install; use **Browse** if not),
    then press **Install** and pick a version. The newest release is selected; the
    **dev channel (latest from the main branch)** at the end of the list installs the very latest
-   build instead.
+   build instead if you want the latest untested changes from GitHub.
 3. Press **Launch game**, or start the game as usual.
 
 To **update**, run the installer again: it says when an update is available, and the button reads
@@ -50,6 +50,5 @@ explicitly:
 
 Launch the game normally. If the game has been running for a while and nothing is happening, press
 Enter on the keyboard and it should load you into the main menu. The first time you launch with the
-mod installed, a **setup wizard** walks you through speech rate, movement, and your preferred
-exploration features (sonar, wall tones, and so on). You can re-run it any time from the mod menu
+mod installed, a **setup wizard** walks you through setting up your speech output and event readout settings. You can re-run it any time from the mod menu
 (Ctrl+M).

@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d9ea1601.js";
+            window.path_to_searchindex_js = "searchindex-cf8585e2.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6d5d962f.js"></script>
@@ -200,8 +200,8 @@ you through speech and event feedback.</li>
 <li><strong>Exploration</strong>: a movement cursor, a categorized <strong>scanner</strong> of everything in the area, a
 <strong>sonar</strong> and other spatial-audio overlays, <strong>wall tones</strong>, room/area awareness with hand-written
 room descriptions, and bookmarks.</li>
-<li>The <strong>world map</strong>: road-by-road travel on the arrow keys, the location list, and the crusade —
-armies, recruiting, resources, and <strong>crusade battles</strong> on their grid.</li>
+<li>The <strong>world map</strong>: road-by-road travel, the location list, and the crusade —
+armies, recruiting, resources, and <strong>crusade battles</strong>.</li>
 <li><strong>Dialogue</strong>, book events, tutorial popups, and the in-game log / barks.</li>
 <li><strong>Turn-based combat</strong> and <strong>targeting</strong> (abilities, the action-bar number keys, resting).</li>
 <li><strong>Service windows</strong>: inventory, character sheet, spellbook, journal, encyclopedia, local map.</li>
@@ -242,7 +242,7 @@ unrecognized app the first time; choose <strong>More info</strong>, then <strong
 <li>Check the game directory is right (it auto-detects your Steam install; use <strong>Browse</strong> if not),
 then press <strong>Install</strong> and pick a version. The newest release is selected; the
 <strong>dev channel (latest from the main branch)</strong> at the end of the list installs the very latest
-build instead.</li>
+build instead if you want the latest untested changes from GitHub.</li>
 <li>Press <strong>Launch game</strong>, or start the game as usual.</li>
 </ol>
 <p>To <strong>update</strong>, run the installer again: it says when an update is available, and the button reads
@@ -265,8 +265,7 @@ explicitly:</p>
 <h2 id="first-launch"><a class="header" href="#first-launch">First launch</a></h2>
 <p>Launch the game normally. If the game has been running for a while and nothing is happening, press
 Enter on the keyboard and it should load you into the main menu. The first time you launch with the
-mod installed, a <strong>setup wizard</strong> walks you through speech rate, movement, and your preferred
-exploration features (sonar, wall tones, and so on). You can re-run it any time from the mod menu
+mod installed, a <strong>setup wizard</strong> walks you through setting up your speech output and event readout settings. You can re-run it any time from the mod menu
 (Ctrl+M).</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
@@ -323,18 +322,29 @@ direction you actually want first, add the second to follow the wall.</p>
 <p>This game has fog of war: if none of your characters can see a spot, you won’t know what’s there. A
 sound marks the cursor entering or leaving fog of war.</p>
 <h3 id="the-review-cursor"><a class="header" href="#the-review-cursor">The review cursor</a></h3>
-<p>The scanner cycles through everything visible to you. Use <strong>Page Up / Page Down</strong> to move through
-items in the current category and subcategory (by default, <em>Everything</em> in the area). <strong>Ctrl+Page
-Up/Down</strong> switches category; <strong>Shift+Page Up/Down</strong> switches subcategory. The currently selected
-scanner item is the <strong>review cursor</strong>.</p>
-<p>Press <strong>I</strong> to interact with the review item (a left-click) — handy for targeting abilities and
-spells without moving the movement cursor. <strong>Slash</strong> jumps the movement cursor to the review cursor.</p>
-<p>You can also cycle the review cursor by kind, nearest first: <strong>Period</strong> for enemies, <strong>Comma</strong> for
-allies, <strong>M</strong> for interactables, <strong>N</strong> for neutral NPCs, <strong>B</strong> for bystanders, <strong>V</strong> for room exits,
-<strong>L</strong> for unexplored space. Hold <strong>Shift</strong> to go backwards. The N/B split separates the people worth
-talking to from the background crowd: <strong>neutrals</strong> (N) are NPCs a click gets a real conversation or
-scripted interaction from — quest-givers, vendors — while <strong>bystanders</strong> (B) only bark a one-liner,
-or nothing at all. An NPC whose conversation unlocks later moves from B to N when it does.</p>
+<p>The <strong>review cursor</strong> is a second cursor for looking at things without moving: it points at one thing
+in the area, and you act on it from wherever you are. The quickest way to find something is to cycle
+the review cursor by kind. Each press jumps to the next nearest thing of that kind:</p>
+<ul>
+<li><strong>Period</strong>: enemies</li>
+<li><strong>Comma</strong>: your party and allies</li>
+<li><strong>N</strong>: neutral NPCs (people worth talking to)</li>
+<li><strong>B</strong>: bystanders (background people)</li>
+<li><strong>M</strong>: interactables and objects (doors, chests, levers, and so on)</li>
+<li><strong>V</strong>: exits from the room you’re in</li>
+<li><strong>L</strong>: unexplored space</li>
+</ul>
+<p>Hold <strong>Shift</strong> with any of them to go backwards. Once you’ve found something, press <strong>I</strong> to interact
+with it (a left-click), or <strong>Slash</strong> to move the movement cursor onto it. <strong>I</strong> is also handy for
+targeting abilities and spells without moving the movement cursor.</p>
+<p>The N/B split separates the people worth talking to from the background crowd: <strong>neutrals</strong> (N) are
+NPCs a click gets a real conversation or scripted interaction from — quest-givers, vendors — while
+<strong>bystanders</strong> (B) only bark a one-liner, or nothing at all. An NPC whose conversation unlocks later
+moves from B to N when it does.</p>
+<p>To browse everything instead, use the <strong>scanner</strong>: <strong>Page Up / Page Down</strong> move through the items in
+the current category and subcategory (by default, <em>Everything</em> in the area), <strong>Ctrl+Page Up/Down</strong>
+switches category, and <strong>Shift+Page Up/Down</strong> switches subcategory. Whatever the scanner lands on
+becomes the review cursor, so <strong>I</strong> and <strong>Slash</strong> work on it the same way.</p>
 <p>Every cycle landing plays one of <strong>four sight-and-route sounds</strong>, telling you how the thing relates
 to your cursor: a <strong>straight line</strong> is walkable directly to it; a <strong>path around</strong> exists but bends;
 <strong>unreachable</strong> means you can see it but no walkable path leads there; <strong>blocked sight</strong> means a
@@ -1510,9 +1520,36 @@ The more detail the better — where you were, what you pressed, and what you he
 expected.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="credits"><a class="header" href="#credits">Credits</a></h1>
-<p>Wrath Access is built and maintained by <strong>bradjrenshaw</strong>.</p>
-<p>Huge thanks to everyone testing the alpha — your feedback, bug reports, and patience shape the mod
-directly.</p>
+<h2 id="private-alpha-testers"><a class="header" href="#private-alpha-testers">Private Alpha Testers</a></h2>
+<p>Huge thanks to all of the private testers who tested the initial alpha. Your feedback has made the mod what it is and it is a vastly better mod as a result.</p>
+<ul>
+<li><a href="https://github.com/aaronr7734/">Aaron_Stormer</a></li>
+<li><a href="https://github.com/ahicks92/">Austin Hicks</a></li>
+<li><a href="https://github.com/alex19EP/">Alex19EP</a></li>
+<li>Baelor the Bard</li>
+<li><a href="https://github.com/EarthboundPromoter/">Burningbeard/EarthbounddPromoter</a></li>
+<li>Cctraveler</li>
+<li><a href="https://github.com/flat-arther/">FlatArther</a></li>
+<li><a href="https://github.com/Neurrone/">Neurrone</a></li>
+<li><a href="https://github.com/amerikrainian/">Oleg/Amerikrainian</a></li>
+<li><a href="https://github.com/rashadnaqeeb/">Rashad Naqeeb</a></li>
+<li><a href="https://github.com/shane12300/">Shane</a></li>
+<li><a href="https://github.com/BlindGuyNW/">Zack/Zkline</a></li>
+</ul>
+<h2 id="patreon"><a class="header" href="#patreon">Patreon</a></h2>
+<p>Huge thanks as always to all of my Patreon supporters</p>
+<ul>
+<li>Ahmad Abukhdair</li>
+<li>alex19EP</li>
+<li>Chris Shaw</li>
+<li>Garrett Burgess</li>
+<li>Haru</li>
+<li>JohnDoe</li>
+<li>Minionslayer</li>
+<li>Nancy Feldman</li>
+<li>rashad naqeeb</li>
+<li>Todd Shaughnessy</li>
+</ul>
 <h2 id="third-party-components"><a class="header" href="#third-party-components">Third-party components</a></h2>
 <p>The mod ships and builds on work by others:</p>
 <ul>

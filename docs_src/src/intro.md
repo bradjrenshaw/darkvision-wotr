@@ -21,8 +21,8 @@ spatial audio for the world around you, and review "buffers" for inspecting char
 - **Exploration**: a movement cursor, a categorized **scanner** of everything in the area, a
   **sonar** and other spatial-audio overlays, **wall tones**, room/area awareness with hand-written
   room descriptions, and bookmarks.
-- The **world map**: road-by-road travel on the arrow keys, the location list, and the crusade —
-  armies, recruiting, resources, and **crusade battles** on their grid.
+- The **world map**: road-by-road travel, the location list, and the crusade —
+  armies, recruiting, resources, and **crusade battles**.
 - **Dialogue**, book events, tutorial popups, and the in-game log / barks.
 - **Turn-based combat** and **targeting** (abilities, the action-bar number keys, resting).
 - **Service windows**: inventory, character sheet, spellbook, journal, encyclopedia, local map.

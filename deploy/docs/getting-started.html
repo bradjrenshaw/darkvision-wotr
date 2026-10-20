@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d9ea1601.js";
+            window.path_to_searchindex_js = "searchindex-cf8585e2.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6d5d962f.js"></script>
@@ -231,18 +231,29 @@ direction you actually want first, add the second to follow the wall.</p>
 <p>This game has fog of war: if none of your characters can see a spot, you won’t know what’s there. A
 sound marks the cursor entering or leaving fog of war.</p>
 <h3 id="the-review-cursor"><a class="header" href="#the-review-cursor">The review cursor</a></h3>
-<p>The scanner cycles through everything visible to you. Use <strong>Page Up / Page Down</strong> to move through
-items in the current category and subcategory (by default, <em>Everything</em> in the area). <strong>Ctrl+Page
-Up/Down</strong> switches category; <strong>Shift+Page Up/Down</strong> switches subcategory. The currently selected
-scanner item is the <strong>review cursor</strong>.</p>
-<p>Press <strong>I</strong> to interact with the review item (a left-click) — handy for targeting abilities and
-spells without moving the movement cursor. <strong>Slash</strong> jumps the movement cursor to the review cursor.</p>
-<p>You can also cycle the review cursor by kind, nearest first: <strong>Period</strong> for enemies, <strong>Comma</strong> for
-allies, <strong>M</strong> for interactables, <strong>N</strong> for neutral NPCs, <strong>B</strong> for bystanders, <strong>V</strong> for room exits,
-<strong>L</strong> for unexplored space. Hold <strong>Shift</strong> to go backwards. The N/B split separates the people worth
-talking to from the background crowd: <strong>neutrals</strong> (N) are NPCs a click gets a real conversation or
-scripted interaction from — quest-givers, vendors — while <strong>bystanders</strong> (B) only bark a one-liner,
-or nothing at all. An NPC whose conversation unlocks later moves from B to N when it does.</p>
+<p>The <strong>review cursor</strong> is a second cursor for looking at things without moving: it points at one thing
+in the area, and you act on it from wherever you are. The quickest way to find something is to cycle
+the review cursor by kind. Each press jumps to the next nearest thing of that kind:</p>
+<ul>
+<li><strong>Period</strong>: enemies</li>
+<li><strong>Comma</strong>: your party and allies</li>
+<li><strong>N</strong>: neutral NPCs (people worth talking to)</li>
+<li><strong>B</strong>: bystanders (background people)</li>
+<li><strong>M</strong>: interactables and objects (doors, chests, levers, and so on)</li>
+<li><strong>V</strong>: exits from the room you’re in</li>
+<li><strong>L</strong>: unexplored space</li>
+</ul>
+<p>Hold <strong>Shift</strong> with any of them to go backwards. Once you’ve found something, press <strong>I</strong> to interact
+with it (a left-click), or <strong>Slash</strong> to move the movement cursor onto it. <strong>I</strong> is also handy for
+targeting abilities and spells without moving the movement cursor.</p>
+<p>The N/B split separates the people worth talking to from the background crowd: <strong>neutrals</strong> (N) are
+NPCs a click gets a real conversation or scripted interaction from — quest-givers, vendors — while
+<strong>bystanders</strong> (B) only bark a one-liner, or nothing at all. An NPC whose conversation unlocks later
+moves from B to N when it does.</p>
+<p>To browse everything instead, use the <strong>scanner</strong>: <strong>Page Up / Page Down</strong> move through the items in
+the current category and subcategory (by default, <em>Everything</em> in the area), <strong>Ctrl+Page Up/Down</strong>
+switches category, and <strong>Shift+Page Up/Down</strong> switches subcategory. Whatever the scanner lands on
+becomes the review cursor, so <strong>I</strong> and <strong>Slash</strong> work on it the same way.</p>
 <p>Every cycle landing plays one of <strong>four sight-and-route sounds</strong>, telling you how the thing relates
 to your cursor: a <strong>straight line</strong> is walkable directly to it; a <strong>path around</strong> exists but bends;
 <strong>unreachable</strong> means you can see it but no walkable path leads there; <strong>blocked sight</strong> means a
