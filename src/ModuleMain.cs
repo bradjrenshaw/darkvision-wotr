@@ -477,7 +477,7 @@ namespace WrathAccess
             }).AddBinding(KeyCode.A, ctrl: true, shift: true);
 
             InputManager.Register("speak_test", "Speak test", InputCategory.Global, () =>
-                Tts.Speak("Wrath Access input and speech are working."))
+                Tts.Speak("Darkvision input and speech are working."))
                 .AddBinding(KeyCode.T, ctrl: true, shift: true);
 
             // Quick save (the game's own MakeQuickSave). Self-gates to focus mode + a save-allowed mode.

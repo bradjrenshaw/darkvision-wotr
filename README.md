@@ -1,4 +1,6 @@
-# Wrath Access
+# Darkvision: Wrath of the Righteous
+
+*Formerly Wrath Access.*
 
 A screen-reader accessibility mod for **Pathfinder: Wrath of the Righteous**, for blind and
 visually-impaired players. It speaks the game's menus, character creation, dialogue, exploration,
@@ -42,13 +44,13 @@ The mod follows the game's language setting; English is included.
 ## Install and update
 
 There are two ways to install - use whichever suits you. **Close the game first** either way, and the
-setup wizard runs automatically on the first launch. Your Wrath Access settings are stored separately,
+setup wizard runs automatically on the first launch. Your Darkvision settings are stored separately,
 so updating never resets them.
 
 ### Without Git (installer)
 
 1. Download the installer:
-   **[WrathAccessInstaller.exe](https://github.com/bradjrenshaw/wotr-access/releases/latest/download/WrathAccessInstaller.exe)**
+   **[DarkvisionInstaller.exe](https://github.com/bradjrenshaw/darkvision-wotr/releases/latest/download/DarkvisionInstaller.exe)**
    and run it from anywhere - there is nothing to install. Windows SmartScreen may warn about an
    unrecognized app the first time; choose **More info**, then **Run anyway**.
 2. Check the game directory is right (it auto-detects your Steam install; use **Browse** if not),
@@ -60,13 +62,13 @@ so updating never resets them.
 To **update**, run the installer again: it says when an update is available, and the button reads
 **Update**. The installer keeps itself up to date too. **Uninstall** removes everything it
 installed. The installer is [Loadstone](https://github.com/bradjrenshaw/loadstone), an accessible
-mod manager, set up for Wrath Access alone.
+mod manager, set up for Darkvision alone.
 
 ### With Git
 
 1. Clone the repo:
    ```
-   git clone https://github.com/bradjrenshaw/wotr-access
+   git clone https://github.com/bradjrenshaw/darkvision-wotr
    ```
 2. In PowerShell, from the repo folder, run `.\deploy.ps1`.
 3. Start the game. To **update** later: `git pull`, then `.\deploy.ps1` again.
@@ -182,7 +184,7 @@ Press control m anywhere to open the mod menu, which holds the mod's settings an
 - **Alpha**: not everything in the game is accessible yet, and some screens are partial.
 - Native mods set the game's "a mod is active" flag, which **disables Steam achievements** while the
   mod is installed. I will add a way to fix this later, but I wouldn't want a buggy alpha feature giving people achievements they shouldn't have.
-- **Report bugs** on the [issue tracker](https://github.com/bradjrenshaw/wotr-access/issues) - the
+- **Report bugs** on the [issue tracker](https://github.com/bradjrenshaw/darkvision-wotr/issues) - the
   more detail (where you were, what you pressed, what you heard vs. expected), the better.
 
 ## Building (developers)

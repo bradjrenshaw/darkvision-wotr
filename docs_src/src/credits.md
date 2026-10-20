@@ -42,7 +42,7 @@ The mod ships and builds on work by others:
 Patterns and lessons from the **Say the Spire** mods (1 and 2) informed much of the design.
 
 Full third-party license texts are in
-[`THIRD-PARTY-NOTICES.md`](https://github.com/bradjrenshaw/wotr-access/blob/main/THIRD-PARTY-NOTICES.md)
+[`THIRD-PARTY-NOTICES.md`](https://github.com/bradjrenshaw/darkvision-wotr/blob/main/THIRD-PARTY-NOTICES.md)
 in the repository.
 
 ## Support

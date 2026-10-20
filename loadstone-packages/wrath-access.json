@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "id": "wrath-access",
-  "name": "Wrath Access",
+  "name": "Darkvision: Wrath of the Righteous",
   "description": "Screen-reader accessibility for Pathfinder: Wrath of the Righteous, for blind and visually-impaired players: speaks menus, character creation, dialogue, exploration, and turn-based combat, with custom keyboard navigation.",
   "authors": [
     "Bradley Renshaw"
@@ -176,7 +176,7 @@
   "packaging": {
     "artifacts": [
       {
-        "file": "../release/assets/WrathAccess.zip"
+        "file": "../release/assets/Darkvision.zip"
       }
     ]
   }

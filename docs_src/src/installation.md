@@ -10,13 +10,13 @@
   install.
 
 There are two ways to install — use whichever suits you. **Close the game first** either way, and
-the setup wizard runs automatically on the first launch. Your Wrath Access settings are stored
+the setup wizard runs automatically on the first launch. Your Darkvision settings are stored
 separately, so updating never resets them.
 
 ## Without Git (installer)
 
 1. Download the installer:
-   **[WrathAccessInstaller.exe](https://github.com/bradjrenshaw/wotr-access/releases/latest/download/WrathAccessInstaller.exe)**
+   **[DarkvisionInstaller.exe](https://github.com/bradjrenshaw/darkvision-wotr/releases/latest/download/DarkvisionInstaller.exe)**
    and run it from anywhere — there is nothing to install. Windows SmartScreen may warn about an
    unrecognized app the first time; choose **More info**, then **Run anyway**.
 2. Check the game directory is right (it auto-detects your Steam install; use **Browse** if not),
@@ -28,13 +28,13 @@ separately, so updating never resets them.
 To **update**, run the installer again: it says when an update is available, and the button reads
 **Update**. The installer keeps itself up to date too. **Uninstall** removes everything it
 installed. The installer is [Loadstone](https://github.com/bradjrenshaw/loadstone), an accessible
-mod manager, set up for Wrath Access alone.
+mod manager, set up for Darkvision alone.
 
 ## With Git
 
 1. Clone the repo:
    ```
-   git clone https://github.com/bradjrenshaw/wotr-access
+   git clone https://github.com/bradjrenshaw/darkvision-wotr
    ```
 2. In PowerShell, from the repo folder, run `.\deploy.ps1`.
 3. Start the game. To **update** later: `git pull`, then `.\deploy.ps1` again.

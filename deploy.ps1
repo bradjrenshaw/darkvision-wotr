@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Install / update Wrath Access from this repo into the game (alpha-tester flow).
+    Install / update Darkvision from this repo into the game (alpha-tester flow).
 
 .DESCRIPTION
     Copies the prebuilt mod into the game's native-mod folder and enables it - no .NET
@@ -18,7 +18,7 @@
       * adds WrathAccess to EnabledModifications in OwlcatModificationManagerSettings.json
         (other mods and SourceDirectories preserved).
 
-    Your own Wrath Access settings live in %LOCALLOW%\...\WrathAccess\ (NOT the mod folder),
+    Your own Darkvision settings live in %LOCALLOW%\...\WrathAccess\ (NOT the mod folder),
     so they survive a redeploy. Close the game before running (prism.dll is locked while it
     runs). Restart the game afterwards to load the update.
 
@@ -156,7 +156,7 @@ foreach ($c in $checks) {
 
 Write-Host ""
 if ($allOk) {
-    Write-Host "Wrath Access deployed and verified. Start the game to load this build." -ForegroundColor Green
+    Write-Host "Darkvision deployed and verified. Start the game to load this build." -ForegroundColor Green
 } elseif ($prismOk) {
     Write-Host "Deployed with FAILURES above - the mod may not load. Please report the FAIL lines." -ForegroundColor Yellow
 } else {

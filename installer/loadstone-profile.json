@@ -1,7 +1,7 @@
 {
   "mode": "single-mod",
   "mod": "wrath-access",
-  "title": "Wrath Access Installer",
-  "registries": ["github:bradjrenshaw/wotr-access"],
+  "title": "Darkvision: Wrath of the Righteous Installer",
+  "registries": ["github:bradjrenshaw/darkvision-wotr"],
   "lockRegistries": true
 }

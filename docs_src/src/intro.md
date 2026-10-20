@@ -1,6 +1,6 @@
 # Introduction
 
-Wrath Access is a screen-reader accessibility mod for **Pathfinder: Wrath of the Righteous**, for
+**Darkvision: Wrath of the Righteous** (Darkvision for short) is a screen-reader accessibility mod for **Pathfinder: Wrath of the Righteous**, for
 blind and visually-impaired players. It speaks the game's menus, character creation, dialogue,
 exploration, combat, and the crusade, and adds custom keyboard navigation over the game's UI,
 spatial audio for the world around you, and review "buffers" for inspecting characters in detail.
@@ -34,8 +34,8 @@ spatial audio for the world around you, and review "buffers" for inspecting char
 ## Links
 
 - [Pathfinder: Wrath of the Righteous on Steam](https://store.steampowered.com/app/1184370/Pathfinder_Wrath_of_the_Righteous/)
-- [Wrath Access latest release](https://github.com/bradjrenshaw/wotr-access/releases/latest/)
-- [Wrath Access GitHub repository](https://github.com/bradjrenshaw/wotr-access/)
-- [Report a bug (issue tracker)](https://github.com/bradjrenshaw/wotr-access/issues)
+- [Darkvision latest release](https://github.com/bradjrenshaw/darkvision-wotr/releases/latest/)
+- [Darkvision GitHub repository](https://github.com/bradjrenshaw/darkvision-wotr/)
+- [Report a bug (issue tracker)](https://github.com/bradjrenshaw/darkvision-wotr/issues)
 - [My modding Discord](https://discord.gg/Dz8u2Pr9py)
 - [My Patreon](https://www.patreon.com/bradjrenshaw/)

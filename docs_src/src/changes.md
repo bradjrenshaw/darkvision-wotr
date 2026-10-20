@@ -1,11 +1,13 @@
 # Change Log
 
 This page tracks notable, player-facing changes. The mod is in **alpha**, so it moves quickly; for
-the exact history see the [commit log](https://github.com/bradjrenshaw/wotr-access/commits/main).
+the exact history see the [commit log](https://github.com/bradjrenshaw/darkvision-wotr/commits/main).
 
 ## 0.1.0 — first public alpha
 
-- **New installer**: WrathAccessInstaller.exe finds your game, installs, updates and uninstalls the
+- **A new name**: Wrath Access is now **Darkvision: Wrath of the Righteous**.
+
+- **New installer**: DarkvisionInstaller.exe finds your game, installs, updates and uninstalls the
   mod, and keeps itself up to date.
 - **The crusade**: the world map's toolbar and crusade stats, armies (selecting, the army list and
   details), recruiting, buying resources, generals, and **crusade battles** on their grid, with the

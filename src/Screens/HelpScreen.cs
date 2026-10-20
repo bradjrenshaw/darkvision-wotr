@@ -19,7 +19,7 @@ namespace WrathAccess.Screens
     public sealed class HelpScreen : Screen
     {
         // The hosted docs (GitHub Pages) — the fallback when this install has no bundled copy.
-        private const string DocsUrl = "https://bradjrenshaw.github.io/wotr-access/";
+        private const string DocsUrl = "https://bradjrenshaw.github.io/darkvision-wotr/";
 
         private static bool s_open;
         public static void Open() { s_open = true; }

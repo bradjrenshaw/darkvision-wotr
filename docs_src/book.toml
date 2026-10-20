@@ -2,7 +2,7 @@
 authors = ["bradjrenshaw"]
 language = "en"
 src = "src"
-title = "Wrath Access Documentation"
+title = "Darkvision: Wrath of the Righteous"
 
 [output.html]
-git-repository-url = "https://github.com/bradjrenshaw/wotr-access"
+git-repository-url = "https://github.com/bradjrenshaw/darkvision-wotr"

@@ -1,20 +1,20 @@
-"""Build the Wrath Access release artifacts.
+"""Build the Darkvision: Wrath of the Righteous release artifacts.
 
 Builds everything a GitHub release needs into release/ (the same layout as Say the Spire 2 and
 Eliza Access):
   release/changes-latest.md        the release notes (copied from changes-latest.md at the repo root;
                                    also embedded in loadstone-release.json)
   release/assets/                  every uploadable asset:
-  WrathAccess.zip          — the mod payload the installer downloads/extracts:
+  Darkvision.zip           — the mod payload the installer downloads/extracts:
                               WrathAccess/ (the native-mod folder) + game/ (prism.dll, loadstar.dll)
-  WrathAccessInstaller.exe  — the standalone installer: Loadstone (external/loadstone) built with the
+  DarkvisionInstaller.exe  — the standalone installer: Loadstone (external/loadstone) built with the
                               single-mod profile installer/loadstone-profile.json baked in
   loadstone-release.json    — the release manifest Loadstone installs from: the install steps frozen
                               from loadstone-packages/wrath-access.json, the zip's SHA-256, and the
                               installer's hash + Loadstone version (so installers self-update)
 
 usage: python scripts/release.py, then publish with the command it prints:
-  gh release create vX.Y.Z --title "Wrath Access X.Y.Z" --notes-file release/changes-latest.md release/assets/*
+  gh release create vX.Y.Z --title "Darkvision: Wrath of the Righteous X.Y.Z" --notes-file release/changes-latest.md release/assets/*
 (the tag is Version in OwlcatModificationManifest.json; Loadstone compares release tags by semver).
 The installer build needs Visual Studio (C++ workload), CMake and Rust; the first build also
 compiles a static wxWidgets once (cached under %LOCALAPPDATA%/loadstone).
@@ -76,7 +76,7 @@ def stage_payload():
 
 
 def make_zip():
-    out = os.path.join(ASSETS, "WrathAccess.zip")
+    out = os.path.join(ASSETS, "Darkvision.zip")
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for root, _dirs, files in os.walk(STAGE):
             for f in files:
@@ -117,7 +117,7 @@ def main():
     run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
          os.path.join(LOADSTONE, "scripts", "build_windows_app.ps1"),
          "-ProfilePath", os.path.join(REPO, "installer", "loadstone-profile.json"),
-         "-Name", "WrathAccessInstaller", "-Out", ASSETS])
+         "-Name", "DarkvisionInstaller", "-Out", ASSETS])
 
     with open(os.path.join(REPO, "OwlcatModificationManifest.json"), encoding="utf-8-sig") as f:
         version = json.load(f)["Version"]
@@ -128,13 +128,13 @@ def main():
                "--manifest", os.path.join(REPO, "loadstone-packages", "wrath-access.json"),
                "--version", "v" + version,
                "--artifact", zip_path,
-               "--installer", os.path.join(ASSETS, "WrathAccessInstaller.exe"),
+               "--installer", os.path.join(ASSETS, "DarkvisionInstaller.exe"),
                "--notes-file", os.path.join(RELEASE, "changes-latest.md"),
                "--out", os.path.join(ASSETS, "loadstone-release.json")]
     run(package)
 
     print("\nDone. Release folder: release/ (notes: changes-latest.md, assets: assets/)")
-    print('Publish with: gh release create v%s --title "Wrath Access %s" '
+    print('Publish with: gh release create v%s --title "Darkvision: Wrath of the Righteous %s" '
           "--notes-file release/changes-latest.md release/assets/*" % (version, version))
 
 

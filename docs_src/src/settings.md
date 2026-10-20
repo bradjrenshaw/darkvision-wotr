@@ -97,7 +97,7 @@ Every tab has a **Reset to defaults** for just that tab, and a reset-everything 
 
 ## Notes
 
-- Your Wrath Access settings are stored separately from the game's, so an ordinary update keeps
+- Your Darkvision settings are stored separately from the game's, so an ordinary update keeps
   them, and you can reset any single category back to its defaults without touching the rest.
 - While the mod is in alpha, an update that reorganizes the settings starts everyone from the
   defaults instead of converting old values (the setup wizard runs again too). Your old settings
