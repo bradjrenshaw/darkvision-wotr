@@ -112,6 +112,7 @@ namespace WrathAccess
             try { FocusMode.Set(false); } catch (Exception e) { Log?.Error("[dispose] focus: " + e); } // releases the KeyboardAccess scope
             try { OverlayManager.DisengageForReload(); } catch (Exception e) { Log?.Error("[dispose] overlays: " + e); } // overlay systems release their NAudio voices
             try { WrathAccess.Audio.AudioEngines.ShutdownAll(); } catch (Exception e) { Log?.Error("[dispose] audio: " + e); }
+            try { WrathAccess.Audio.WwiseRuntimeConfig.ReleaseFrameCap(); } catch (Exception e) { Log?.Error("[dispose] frame cap: " + e); }
             try { WrathAccess.Speech.SpeechManager.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] speech: " + e); }
             try { WarningReader.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] warnings: " + e); }
             try { WrathAccess.Events.EventBusAdapter.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] events: " + e); }
@@ -157,7 +158,7 @@ namespace WrathAccess
         {
             if (!Enabled)
             {
-                if (_wasEnabled) { _wasEnabled = false; try { FocusMode.Set(false); } catch { } }
+                if (_wasEnabled) { _wasEnabled = false; try { FocusMode.Set(false); WrathAccess.Audio.WwiseRuntimeConfig.ReleaseFrameCap(); } catch { } }
                 return;
             }
             _wasEnabled = true;
