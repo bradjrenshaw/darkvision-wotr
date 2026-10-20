@@ -11,6 +11,7 @@ Huge thanks to all of the private testers who tested the initial alpha. Your fee
 * [Burningbeard/EarthbounddPromoter](https://github.com/EarthboundPromoter/)
 * Cctraveler
 * [FlatArther](https://github.com/flat-arther/)
+* Kong
 * [Neurrone](https://github.com/Neurrone/)
 * [Oleg/Amerikrainian](https://github.com/amerikrainian/)
 * [Rashad Naqeeb](https://github.com/rashadnaqeeb/)
