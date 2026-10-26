@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Kingmaker;
 using Kingmaker.UI.MVVM._VM.MessageBox;
 using WrathAccess.UI;
@@ -69,6 +70,19 @@ namespace WrathAccess.Screens
             if (vm.ShowDecline)
                 b.BeginStop("decline").AddItem(ControlId.Structural(k + "decline"),
                     GraphNodes.Button(() => vm.DeclineText, () => vm.OnDeclinePressed()));
+        }
+
+        // Escape = the decline button (Cancel / No), or OK on a message-only box that has none. The
+        // game's PC view binds no Esc here, so without this Escape did nothing.
+        public override IEnumerable<ElementAction> GetActions()
+        {
+            yield return new ElementAction(ActionIds.Back, Message.Localized("ui", "action.close"), _ =>
+            {
+                var vm = Vm();
+                if (vm == null) return;
+                UiSound.Click();
+                if (vm.ShowDecline) vm.OnDeclinePressed(); else vm.OnAcceptPressed();
+            });
         }
     }
 }
