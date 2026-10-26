@@ -69,6 +69,10 @@ namespace WrathAccess.Screens
             var master = ModSettings.GetSetting<IntSetting>("audio.master_volume");
             if (master != null)
                 b.AddItem(ControlId.Structural(k + "snd.master"), ModSettingNodes.IntSlider(master));
+            // The standalone cues (control gained/lost, compass north) — no system node to live under.
+            var cues = ModSettings.GetSetting<IntSetting>("audio.volumes." + WrathAccess.Exploration.Overlays.OverlayAudio.CueVolumeKey);
+            if (cues != null)
+                b.AddItem(ControlId.Structural(k + "snd.cues"), ModSettingNodes.IntSlider(cues));
             foreach (var sys in SoundSystems)
             {
                 var mode = ModSettingsScreen.SystemDefaults(sys)?.Get<ChoiceSetting>("mode");

@@ -102,7 +102,7 @@ namespace WrathAccess.Exploration
             ToEar(ref dx, ref dz);
             WrathAccess.Audio.AudioEngines.Current.PlaySpatial(
                 System.IO.Path.Combine(Overlays.OverlayAudio.Dir, "compass_north.wav"),
-                Overlays.OverlayAudio.Master * 0.8f, dx, dz, NorthCuePanWidth);
+                Overlays.OverlayAudio.Cue, dx, dz, NorthCuePanWidth);
         }
 
         private static void SetFacing(float f)

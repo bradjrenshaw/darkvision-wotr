@@ -1,4 +1,5 @@
 using Kingmaker;
+using Kingmaker.GameModes; // GameModeType
 
 namespace WrathAccess
 {
@@ -14,6 +15,20 @@ namespace WrathAccess
     {
         public static bool HasControl => Game.Instance?.ClickEventsController != null;
 
+        /// <summary>The GAME has taken control: a cutscene (in an area or on the world map) or a dialogue
+        /// (incl. book events / interchapters) is running. Unlike <see cref="HasControl"/> this ignores the
+        /// player's own UI — the escape menu, inventory, character sheet, rest camp… also drop the click
+        /// controller, but opening one isn't losing control. Modes stack, so IsModeActive, not CurrentMode.</summary>
+        public static bool Scripted
+        {
+            get
+            {
+                var g = Game.Instance;
+                return g != null && (g.IsModeActive(GameModeType.Cutscene)
+                    || g.IsModeActive(GameModeType.CutsceneGlobalMap) || g.IsModeActive(GameModeType.Dialog));
+            }
+        }
+
         // How long the raw state must hold before Settled adopts it. Cutscenes blip the click
         // controller for a frame or two between beats; this rides those out. Short by design —
         // the isolated cutscene start/stop stutters are gone, and a long settle reads as lag on
@@ -23,16 +38,16 @@ namespace WrathAccess
         private static bool _settled = true, _pending = true;
         private static float _pendingSince;
 
-        /// <summary>The DEBOUNCED control state: <see cref="HasControl"/> held for
-        /// <see cref="SettleSeconds"/>. Consumers that must not react to the between-beat blips
-        /// (the control chime, buff-event gating) read this; instant gating (input categories,
-        /// cursor movement) reads the raw property.</summary>
+        /// <summary>The DEBOUNCED "not <see cref="Scripted"/>" state, held for <see cref="SettleSeconds"/>:
+        /// what the control chime and buff-event gating read (game-taken control only, never the
+        /// player's own windows). Instant gating (input categories, cursor movement) reads the raw
+        /// <see cref="HasControl"/>.</summary>
         public static bool Settled => _settled;
 
         /// <summary>Advance the debounce; call once per frame, before the consumers of <see cref="Settled"/>.</summary>
         public static void Tick()
         {
-            bool raw = HasControl;
+            bool raw = !Scripted;
             float now = UnityEngine.Time.unscaledTime;
             if (raw != _pending) { _pending = raw; _pendingSince = now; }
             if (_settled != _pending && now - _pendingSince >= SettleSeconds) _settled = _pending;

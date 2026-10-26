@@ -271,6 +271,7 @@
   "audio.volumes.footsteps": "Footsteps volume",
   "audio.volumes.fog": "Fog cue volume",
   "audio.volumes.object": "Object cue volume",
+  "audio.volumes.cues": "Additional alert cues volume",
   "system.grid": "Tile readout",
   "system.spatial": "Spatial",
   "system.sonar": "Sonar",

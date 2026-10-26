@@ -238,8 +238,8 @@ namespace WrathAccess
         }
 
         // Chime when control of the party is lost to / regained from a cutscene or scripted event —
-        // reacting to ControlState.Settled (the shared debounce that rides out the between-beat
-        // ClickEventsController blips). Gated to being in a local area (menus never chime). Nullable
+        // reacting to ControlState.Settled (the debounced cutscene/dialogue state — the player's own
+        // windows and the escape menu never chime). Gated to being in a local area (menus never chime). Nullable
         // baseline SEEDED FROM THE RAW state on (re-)entry: across an area load the settled value can
         // still be catching up to the already-true raw one, and a settled-value baseline would chime a
         // phantom "gained" on every load. Entering mid-intro-cutscene thus baselines to no-control
@@ -249,11 +249,11 @@ namespace WrathAccess
         {
             var game = Game.Instance;
             if (game == null || game.RootUiContext == null || !game.RootUiContext.IsInGame) { _hadControl = null; return; }
-            if (!_hadControl.HasValue) { _hadControl = ControlState.HasControl; return; }
+            if (!_hadControl.HasValue) { _hadControl = !ControlState.Scripted; return; }
             bool settled = ControlState.Settled;
             if (settled == _hadControl.Value) return;
             WrathAccess.Audio.AudioEngines.Current.Play2D(System.IO.Path.Combine(OverlayAudio.Dir,
-                settled ? "control_gained.wav" : "control_lost.wav"), OverlayAudio.Master);
+                settled ? "control_gained.wav" : "control_lost.wav"), OverlayAudio.Cue);
             _hadControl = settled;
         }
 

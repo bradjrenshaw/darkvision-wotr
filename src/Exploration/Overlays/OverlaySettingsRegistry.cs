@@ -153,6 +153,11 @@ namespace WrathAccess.Exploration.Overlays
             if (volumes.GetByKey(TerrainSounds.VolumeKey) == null)
                 volumes.Add(new IntSetting(TerrainSounds.VolumeKey, "Footsteps volume", 100, 0, 100, 5,
                     "audio.volumes." + TerrainSounds.VolumeKey));
+            // The standalone cues (control gained/lost, compass north) — 40% like the systems; at the
+            // bare master they sat ~8 dB over every other sound (tester feedback).
+            if (volumes.GetByKey(OverlayAudio.CueVolumeKey) == null)
+                volumes.Add(new IntSetting(OverlayAudio.CueVolumeKey, "Additional alert cues volume", 40, 0, 100, 5,
+                    "audio.volumes." + OverlayAudio.CueVolumeKey));
 
             // The audio listener anchor (the "virtual head" — see ListenerAnchor): where the game's
             // 3D audio is heard from. Default = the same reference the sonification pans from, so

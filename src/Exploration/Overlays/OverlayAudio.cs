@@ -16,5 +16,13 @@ namespace WrathAccess.Exploration.Overlays
         /// <summary>Global master volume as a 0..1 fraction (default full).</summary>
         public static float Master =>
             (ModSettings.GetSetting<IntSetting>("audio.master_volume")?.Get() ?? 100) / 100f;
+
+        /// <summary>Settings key (under audio.volumes) of the standalone cues — control gained/lost and
+        /// the compass north ping — which belong to no sound system.</summary>
+        public const string CueVolumeKey = "cues";
+
+        /// <summary>The standalone cues' volume (0..1, master applied) — 40% like the system defaults.</summary>
+        public static float Cue =>
+            (ModSettings.GetSetting<IntSetting>("audio.volumes." + CueVolumeKey)?.Get() ?? 40) / 100f * Master;
     }
 }

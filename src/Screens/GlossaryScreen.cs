@@ -39,12 +39,12 @@ namespace WrathAccess.Screens
             b.BeginStop("tree");
 
             // General cues — the fixed one-shots outside the sonar taxonomy, each played at the same
-            // volume its own system uses (control pair rides the master only; fog/object pairs have
-            // their system volumes).
+            // volume its own system uses (control pair = the cue volume; fog/object pairs have their
+            // system volumes).
             b.BeginGroup(ControlId.Structural("gloss:general"),
                 GraphNodes.Group(() => Loc.T("glossary.general")));
-            CueButton(b, "control_gained", () => OverlayAudio.Master);
-            CueButton(b, "control_lost", () => OverlayAudio.Master);
+            CueButton(b, "control_gained", () => OverlayAudio.Cue);
+            CueButton(b, "control_lost", () => OverlayAudio.Cue);
             CueButton(b, "fog_enter", () => SystemVolume("fog"));
             CueButton(b, "fog_exit", () => SystemVolume("fog"));
             CueButton(b, "object_enter", () => SystemVolume("object"));
