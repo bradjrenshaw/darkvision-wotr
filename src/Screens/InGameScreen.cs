@@ -57,6 +57,23 @@ namespace WrathAccess.Screens
              : Navigation.HasFocus ? FocusedCats : UnfocusedCats;
         public override bool IsActive() => Game.Instance?.RootUiContext?.IsInGame ?? false;
 
+        // Escape in the focused HUD returns to game mode (the same place Tab off the end lands);
+        // unfocused, the action is absent and Escape falls through to InGame (cancel targeting / the
+        // pause menu). Aiming or a tactical spell awaiting its target keeps Escape's cancel meaning.
+        public override IEnumerable<ElementAction> GetActions()
+        {
+            if (!Navigation.HasFocus || Targeting.Aiming
+                || (TacticalModel.Active && Game.Instance?.SelectedAbilityHandler?.SelectedAbility != null))
+                yield break;
+            yield return new ElementAction(ActionIds.Back, Message.Localized("ui", "screen.game"), _ => ToGameMode());
+        }
+
+        private void ToGameMode()
+        {
+            Navigation.Blur();
+            Tts.Speak(ScreenName, interrupt: true);
+        }
+
         public override void OnUpdate()
         {
             // Hold/Stop/Stealth/AI are global party commands: announce their settled state changes whether

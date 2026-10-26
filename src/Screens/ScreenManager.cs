@@ -19,6 +19,15 @@ namespace WrathAccess.Screens
         private static List<Screen> _stack = new List<Screen>();
         private static Screen _focused; // the deepest screen the navigator is currently attached to
 
+        /// <summary>The screen focus just moved AWAY from (set before the new screen's OnFocus) — lets a
+        /// screen react to what it's returning from.</summary>
+        public static Screen PreviousFocused { get; private set; }
+
+        /// <summary>A window the player opens from play (the service windows incl. the map, and the
+        /// mod log) — leaving one returns to game mode, not to the HUD.</summary>
+        public static bool IsPlayerWindow(Screen s)
+            => s != null && s.Key != null && (s.Key.StartsWith("service.") || s.Key == "overlay.modlog");
+
         // The focused screen = the deepest active child of the top outer screen (== the top when no
         // child sub-screens are pushed).
         public static Screen Current => _stack.Count > 0 ? _stack[_stack.Count - 1].DeepestActiveScreen() : null;
@@ -103,11 +112,18 @@ namespace WrathAccess.Screens
             var cur = Current;
             if (ReferenceEquals(cur, _focused)) return;
             _focused?.OnUnfocus();
+            PreviousFocused = _focused;
             _focused = cur;
             Safe(() => cur?.OnFocus(), cur, "OnFocus"); // speaks the screen name
             // Bind the navigator; the initial-focus landing is announced by EnsureFocus once the screen's
             // content exists (handles lazy builds + build-time silent Attach uniformly).
             WrathAccess.UI.Navigation.Attach(cur);
+            // Closing a window the player opened (inventory, character sheet, map, log…) back onto an
+            // unfocused-capable screen (the in-game HUD) lands in game mode, not on the HUD control
+            // that opened it (tester feedback: Escape out of the inventory, then Tab around to get the
+            // arrows back). Right after Attach restores the HUD state, before EnsureFocus announces it.
+            if (cur != null && cur.StartUnfocused && IsPlayerWindow(PreviousFocused))
+                WrathAccess.UI.Navigation.Blur();
         }
 
         private static void Safe(Action a, Screen s, string hook)

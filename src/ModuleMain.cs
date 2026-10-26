@@ -633,6 +633,16 @@ namespace WrathAccess
                     InputCategory.Exploration, () => WrathAccess.Exploration.PartySelection.SelectMember(idx))
                     .AddBinding(KeyCode.Alpha1 + i, ctrl: true).Grouped("party");
             }
+            // The same keys inside the player's windows (inventory, character sheet, spellbook…): switch
+            // whose window it is, as the window's own character list does. Windows category — in the
+            // in-game screen the Exploration twin above comes first and wins.
+            for (int i = 0; i < 6; i++)
+            {
+                int idx = i;
+                InputManager.Register("window.selectMember" + (i + 1), "Show party member " + (i + 1) + " in the window",
+                    InputCategory.Windows, () => WrathAccess.Screens.ServiceWindows.ShowMember(idx))
+                    .AddBinding(KeyCode.Alpha1 + i, ctrl: true).Grouped("party");
+            }
             // Hold position (H) / Stop (G): the game's own party commands (the in-game menu's Hold/Stop
             // buttons), toggled across the current selection. Both keys are free in our exploration set.
             InputManager.Register("party.hold", "Hold position", InputCategory.Exploration,

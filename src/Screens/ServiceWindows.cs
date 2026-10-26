@@ -27,6 +27,22 @@ namespace WrathAccess.Screens
         /// <summary>The shared character-switcher Tab-stop (inventory / char sheet / spellbook lead
         /// with it): the party as buttons driving the game's real selection, the current character
         /// carrying a live "selected" part (it also announces when a switch lands elsewhere).</summary>
+        /// <summary>Ctrl+1..6 inside a player window: show that party member, exactly as picking them in
+        /// the window's character list does (same party order as the in-area Ctrl+N keys).</summary>
+        public static void ShowMember(int index)
+        {
+            if (!ScreenManager.IsPlayerWindow(ScreenManager.Current)) return;
+            var party = Game.Instance?.Player?.PartyCharacters;
+            var unit = party != null && index >= 0 && index < party.Count ? party[index].Value : null;
+            if (unit == null)
+            {
+                Tts.Speak(Loc.T("party.no_member", new { index = index + 1 }), interrupt: true);
+                return;
+            }
+            Game.Instance.SelectionCharacter.SetSelected(unit);
+            Tts.Speak(Loc.T("party.member_selected", new { name = unit.CharacterName }), interrupt: true);
+        }
+
         public static void EmitCharacterSwitcher(GraphBuilder b, string keyPrefix)
         {
             var party = Game.Instance?.Player?.Party;

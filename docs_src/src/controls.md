@@ -46,8 +46,9 @@ Used while navigating UI panels (menus, the character sheet, dialogue, vendors, 
 
 In an area, the keyboard starts on the world: the arrows move the cursor. **Tab** brings up the
 in-game HUD (action bar, the turn panel in turn-based combat, the menu bar, and the windows list), and
-Tabbing past its last panel returns you to the world. While the HUD has focus, the arrows navigate it
-and the rest of the exploration keys below keep working.
+Tabbing past its last panel (or pressing **Escape**) returns you to the world. While the HUD has focus,
+the arrows navigate it and the rest of the exploration keys below keep working. Closing a window you
+opened (inventory, character sheet, map, log…) also returns you to the world, not to the HUD.
 
 ### Action-bar hotkeys
 
@@ -188,6 +189,7 @@ inside any of these windows, to switch straight to another one.
 | Ctrl+J | Journal |
 | Ctrl+V | Map |
 | Ctrl+L | Log (past messages, grouped into channels) |
+| Ctrl+1 … Ctrl+6 | Inside a window: show party member 1–6 |
 
 The encyclopedia doesn't have a shortcut yet — open it from the Windows panel of the in-game HUD.
 
