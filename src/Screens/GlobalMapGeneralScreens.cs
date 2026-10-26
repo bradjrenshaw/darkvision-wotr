@@ -136,11 +136,12 @@ namespace WrathAccess.Screens
 
         public override string Key => "overlay.worldmap_set_general";
         public override string ScreenName => UIStrings.Instance.CrusadeTexts.SetLeaderHeader;
-        public override int Layer => 16; // over the recruit window
+        public override int Layer => 16; // over the recruit / army window
 
         private static ArmyCartSetLeaderVM Vm()
         {
-            var vm = GlobalMapRecruitScreen.Vm()?.SetLeaderVM.Value;
+            // The recruit window's or the army window's (both answer the cart's general-slot click).
+            var vm = GlobalMapRecruitScreen.Vm()?.SetLeaderVM.Value ?? GlobalMapArmyInfoScreen.Vm()?.SetLeaderVM.Value;
             return vm != null && !vm.IsDisposed ? vm : null;
         }
 

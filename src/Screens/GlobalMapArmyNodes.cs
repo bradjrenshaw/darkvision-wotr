@@ -59,6 +59,12 @@ namespace WrathAccess.Screens
             if (cart == null) return;
             b.BeginStop("army").PushContext(cart.ArmyName.Value, "group");
             CartRows(b, Cart, "army:");
+            // The cart's two buttons: Army (the PC info button → the army window) and Merge (shown, as on
+            // the map overtip, only while another crusader army stands on the same spot).
+            var ct = UIStrings.Instance.CrusadeTexts;
+            b.AddItem(ControlId.Structural("army:info"), GraphNodes.Button(() => ct.Army, () => Cart()?.OnInfoRequest()));
+            if (cart.CanMerge.Value)
+                b.AddItem(ControlId.Structural("army:merge"), GraphNodes.Button(() => ct.Merge, () => Cart()?.ShowMerge()));
             b.PopContext();
         }
 
@@ -67,7 +73,10 @@ namespace WrathAccess.Screens
         /// stop and the recruit window, which bind the same cart VM type; the caller owns the stop.</summary>
         /// <param name="liveGeneral">The general slot is clickable (the recruit and army windows answer
         /// the click by opening the set-general panel); on the map's own cart it is display only.</param>
-        public static void CartRows(GraphBuilder b, Func<ArmyInfoArmyCartVM> get, string k, bool liveGeneral = false)
+        /// <param name="squadActivate">When given, squad rows are buttons that call it (the army window's
+        /// squad action menu); otherwise they are text rows.</param>
+        public static void CartRows(GraphBuilder b, Func<ArmyInfoArmyCartVM> get, string k, bool liveGeneral = false,
+            Action<ArmyInfoSquadVM> squadActivate = null)
         {
             var cart = get();
             if (cart == null || cart.IsDisposed) return;
@@ -108,8 +117,15 @@ namespace WrathAccess.Screens
                 var st = vm?.Squad;
                 if (st == null || st.Unit == null || !seen.Add(st)) continue;
                 var cell = vm; // capture per iteration
-                b.AddItem(ControlId.Referenced(st, k + "squad:" + i), GraphNodes.Text(
-                    () => SquadLine(cell), () => cell.GetTooltip()));
+                if (squadActivate != null)
+                {
+                    var vt = GraphNodes.Button(() => SquadLine(cell), () => squadActivate(cell));
+                    vt.OnTooltip = () => { var t = cell.GetTooltip(); if (t != null) TooltipScreen.Open(t); };
+                    b.AddItem(ControlId.Referenced(st, k + "squad:" + i), vt);
+                }
+                else
+                    b.AddItem(ControlId.Referenced(st, k + "squad:" + i), GraphNodes.Text(
+                        () => SquadLine(cell), () => cell.GetTooltip()));
             }
         }
 

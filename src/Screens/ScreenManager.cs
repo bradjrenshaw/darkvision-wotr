@@ -148,6 +148,7 @@ namespace WrathAccess.Screens
             Register(new GlobalMapToolbarSettingsScreen()); // world-map toolbar gear popup (three switches + close), modal; layer 15
             Register(new GlobalMapBuyResourcesScreen()); // crusade Buy Resources window (two counters + buy/close), modal; layer 16
             Register(new GlobalMapRecruitScreen()); // crusade Recruit window (army cart, unit pool, mercenaries, resources), modal; layer 15
+            Register(new GlobalMapArmyInfoScreen()); // crusade army window (army info / merge: carts, transfers, split, recruit), modal; layer 15
             Register(new GlobalMapRecruitCountScreen()); // the recruit count picker a unit's Buy raises; layer 16
             Register(new GlobalMapSetGeneralScreen()); // set-general panel (the cart's general slot in the recruit window); layer 16
             Register(new GlobalMapHireGeneralScreen()); // hire-general panel (four candidates); layer 17

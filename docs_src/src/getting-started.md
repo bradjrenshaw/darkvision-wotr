@@ -276,6 +276,13 @@ army's details. Your armies are on **Comma** and enemy armies on **Period**; **I
 armies selects it, and **Y** reads an army's information. The crusade's windows (recruiting,
 buying resources, generals) are accessible too.
 
+The selected army's details end with an **Army** button, which opens the army window: rename or
+dismiss the army, assign its general, **Split** off a new (empty) army, and manage each squad (Enter
+on a squad: split it, merge it, dismiss it). When another of your armies stands on the same spot, a
+**Merge** button appears as well; the merge view shows both armies, with buttons to move all squads
+either way, and each squad's menu can move it to the other army. An army left empty when the window
+closes is removed.
+
 ## Crusade battles
 
 When armies meet, the battle plays out on a 9 by 7 grid. The same cursor keys step one cell at a time,
