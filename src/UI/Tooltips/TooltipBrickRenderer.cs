@@ -55,10 +55,11 @@ namespace WrathAccess.UI.Tooltips
 
         // ---- shared formatting helpers ----
 
-        /// <summary>"Label: Value"; falls back to the icon's sprite name when there's no text label.</summary>
-        protected static string Stat(string name, string value, Sprite icon)
+        /// <summary>"Label: Value", or just the one that's present. An icon-only stat reads its value
+        /// alone: the icon's sprite name is an asset id ("UI_Icon_Melee"), never player text.</summary>
+        protected static string Stat(string name, string value)
         {
-            string label = !string.IsNullOrEmpty(name) ? name : (icon != null ? icon.name : null);
+            string label = name;
             if (string.IsNullOrEmpty(label)) return value;
             if (string.IsNullOrEmpty(value)) return label;
             return label + ": " + value;

@@ -128,8 +128,8 @@ namespace WrathAccess.UI.Tooltips
         // (TooltipBrickIconValueStatView.SetupValues) — mirror it so the pair reads the right way.
         internal static string Line(TooltipBrickIconValueStatVM vm)
             => vm.Type.HasFlag(TooltipIconValueStatType.Inverted)
-                ? Stat(vm.Value, vm.Name, vm.Icon)
-                : Stat(vm.Name, vm.Value, vm.Icon);
+                ? Stat(vm.Value, vm.Name)
+                : Stat(vm.Name, vm.Value);
 
         public override IEnumerable<BrickLine> GetExpandedLines(TooltipBrickIconValueStatVM vm)
             => One(vm == null ? null : Line(vm), () => vm?.Tooltip);
@@ -161,7 +161,7 @@ namespace WrathAccess.UI.Tooltips
     public sealed class TwoColumnsStatBrickRenderer : TooltipBrickRenderer<TooltipBrickTwoColumnsStatVM>
     {
         public override IEnumerable<BrickLine> GetExpandedLines(TooltipBrickTwoColumnsStatVM vm)
-            => One(vm == null ? null : Join(Stat(vm.NameLeft, vm.ValueLeft, vm.IconLeft), Stat(vm.NameRight, vm.ValueRight, vm.IconRight)));
+            => One(vm == null ? null : Join(Stat(vm.NameLeft, vm.ValueLeft), Stat(vm.NameRight, vm.ValueRight)));
 
     }
 
@@ -170,8 +170,8 @@ namespace WrathAccess.UI.Tooltips
         public override IEnumerable<BrickLine> GetExpandedLines(TooltipBrickThreeColumnsStatVM vm)
         {
             if (vm == null) yield break;
-            var line = new BrickLine(Join(Stat(vm.NameLeft, vm.ValueLeft, vm.IconLeft),
-                Stat(vm.NameCenter, vm.ValueCenter, vm.IconCenter), Stat(vm.NameRight, vm.ValueRight, vm.IconRight)));
+            var line = new BrickLine(Join(Stat(vm.NameLeft, vm.ValueLeft),
+                Stat(vm.NameCenter, vm.ValueCenter), Stat(vm.NameRight, vm.ValueRight)));
             // Each column's own tooltip (the game's glossary entry behind BAB / CMB / CMD), listed like
             // the links in a line of text. A glossary template with no entry has nothing to show.
             var links = new List<KeyValuePair<string, Func<TooltipBaseTemplate>>>();
