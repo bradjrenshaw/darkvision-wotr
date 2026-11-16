@@ -87,6 +87,14 @@ namespace WrathAccess.Screens
                     () => get()?.LeaderVM.OnClick())); // the slot's click: raises the set-general request
             else
                 b.AddItem(ControlId.Structural(k + "leader"), GraphNodes.Text(() => LeaderLine(get())));
+            // The game's army cart exposes the general's level-up action here. The Army List card
+            // only announces IsLevelUp; this button routes through the same ArmyLeaderInfoVM action
+            // as the PC view, which asks GlobalMapVM to open its LeaderLevelUpVM.
+            var leaderVm = cart.LeaderVM;
+            if (leaderVm != null && leaderVm.HasLeader.Value && leaderVm.IsLevelUp.Value)
+                b.AddItem(ControlId.Structural(k + "leader-levelup"), GraphNodes.Button(
+                    () => Loc.T("crusade.levelup_action", new { name = leaderVm.CommonVM?.Name.Value ?? "" }),
+                    () => get()?.LeaderVM?.OnLevelUp()));
             b.AddItem(ControlId.Structural(k + "mp"), GraphNodes.Text(
                 () => Line(ct.MovementPointsTooltipHeader, get()?.SquadsVM.MovementPoints.Value),
                 () => SimpleTooltip.Make(ct.MovementPointsTooltipHeader, ct.MovementPointsTooltipDescription)));
