@@ -226,6 +226,47 @@ namespace WrathAccess.Exploration.Overlays
             });
         }
 
+        /// <summary>Offer the game's directional travel to an army-occupied hidden point. Such points have
+        /// no visible location-panel entry, but the game's path manager can still route the selected traveler
+        /// there; Enter uses this same localized confirmation instead of consuming the key as army inspect.</summary>
+        public static bool OfferTravelTo(GlobalMapPointView to)
+        {
+            if (to == null) return false;
+            var from = GlobalMapModel.TravelerPos;
+            float dx = to.transform.position.x - from.x, dz = to.transform.position.z - from.z;
+            int sector = SectorOf(MapFrame.ToMap(Mathf.Atan2(dx, dz) * Mathf.Rad2Deg));
+            var t = Traveler;
+            var pm = GlobalMapView.Instance?.State?.PathManager;
+            if (t == null || pm == null || to.Blueprint == null) return false;
+            var data = pm.CalculatePathByDirection(t, to.Blueprint);
+            if (data == null) { Tts.Speak(Loc.T("worldmap.no_route", new { name = NodeLabel(to) }), interrupt: true); return true; }
+            string cost = "";
+            if (t is GlobalMapArmyState army)
+            {
+                int points = pm.GetArmyPathCost(data, army.Position);
+                if (points > 0) cost = Loc.T("worldmap.travel_cost", new { points });
+            }
+            else
+            {
+                var time = pm.GetPlayerPathTime(data);
+                if (time > System.TimeSpan.Zero)
+                {
+                    var period = Kingmaker.Blueprints.Root.BlueprintRoot.Instance.Calendar.GetPeriodString(time);
+                    if (!string.IsNullOrEmpty(period)) cost = Loc.T("worldmap.travel_time", new { time = period });
+                }
+            }
+            var text = Loc.T("worldmap.travel_confirm", new { direction = Word(sector), dest = NodeLabel(WalkEnd(data, to)), cost });
+            Kingmaker.PubSubSystem.EventBus.RaiseEvent(delegate(Kingmaker.PubSubSystem.IMessageModalUIHandler w)
+            {
+                w.HandleOpen(text, Kingmaker.UI.MessageModalBase.ModalType.Dialog,
+                    delegate(Kingmaker.UI.MessageModalBase.ButtonType button)
+                    {
+                        if (button == Kingmaker.UI.MessageModalBase.ButtonType.Yes) Travel(to);
+                    });
+            });
+            return true;
+        }
+
         /// <summary>Start along the road toward <paramref name="to"/>, with the arrow click's own guards
         /// (no cutscene, not resting) and the map's interactive gate. The route is recomputed live: the
         /// modal may have sat open a while.</summary>

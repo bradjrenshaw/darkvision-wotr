@@ -53,9 +53,25 @@ namespace WrathAccess.Exploration
             // Mid-journey pause (the game's move-helper Continue): Enter resumes travel, like the game's own
             // primary travel input. Otherwise act on the point under the cursor.
             if (GlobalMapModel.TravelPaused) { GlobalMapActions.ResumeTravel(); return; }
-            // An army pawn sits on top of its point (the game's click lands on the pawn first).
+            // An army pawn sits on top of its point. Enter means activate the map point; army selection /
+            // inspection stays available through the review cursor (comma/period + I). A hidden point
+            // cannot go through HandleClick, so offer the game's directional travel to it instead.
             var a = ArmyWithin();
-            if (a != null) { GlobalMapActions.ArmyInteract(a); return; }
+            if (a != null)
+            {
+                var point = a.Location != null ? GlobalMapView.Instance?.GetPointView(a.Location) : null;
+                if (point != null && point.Blueprint != null && point.Blueprint != GlobalMapModel.CurrentLocation)
+                {
+                    if (point.State != null && point.State.IsRevealed)
+                    {
+                        GlobalMapActions.Go(point);
+                        return;
+                    }
+                    if (Overlays.ConnectedStep.OfferTravelTo(point)) return;
+                }
+                GlobalMapActions.ArmyInteract(a);
+                return;
+            }
             var p = NearestWithin();
             if (p != null) GlobalMapActions.Go(p);
             else Tts.Speak(Loc.T("worldmap.cursor_empty"));
