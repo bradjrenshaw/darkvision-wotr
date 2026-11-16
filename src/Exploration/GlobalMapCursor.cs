@@ -73,8 +73,11 @@ namespace WrathAccess.Exploration
                 return;
             }
             var p = NearestWithin();
-            if (p != null) GlobalMapActions.Go(p);
-            else Tts.Speak(Loc.T("worldmap.cursor_empty"));
+            if (p != null) { GlobalMapActions.Go(p); return; }
+            var hidden = HiddenPointWithin();
+            if (hidden != null && hidden.Blueprint != GlobalMapModel.CurrentLocation
+                && Overlays.ConnectedStep.OfferTravelTo(hidden)) return;
+            Tts.Speak(Loc.T("worldmap.cursor_empty"));
         }
 
         /// <summary>The nearest point whose OWN footprint contains the cursor, or null. Each point uses its
@@ -89,6 +92,22 @@ namespace WrathAccess.Exploration
             foreach (var pt in GlobalMapModel.Locations.Concat(GlobalMapModel.Junctions))
             {
                 if (pt == null) continue;
+                float d = Geo.Distance(c, pt.transform.position);
+                if (d <= Radius(pt) && d < bd) { bd = d; best = pt; }
+            }
+            return best;
+        }
+
+        /// <summary>The nearest unrevealed point under the cursor. It has no normal point-list entry, but
+        /// pressing Enter can still offer travel when the game's path manager has a route to it.</summary>
+        private static GlobalMapPointView HiddenPointWithin()
+        {
+            GlobalMapPointView best = null;
+            float bd = float.MaxValue;
+            var c = Position;
+            foreach (var pt in GlobalMapModel.Points)
+            {
+                if (pt == null || pt.State == null || pt.State.IsRevealed) continue;
                 float d = Geo.Distance(c, pt.transform.position);
                 if (d <= Radius(pt) && d < bd) { bd = d; best = pt; }
             }

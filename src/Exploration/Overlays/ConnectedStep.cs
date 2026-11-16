@@ -115,7 +115,7 @@ namespace WrathAccess.Exploration.Overlays
                 // there (the camp's north road is explored, but the walk halts at the three-way bend where
                 // the unexplored road starts). Other explored walks never prompt: the arrows are for
                 // looking, and travel to known places has its own keys.
-                if (WalkExplores(exit, anchor) || WalkEndsAtHiddenNode(exit, anchor)) OfferTravel(exit, cursor);
+                if (WalkExplores(exit, anchor) || WalkEndsAtUnrevealedPoint(exit, anchor)) OfferTravel(exit, cursor);
                 else Land(exit.To, cursor);
                 return;
             }
@@ -171,13 +171,13 @@ namespace WrathAccess.Exploration.Overlays
             return false;
         }
 
-        /// <summary>Whether that walk stops at an UNREVEALED bend or fork — one with no junction dot, which
-        /// nothing but the arrow can reach (a revealed one is in the lists and travelled to with i).</summary>
-        private static bool WalkEndsAtHiddenNode(Exit exit, GlobalMapPointView from)
+        /// <summary>Whether that walk ends at an unrevealed point. Hidden ordinary waypoints have no point
+        /// list entry either, so the connected-arrow confirmation must offer travel there too.</summary>
+        private static bool WalkEndsAtUnrevealedPoint(Exit exit, GlobalMapPointView from)
         {
             var data = ArrowWalk(exit, from);
             var end = data != null ? WalkEnd(data, null) : null;
-            return GlobalMapModel.IsSystemNode(end) && end.State != null && !end.State.IsRevealed;
+            return end != null && end.State != null && !end.State.IsRevealed;
         }
 
         /// <summary>Where that walk ends (the bends it runs through are skipped), else the road's own end.</summary>
