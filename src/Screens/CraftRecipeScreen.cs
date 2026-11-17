@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kingmaker;
+using Kingmaker.Blueprints.Items.Equipment; // UsableItemType
 using Kingmaker.Blueprints.Root.Strings;
 using Kingmaker.Controllers.Rest.State;
 using Kingmaker.PubSubSystem;
+using Kingmaker.UI.Common; // UIUtility.AddSign
 using Kingmaker.UI.MVVM._PCView.Rest;
 using Kingmaker.UI.MVVM._VM.Rest;
 using WrathAccess.UI;
@@ -13,9 +15,13 @@ using WrathAccess.UI.Graph;
 namespace WrathAccess.Screens
 {
     /// <summary>
-    /// Accessible counterpart to the game's Alchemy craft page. The game opens separate potion and meal
-    /// selection pages from the Alchemist panel; this child screen keeps that flow, while exposing the
-    /// live recipe VM, its eligibility, ingredients, DC, and potion caster-level choice.
+    /// The camp's craft RECIPE window (<see cref="RestCraftRecipeVM"/>: potions and meals from the
+    /// Alchemist panel, scrolls from the Scroll Scribe panel), laid out as the PC view is
+    /// (RestCraftRecipePCView): the recipe list on the left — a radio list where EVERY recipe can be
+    /// selected, craftable or not (a forbidden one names what is missing; only Ok is blocked), and
+    /// Enter on the selected one deselects it — then the selected recipe's block (name, description,
+    /// the check's DC / skill bonus / success chance, caster level, one row per ingredient as
+    /// needed / owned), the craft kit and its requirements, and the Ok and Back buttons.
     /// </summary>
     public sealed class CraftRecipeScreen : Screen
     {
@@ -45,9 +51,7 @@ namespace WrathAccess.Screens
         {
             if (rest == null) return;
             var parent = ScreenManager.Current;
-            var role = kind == CraftKind.Scroll
-                ? Kingmaker.Controllers.Rest.State.CampingRoleType.ScrollScribe
-                : Kingmaker.Controllers.Rest.State.CampingRoleType.Alchemist;
+            var role = kind == CraftKind.Scroll ? CampingRoleType.ScrollScribe : CampingRoleType.Alchemist;
             var stage = kind == CraftKind.Cooking ? CraftStage.CraftSecondType : CraftStage.CraftFirstType;
             EventBus.RaiseEvent(delegate(IRestRoleUIStageEvents h)
             {
@@ -82,11 +86,12 @@ namespace WrathAccess.Screens
         public override void Build(GraphBuilder b)
         {
             var vm = Recipe;
-            string title = TitleKey();
+            var rest = UIStrings.Instance.Rest;
             var items = vm.Items;
             var selected = vm.SelectedItem.Value;
 
-            b.BeginStop(_key + "recipes").PushContext(title);
+            // ---- the recipe list (the left column) ----
+            b.BeginStop(_key + "recipes").PushContext(TitleKey());
             if (items == null || items.Count == 0)
             {
                 b.AddItem(ControlId.Structural(_key + "empty"),
@@ -95,52 +100,86 @@ namespace WrathAccess.Screens
             else
             {
                 for (int i = 0; i < items.Count; i++)
-                {
-                    var item = items[i];
-                    int index = i;
-                    var vt = RecipeOption(item, vm, index, items.Count);
-                    b.AddItem(ControlId.Structural(_key + "recipe:" + i), vt);
-                }
+                    b.AddItem(ControlId.Structural(_key + "recipe:" + i), RecipeOption(items[i], vm, i, items.Count));
                 int selectedIndex = items.IndexOf(selected);
                 if (selectedIndex >= 0)
                     b.SetStart(ControlId.Structural(_key + "recipe:" + selectedIndex));
             }
-            b.AddItem(ControlId.Structural(_key + "clear"), GraphNodes.Button(
-                () => Loc.T("craft.clear_selection"), () => vm.SelectedItem.Value = null));
             b.PopContext();
 
+            // ---- the selected recipe (the right column): name, description, the check, caster level,
+            //      ingredients. With nothing selected the game shows its "choose" prompt and the role's
+            //      explanation instead (RestCraftRecipeBaseView.SelectItem). ----
             b.BeginStop(_key + "details").PushContext(Loc.T("craft.details"));
             b.AddItem(ControlId.Structural(_key + "selected"), GraphNodes.Text(
-                () => SelectedSummary(vm), () => vm.SelectedItem.Value?.Tooltip));
+                () => SelectedName(vm), () => vm.SelectedItem.Value?.Tooltip));
+            b.AddItem(ControlId.Structural(_key + "effect"), GraphNodes.Text(
+                () => SelectedDescription(vm), () => vm.SelectedItem.Value?.Tooltip));
+            b.AddItem(ControlId.Structural(_key + "dc"), GraphNodes.Text(
+                () => Loc.T("craft.dc", new { dc = vm.DCValue.Value }), () => vm.DCTooltipTemplate));
+            b.AddItem(ControlId.Structural(_key + "bonus"), GraphNodes.Text(
+                () => Loc.T("craft.bonus", new { bonus = UIUtility.AddSign(vm.RollValue.Value) }), () => vm.D20TooltipTemplate));
+            b.AddItem(ControlId.Structural(_key + "chance"), GraphNodes.Text(
+                () => Loc.T("craft.chance", new { chance = vm.SuccessChanceValue.Value })));
             if (_kind != CraftKind.Cooking)
                 EmitCasterLevel(b, vm);
-            b.AddItem(ControlId.Structural(_key + "ingredients"), GraphNodes.Text(
-                () => IngredientSummary(vm)));
-            b.AddItem(ControlId.Structural(_key + "effect"), GraphNodes.Text(
-                () => SelectedEffect(vm),
-                () => vm.SelectedItem.Value?.Tooltip));
+            // One row per ingredient, as the game's slots: needed / owned (Space = the item's tooltip).
+            // The list is the bound view's (UpdateIngredients on each pick); it is only current while a
+            // recipe is selected.
+            if (selected != null && vm.IngredientItems != null)
+                for (int i = 0; i < vm.IngredientItems.Count; i++)
+                {
+                    var ing = vm.IngredientItems[i];
+                    b.AddItem(ControlId.Structural(_key + "ingredient:" + i), GraphNodes.Text(
+                        () => Loc.T("craft.ingredient", new
+                        {
+                            name = TextUtil.StripRichText(ing.Ingredient.Name),
+                            required = ing.RequiredCount,
+                            owned = ing.InventoryCount,
+                        }),
+                        () => ing.ItemTooltip));
+                }
             b.PopContext();
 
+            // ---- the craft kit and what the crafter needs (RestCraftSetPCView; potions and scrolls) ----
+            var set = vm.CraftSetVM;
+            if (set != null)
+            {
+                b.BeginStop(_key + "requirements").PushContext(Loc.T("craft.requirements"));
+                b.AddItem(ControlId.Structural(_key + "kit"), GraphNodes.Text(
+                    () => set.KitIcon != null ? Loc.T("craft.kit", new { name = set.KitName, level = set.KitLevel }) : set.KitName));
+                var restrictions = set.Restrictions;
+                if (restrictions != null)
+                    for (int i = 0; i < restrictions.Count; i++)
+                    {
+                        var r = restrictions[i];
+                        b.AddItem(ControlId.Structural(_key + "restriction:" + i), GraphNodes.Text(
+                            () => Loc.T(r.IsAllowed ? "craft.requirement_met" : "craft.requirement_unmet", new { name = r.DisplayName })));
+                    }
+                b.PopContext();
+            }
+
+            // ---- the buttons: Ok (the game's Apply; greyed on a recipe that can't be crafted) and Back ----
             b.BeginStop(_key + "actions");
             b.AddItem(ControlId.Structural(_key + "apply"), GraphNodes.Button(
-                () => Loc.T(_kind == CraftKind.Potion ? "craft.potion.apply"
-                    : _kind == CraftKind.Cooking ? "craft.cooking.apply" : "craft.scroll.apply"),
+                () => rest.Apply,
                 () => Apply(vm), () => vm.SelectedItem.Value == null || vm.SelectedItem.Value.CanCraft));
-            b.AddItem(ControlId.Structural(_key + "back"), GraphNodes.Button(
-                () => Loc.T(_kind == CraftKind.Scroll ? "craft.back_to_scribing" : "craft.back_to_alchemy"), ReturnToRole));
+            b.AddItem(ControlId.Structural(_key + "back"), GraphNodes.Button(() => rest.Back, ReturnToRole));
         }
 
+        // A recipe row. Enter is the row's click (SelectionGroupEntityView.OnClick): select it, or
+        // deselect it when it already is (the group allows switching off). Forbidden recipes select
+        // too — the game only greys Ok for them — so their details and ingredients can be read.
         private NodeVtable RecipeOption(RestBaseRecipeItemVM item, RestCraftRecipeVM vm, int index, int count)
         {
-            Func<bool> selected = () => ReferenceEquals(vm.SelectedItem.Value, item);
-            Func<bool> available = () => item.CanCraft;
-            var vt = GraphNodes.ChoiceOption(() => OptionLabel(item), selected, () =>
-            {
-                if (!available()) return;
-                vm.SelectedItem.Value = item;
-                Tts.Speak(OptionLabel(item), interrupt: true);
-            }, GraphNodes.Position(index + 1, count));
-            vt.Announcements = vt.Announcements.Concat(new[] { GraphNodes.DisabledPart(available) }).ToList();
+            var vt = GraphNodes.ChoiceOption(() => OptionLabel(item),
+                () => ReferenceEquals(vm.SelectedItem.Value, item),
+                () =>
+                {
+                    bool select = !item.IsSelected.Value;
+                    item.SetSelectedFromView(select);
+                    if (!select) Tts.Speak(Loc.T("craft.deselected"), interrupt: true); // "selected" is the live part
+                }, GraphNodes.Position(index + 1, count));
             vt.OnTooltip = () =>
             {
                 if (item.Tooltip != null) TooltipScreen.Open(item.Tooltip);
@@ -148,64 +187,49 @@ namespace WrathAccess.Screens
             return vt;
         }
 
+        // The row as the game draws it: name, spell level (potions / scrolls), DC, and — forbidden — why.
         private string OptionLabel(RestBaseRecipeItemVM item)
         {
-            string status = Availability(item);
-            string details = _kind == CraftKind.Cooking
-                ? Loc.T("craft.cooking.option_details", new { dc = item.DC, status })
-                : Loc.T(_kind == CraftKind.Scroll ? "craft.scroll.option_details" : "craft.potion.option_details",
-                    new { level = item.CraftItemLevel, dc = item.DC, status });
-            return Loc.T("craft.recipe_option", new { name = item.CraftItemName, details });
+            string label = _kind == CraftKind.Cooking
+                ? Loc.T("craft.meal_row", new { name = item.CraftItemName, dc = item.DC })
+                : Loc.T("craft.recipe_row", new { name = item.CraftItemName, level = item.CraftItemLevel, dc = item.DC });
+            if (item.IsAvail) return label;
+            string reasons = ForbiddenText(item);
+            return label + ", " + (reasons.Length > 0
+                ? Loc.T("craft.forbidden", new { reasons })
+                : Loc.T("craft.forbidden_plain"));
         }
 
-        private static string Availability(RestBaseRecipeItemVM item)
+        // The game's forbidden label (RestCraftRecipeItemPCView.SetForbiddenText), in its own words:
+        // the craft feat, the kit, the reagents — whichever are missing.
+        private static string ForbiddenText(RestBaseRecipeItemVM item)
         {
-            if (item.CanCraft) return Loc.T("craft.available");
-            if (item is RestCraftRecipeItemVM potion)
-            {
-                var info = potion.Item;
-                var missing = new List<string>();
-                if (!info.IsKnowAbility) missing.Add(Loc.T("craft.spell_not_known"));
-                if (!info.IsHaveFeature) missing.Add(Loc.T("craft.missing_feature"));
-                if (!info.IsHaveItem) missing.Add(Loc.T("craft.missing_item"));
-                if (!info.IsHaveResources) missing.Add(Loc.T("craft.missing_ingredients"));
-                if (missing.Count > 0) return string.Join(", ", missing);
-            }
-            return Loc.T("craft.missing_ingredients");
+            var rest = UIStrings.Instance.Rest;
+            var parts = new List<string>();
+            bool crafted = item.ItemType != UsableItemType.Other; // meals need only their ingredients
+            if (!item.IsHaveFeature && crafted) parts.Add(rest.CraftFeature);
+            if (!item.IsHaveItem && crafted)
+                parts.Add(item.ItemType == UsableItemType.Potion ? rest.AlchemyCraftKit : rest.ScrollCraftKit);
+            if (!item.IsHaveResources) parts.Add(rest.CraftResources);
+            return string.Join(", ", parts);
         }
 
-        private string SelectedSummary(RestCraftRecipeVM vm)
-        {
-            var item = vm.SelectedItem.Value;
-            if (item == null) return Loc.T("craft.no_selection");
-            string result = Loc.T("craft.selected_summary", new
-            {
-                name = item.CraftItemName,
-                dc = vm.DCValue.Value,
-                bonus = vm.RollValue.Value,
-                chance = vm.SuccessChanceValue.Value,
-                status = Availability(item),
-            });
-            return TextUtil.StripRichText(result);
-        }
-
-        private string EmptyListText()
-        {
-            if (_kind == CraftKind.Cooking) return Loc.T("craft.no_recipes");
-            if (_kind == CraftKind.Scroll)
-            {
-                var scribe = Game.Instance?.Player?.Camping?.GetCharacterByRoleType(
-                    Kingmaker.Controllers.Rest.State.CampingRoleType.ScrollScribe, true);
-                return Loc.T(scribe == null ? "craft.no_scroll_scribe" : "craft.no_scroll_spells");
-            }
-            var primary = Game.Instance?.Player?.Camping?.GetCharacterByRoleType(CampingRoleType.Alchemist, true);
-            return Loc.T(primary == null ? "craft.no_potion_primary" : "craft.no_potion_spells");
-        }
-
-        private static string SelectedEffect(RestCraftRecipeVM vm)
+        private string SelectedName(RestCraftRecipeVM vm)
         {
             var item = vm.SelectedItem.Value;
-            if (item == null) return "";
+            if (item != null) return item.CraftItemName;
+            var rest = UIStrings.Instance.Rest;
+            return _kind == CraftKind.Scroll ? rest.ChooseScrollText : rest.ChooseRecipeText;
+        }
+
+        private string SelectedDescription(RestCraftRecipeVM vm)
+        {
+            var item = vm.SelectedItem.Value;
+            if (item == null)
+            {
+                var rest = UIStrings.Instance.Rest;
+                return TextUtil.StripRichText(_kind == CraftKind.Scroll ? rest.ScrollScribingOpeningText : rest.AlchemyOpeningText);
+            }
             string effect = item.CraftItemDesc ?? "";
             if (item is RestBrothRecipeItemVM meal)
             {
@@ -217,25 +241,16 @@ namespace WrathAccess.Screens
             return TextUtil.StripRichText(effect);
         }
 
-        private static string IngredientSummary(RestCraftRecipeVM vm)
+        private string EmptyListText()
         {
-            var item = vm.SelectedItem.Value;
-            if (item == null) return Loc.T("craft.ingredients_none");
-            if (item is RestBrothRecipeItemVM meal)
+            if (_kind == CraftKind.Cooking) return Loc.T("craft.no_recipes");
+            if (_kind == CraftKind.Scroll)
             {
-                var entries = meal.BrothRecipe.Ingredients;
-                if (entries == null || entries.Length == 0) return Loc.T("craft.ingredients_none");
-                return Loc.T("craft.ingredients", new
-                {
-                    value = string.Join(", ", entries.Select(x => TextUtil.StripRichText(x.Item.Name + " × " + x.Count))),
-                });
+                var scribe = Game.Instance?.Player?.Camping?.GetCharacterByRoleType(CampingRoleType.ScrollScribe, true);
+                return Loc.T(scribe == null ? "craft.no_scroll_scribe" : "craft.no_scroll_spells");
             }
-            if (vm.IngredientItems == null || vm.IngredientItems.Count == 0)
-                return Loc.T("craft.ingredients_none");
-            return Loc.T("craft.ingredients", new
-            {
-                value = string.Join(", ", vm.IngredientItems.Select(x => TextUtil.StripRichText(x.Ingredient.Name))),
-            });
+            var primary = Game.Instance?.Player?.Camping?.GetCharacterByRoleType(CampingRoleType.Alchemist, true);
+            return Loc.T(primary == null ? "craft.no_potion_primary" : "craft.no_potion_spells");
         }
 
         private void EmitCasterLevel(GraphBuilder b, RestCraftRecipeVM vm)
@@ -296,9 +311,8 @@ namespace WrathAccess.Screens
         private string TitleKey() => Loc.T(_kind == CraftKind.Potion ? "craft.potion.title"
             : _kind == CraftKind.Cooking ? "craft.cooking.title" : "craft.scroll.title");
 
-        private Kingmaker.Controllers.Rest.State.CampingRoleType RoleType()
-            => _kind == CraftKind.Scroll ? Kingmaker.Controllers.Rest.State.CampingRoleType.ScrollScribe
-                : Kingmaker.Controllers.Rest.State.CampingRoleType.Alchemist;
+        private CampingRoleType RoleType()
+            => _kind == CraftKind.Scroll ? CampingRoleType.ScrollScribe : CampingRoleType.Alchemist;
 
         public override IEnumerable<ElementAction> GetActions()
         {

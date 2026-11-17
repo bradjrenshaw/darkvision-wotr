@@ -103,9 +103,11 @@ namespace WrathAccess.Screens
             => b.AddItem(ControlId.Structural(key), GraphNodes.Text(
                 () => WithRise(Line(header, value()), rise()), () => SimpleTooltip.Make(header, description)));
 
-        // The level-up window shows a rise only when there is one (LeaderLevelUpStatsView.SetRise).
+        // The level-up window shows a change only when there is one (LeaderLevelUpStatsView.SetRise:
+        // hidden at 0, signed otherwise) — so a drop reads too, should a level ever lower a stat.
         private static string WithRise(string line, int rise)
-            => rise > 0 ? line + ", " + Loc.T("crusade.rise", new { value = rise }) : line;
+            => rise == 0 ? line
+                : line + ", " + Loc.T(rise > 0 ? "crusade.rise" : "crusade.fall", new { value = Math.Abs(rise) });
 
         /// <summary>The same card as read-only tooltip lines — for the game's army-leader tooltip brick
         /// (<c>TooltipBrickArmyLeaderVM</c>): name, level, the five stats (each with the game's tooltip
