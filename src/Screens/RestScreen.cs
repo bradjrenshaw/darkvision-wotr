@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Kingmaker;
 using Kingmaker.Blueprints.Root.Strings; // UIStrings (game-localized rest labels)
 using Kingmaker.Controllers.Rest;        // RestController, CheckStatus, RestIterationStatus
 using Kingmaker.Controllers.Rest.State;  // CampingRoleType
+using Kingmaker.EntitySystem.Stats;       // StatType
 using Kingmaker.PubSubSystem;            // EventBus, IRestRequestEvents, IRestRoleUIStageEvents
 using Kingmaker.UI.MVVM._PCView.Rest;    // CraftStage (the stage-event payload)
 using Kingmaker.UI.Common;               // UIUtility.AddSign
@@ -102,9 +104,11 @@ namespace WrathAccess.Screens
             EmitRole(b, k, Loc.T("rest.role.divine"), CampingRoleType.DivineService,
                 () => new[] { vm.DivineServiceVM.PrimaryShiftVM, vm.DivineServiceVM.SecondaryShiftVM }, () => vm.DivineRolesVM);
             EmitRole(b, k, Loc.T("rest.role.alchemy"), CampingRoleType.Alchemist,
-                () => new[] { vm.AlchemyCraftVM.PrimaryShiftVM, vm.AlchemyCraftVM.SecondaryShiftVM }, () => vm.AlchemyRolesVM);
+                () => new[] { vm.AlchemyCraftVM.PrimaryShiftVM, vm.AlchemyCraftVM.SecondaryShiftVM }, () => vm.AlchemyRolesVM,
+                () => EmitAlchemyActions(b, vm, k));
             EmitRole(b, k, Loc.T("rest.role.scribe"), CampingRoleType.ScrollScribe,
-                () => new[] { vm.ScribesCraftVM.PrimaryShiftVM, vm.ScribesCraftVM.SecondaryShiftVM }, () => vm.ScribeRolesVM);
+                () => new[] { vm.ScribesCraftVM.PrimaryShiftVM, vm.ScribesCraftVM.SecondaryShiftVM }, () => vm.ScribeRolesVM,
+                () => EmitScribeActions(b, vm, k));
 
             // Number of rests: a dropdown over the game's iteration radios — selecting one drives the
             // game's selector, whose bound view writes RestIterationsCount. The value part is live, so
@@ -143,7 +147,7 @@ namespace WrathAccess.Screens
         // open role (closing the previous — accordion) and raises the game's stage-open event so the real
         // role panel shows on screen; collapsing raises stage-close — the sighted panel swap, mirrored.
         private void EmitRole(GraphBuilder b, string k, string label, CampingRoleType type,
-            Func<RestShiftVM[]> shifts, Func<RestRolesVM> roles)
+            Func<RestShiftVM[]> shifts, Func<RestRolesVM> roles, Action emitExtras = null)
         {
             bool open = _openRole == type;
             var vt = GraphNodes.Group(() =>
@@ -166,8 +170,74 @@ namespace WrathAccess.Screens
                     SlotDropdown(Loc.T("rest.primary"), shiftVms[0]));
                 b.AddItem(ControlId.Structural(k + "role:" + type + ":assistant"),
                     SlotDropdown(Loc.T("rest.assistant"), shiftVms[1]));
+                emitExtras?.Invoke();
             }
             b.EndGroup();
+        }
+
+        private static void EmitAlchemyActions(GraphBuilder b, RestVM vm, string k)
+        {
+            b.AddItem(ControlId.Structural(k + "alchemy:potion"), GraphNodes.Button(
+                () => Loc.T("craft.potion.action", new { value = SelectedPotionName() }),
+                () => CraftRecipeScreen.Open(vm, potion: true)));
+            b.AddItem(ControlId.Structural(k + "alchemy:cooking"), GraphNodes.Button(
+                () => Loc.T("craft.cooking.action", new { value = SelectedMealName() }),
+                () => CraftRecipeScreen.Open(vm, potion: false)));
+        }
+
+        private static string SelectedPotionName()
+        {
+            var item = Game.Instance?.Player?.Camping?.SelectedPotion?.Item;
+            return item != null ? item.Name : Loc.T("craft.none");
+        }
+
+        private static string SelectedMealName()
+        {
+            var recipe = Game.Instance?.Player?.Camping?.CookingRecipe;
+            return recipe != null ? recipe.Name : Loc.T("craft.none");
+        }
+
+        private static void EmitScribeActions(GraphBuilder b, RestVM vm, string k)
+        {
+            b.AddItem(ControlId.Structural(k + "scribe:skill"), GraphNodes.Dropdown(
+                () => Loc.T("craft.scribing_skill"),
+                () => ScribingSkillName(),
+                () => ChoiceSubmenuScreen.Open(Loc.T("craft.scribing_skill"), ScribingSkillOptions(),
+                    Game.Instance.Player.Camping.IsRestScrollScribingScillArcane ? 0 : 1,
+                    index => SetScribingSkill(vm, index))));
+            b.AddItem(ControlId.Structural(k + "scribe:recipe"), GraphNodes.Button(
+                () => Loc.T("craft.scroll.action", new { value = SelectedScrollName() }),
+                () => CraftRecipeScreen.OpenScroll(vm)));
+        }
+
+        private static List<string> ScribingSkillOptions() => new List<string>
+        {
+            TextUtil.StripRichText(UIStrings.Instance.Rest.ScrollScribingSkillArcane),
+            TextUtil.StripRichText(UIStrings.Instance.Rest.ScrollScribingSkillReligion),
+        };
+
+        private static string ScribingSkillName()
+            => TextUtil.StripRichText(Game.Instance.Player.Camping.IsRestScrollScribingScillArcane
+                ? UIStrings.Instance.Rest.ScrollScribingSkillArcane
+                : UIStrings.Instance.Rest.ScrollScribingSkillReligion);
+
+        private static void SetScribingSkill(RestVM vm, int index)
+        {
+            if (index < 0 || index > 1) return;
+            bool arcane = index == 0;
+            var skill = arcane ? StatType.SkillKnowledgeArcana : StatType.SkillLoreReligion;
+            var scribeVm = vm.ScribesCraftVM;
+            var selected = scribeVm.ScrollScribingSkillSelectorVM.EntitiesCollection
+                .FirstOrDefault(x => x.ScrollScribingSkill == skill);
+            if (selected != null) scribeVm.SelectedScrollScribingSkillVM.Value = selected;
+            Game.Instance.Player.Camping.IsRestScrollScribingScillArcane = arcane;
+            scribeVm.ChangeSkill(skill);
+        }
+
+        private static string SelectedScrollName()
+        {
+            var item = Game.Instance?.Player?.Camping?.SelectedScroll?.Item;
+            return item != null ? item.Name : Loc.T("craft.none");
         }
 
         private void OpenRole(CampingRoleType type)

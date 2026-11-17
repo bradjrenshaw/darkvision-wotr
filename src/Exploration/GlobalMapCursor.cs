@@ -53,12 +53,31 @@ namespace WrathAccess.Exploration
             // Mid-journey pause (the game's move-helper Continue): Enter resumes travel, like the game's own
             // primary travel input. Otherwise act on the point under the cursor.
             if (GlobalMapModel.TravelPaused) { GlobalMapActions.ResumeTravel(); return; }
-            // An army pawn sits on top of its point (the game's click lands on the pawn first).
+            // An army pawn sits on top of its point. Enter means activate the map point; army selection /
+            // inspection stays available through the review cursor (comma/period + I). A hidden point
+            // cannot go through HandleClick, so offer the game's directional travel to it instead.
             var a = ArmyWithin();
-            if (a != null) { GlobalMapActions.ArmyInteract(a); return; }
+            if (a != null)
+            {
+                var point = a.Location != null ? GlobalMapView.Instance?.GetPointView(a.Location) : null;
+                if (point != null && point.Blueprint != null && point.Blueprint != GlobalMapModel.CurrentLocation)
+                {
+                    if (point.State != null && point.State.IsRevealed)
+                    {
+                        GlobalMapActions.Go(point);
+                        return;
+                    }
+                    if (Overlays.ConnectedStep.OfferTravelTo(point)) return;
+                }
+                GlobalMapActions.ArmyInteract(a);
+                return;
+            }
             var p = NearestWithin();
-            if (p != null) GlobalMapActions.Go(p);
-            else Tts.Speak(Loc.T("worldmap.cursor_empty"));
+            if (p != null) { GlobalMapActions.Go(p); return; }
+            var hidden = HiddenPointWithin();
+            if (hidden != null && hidden.Blueprint != GlobalMapModel.CurrentLocation
+                && Overlays.ConnectedStep.OfferTravelTo(hidden)) return;
+            Tts.Speak(Loc.T("worldmap.cursor_empty"));
         }
 
         /// <summary>The nearest point whose OWN footprint contains the cursor, or null. Each point uses its
@@ -73,6 +92,22 @@ namespace WrathAccess.Exploration
             foreach (var pt in GlobalMapModel.Locations.Concat(GlobalMapModel.Junctions))
             {
                 if (pt == null) continue;
+                float d = Geo.Distance(c, pt.transform.position);
+                if (d <= Radius(pt) && d < bd) { bd = d; best = pt; }
+            }
+            return best;
+        }
+
+        /// <summary>The nearest unrevealed point under the cursor. It has no normal point-list entry, but
+        /// pressing Enter can still offer travel when the game's path manager has a route to it.</summary>
+        private static GlobalMapPointView HiddenPointWithin()
+        {
+            GlobalMapPointView best = null;
+            float bd = float.MaxValue;
+            var c = Position;
+            foreach (var pt in GlobalMapModel.Points)
+            {
+                if (pt == null || pt.State == null || pt.State.IsRevealed) continue;
                 float d = Geo.Distance(c, pt.transform.position);
                 if (d <= Radius(pt) && d < bd) { bd = d; best = pt; }
             }
