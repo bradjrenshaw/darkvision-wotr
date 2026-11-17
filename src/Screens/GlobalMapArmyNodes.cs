@@ -87,6 +87,11 @@ namespace WrathAccess.Screens
                     () => get()?.LeaderVM.OnClick())); // the slot's click: raises the set-general request
             else
                 b.AddItem(ControlId.Structural(k + "leader"), GraphNodes.Text(() => LeaderLine(get())));
+            // The general's level-up button (the cart's leader view shows it while one is pending) —
+            // opens the leader level-up window (GlobalMapLeaderLevelUpScreen).
+            if (cart.LeaderVM != null && cart.LeaderVM.IsLevelUp.Value)
+                b.AddItem(ControlId.Structural(k + "levelup"), GraphNodes.Button(
+                    () => UIStrings.Instance.CharGen.LevelUp, () => get()?.LeaderVM.OnLevelUp()));
             b.AddItem(ControlId.Structural(k + "mp"), GraphNodes.Text(
                 () => Line(ct.MovementPointsTooltipHeader, get()?.SquadsVM.MovementPoints.Value),
                 () => SimpleTooltip.Make(ct.MovementPointsTooltipHeader, ct.MovementPointsTooltipDescription)));

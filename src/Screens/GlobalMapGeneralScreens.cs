@@ -46,10 +46,25 @@ namespace WrathAccess.Screens
 
         /// <summary>A general's card rows over its stats and skills VMs: the five stats (Space = the
         /// game's stat tooltip), magic reserves, one row per skill (Space = the skill's tooltip). Shared
-        /// by the army panels' cards and the battle's leader card.</summary>
+        /// by the army panels' cards and the battle's leader card. The level-up window's stats VM
+        /// (<see cref="Kingmaker.UI.MVVM._VM.Crusade.LeaderLevelUp.LeaderLevelUpStatsVM"/>) also carries
+        /// each stat's rise at the new level; those rows read "Attack bonus: 3, plus 1".</summary>
         public static void Rows(GraphBuilder b, string k, ArmyLeaderStatsVM stats, ArmyLeaderSkillsVM skillsVm)
         {
             var ct = UIStrings.Instance.CrusadeTexts;
+            var up = stats as Kingmaker.UI.MVVM._VM.Crusade.LeaderLevelUp.LeaderLevelUpStatsVM;
+            if (up != null)
+            {
+                RiseRow(b, k + ":atk", ct.AttackBonusTooltipHeader, ct.AttackBonusTooltipDescription, () => up.AttackBonus.Value, () => up.AttackBonusRise.Value);
+                RiseRow(b, k + ":def", ct.DefenceBonusTooltipHeader, ct.DefenceBonusTooltipDescription, () => up.DefenseBonus.Value, () => up.DefenseBonusRise.Value);
+                RiseRow(b, k + ":spell", ct.SpellBonusTooltipHeader, ct.SpellBonusTooltipDescription, () => up.SpellStrength.Value, () => up.SpellStrengthRise.Value);
+                RiseRow(b, k + ":size", ct.ArmySizeIncreaseTooltipHeader, ct.ArmySizeIncreaseTooltipDescription, () => up.ArmySize.Value, () => up.ArmySizeRise.Value);
+                RiseRow(b, k + ":inf", ct.InfirmaryTooltipHeader, ct.InfirmaryTooltipDescription, () => up.Infirmary.Value, () => up.InfirmaryRise.Value);
+                b.AddItem(ControlId.Structural(k + ":mana"), GraphNodes.Text(() => WithRise(
+                    Line(ct.MagicReserves, up.MaxMana.Value), up.MaxManaRise.Value)));
+                SkillRows(b, k, skillsVm);
+                return;
+            }
             b.AddItem(ControlId.Structural(k + ":atk"), GraphNodes.Text(
                 () => Line(ct.AttackBonusTooltipHeader, stats.AttackBonus.Value),
                 () => SimpleTooltip.Make(ct.AttackBonusTooltipHeader, ct.AttackBonusTooltipDescription)));
@@ -68,6 +83,11 @@ namespace WrathAccess.Screens
             b.AddItem(ControlId.Structural(k + ":mana"), GraphNodes.Text(
                 () => Loc.T("worldmap.size_line", new { name = (string)ct.MagicReserves, current = stats.CurrentMana.Value, max = stats.MaxMana.Value })));
 
+            SkillRows(b, k, skillsVm);
+        }
+
+        private static void SkillRows(GraphBuilder b, string k, ArmyLeaderSkillsVM skillsVm)
+        {
             var skills = skillsVm.Skills;
             for (int i = 0; i < skills.Count; i++)
             {
@@ -77,8 +97,15 @@ namespace WrathAccess.Screens
                     () => s.Count.Value > 1 ? Loc.T("crusade.skill_count", new { name = s.Name.Value, count = s.Count.Value }) : s.Name.Value,
                     () => s.GetTooltipTemplate()));
             }
-
         }
+
+        private static void RiseRow(GraphBuilder b, string key, string header, string description, Func<int> value, Func<int> rise)
+            => b.AddItem(ControlId.Structural(key), GraphNodes.Text(
+                () => WithRise(Line(header, value()), rise()), () => SimpleTooltip.Make(header, description)));
+
+        // The level-up window shows a rise only when there is one (LeaderLevelUpStatsView.SetRise).
+        private static string WithRise(string line, int rise)
+            => rise > 0 ? line + ", " + Loc.T("crusade.rise", new { value = rise }) : line;
 
         /// <summary>The same card as read-only tooltip lines — for the game's army-leader tooltip brick
         /// (<c>TooltipBrickArmyLeaderVM</c>): name, level, the five stats (each with the game's tooltip
