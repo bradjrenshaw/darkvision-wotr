@@ -18,7 +18,8 @@ namespace WrathAccess.Screens
     /// <summary>
     /// The in-game (exploration) context as a navigable screen, graph-native. It's UNFOCUSED by default —
     /// the overlay owns the arrows for spatial navigation — and <b>Tab enters the HUD</b>, then Tab cycles
-    /// its stops (Tab off the end returns to exploration). Stops, in order: the <b>Action bar</b> (the
+    /// its stops (Tab off the end returns to exploration). Stops, in order: at a slab puzzle only, the
+    /// <b>Puzzle</b> board and the <b>Slabs carried</b> list; then the <b>Action bar</b> (the
     /// selected unit's usable slots, then the Abilities / Spells / Items groups as collapsible tree
     /// sections), the turn-based <b>Turn</b> panel (only in TB combat), the <b>Menu</b> control list, and
     /// the <b>Windows</b> list. Everything renders live per frame — a character swap or an item being
@@ -84,14 +85,14 @@ namespace WrathAccess.Screens
 
         public override void Build(GraphBuilder b)
         {
+            BuildPuzzle(b); // only at a puzzle: its board and slabs come first, ahead of the bar
             BuildActionBar(b);
             BuildTurnPanel(b);
             BuildMenuBar(b);
             BuildWindows(b);
-            BuildPuzzle(b);
         }
 
-        // ----- the slab puzzle (last stops; only standing at a puzzle) -----
+        // ----- the slab puzzle (the FIRST stops; only standing at a puzzle) -----
 
         // The board as a real grid, north up: arrows walk tile to tile exactly as the tiles lie on
         // the floor (gaps are skipped — the sockets hang off the frame's edges), each tile reads the
@@ -153,7 +154,7 @@ namespace WrathAccess.Screens
         // focus follows a slot across renders and survives the game repopulating around it.
         private void BuildActionBar(GraphBuilder b)
         {
-            b.PushContext(Loc.T("hud.action_bar"));
+            b.BeginStop("bar").PushContext(Loc.T("hud.action_bar"));
             var vm = ActionBar();
 
             b.SetRegion("bar:main");
