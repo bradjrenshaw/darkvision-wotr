@@ -599,6 +599,8 @@
   "item.notable": "notable",
   "menu.information": "Information",
   "screen.group_manager": "Group manager",
+  "screen.destinations": "Destinations",
+  "transition.linked_quests": "Linked quests",
   "group.locked_tag": "locked",
   "group.levelup_tag": "level up available",
   "group.mythic_tag": "mythic level up available",
