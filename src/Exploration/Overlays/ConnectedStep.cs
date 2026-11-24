@@ -115,7 +115,8 @@ namespace WrathAccess.Exploration.Overlays
                 // there (the camp's north road is explored, but the walk halts at the three-way bend where
                 // the unexplored road starts). Other explored walks never prompt: the arrows are for
                 // looking, and travel to known places has its own keys.
-                if (WalkExplores(exit, anchor) || WalkEndsAtUnrevealedPoint(exit, anchor)) OfferTravel(exit, cursor);
+                if (GlobalMapModel.Interactive && (WalkExplores(exit, anchor) || WalkEndsAtUnrevealedPoint(exit, anchor)))
+                    OfferTravel(exit, cursor);
                 else Land(exit.To, cursor);
                 return;
             }

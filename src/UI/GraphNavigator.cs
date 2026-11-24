@@ -100,7 +100,7 @@ namespace WrathAccess.UI
 
         public override object FocusedStopKey => _graph?.CurrentNode?.StopKey;
 
-        /// <summary>The live render + focused node id (DEBUG inspection — the /gui dump).</summary>
+        /// <summary>The live render and focused node for graph inspection.</summary>
         internal GraphRender CurrentRender => _graph?.Current;
         internal ControlId FocusedNodeId => _graph?.CurrentNode?.Id;
 
@@ -465,7 +465,7 @@ namespace WrathAccess.UI
             return true;
         }
 
-        private bool RegionJump(int dir)
+        internal bool RegionJump(int dir)
         {
             var result = _graph.MoveRegion(dir);
             if (!result.Moved) return true; // no region that way → consume

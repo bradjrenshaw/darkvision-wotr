@@ -7,6 +7,7 @@ using Kingmaker.Kingdom.UI;
 using Kingmaker.PubSubSystem;
 using Kingmaker.UI.Kingdom;
 using UnityEngine;
+using WrathAccess.Exploration;
 using WrathAccess.Input;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
@@ -15,13 +16,17 @@ namespace WrathAccess.Screens
 {
     internal sealed class KingdomScreen : Screen
     {
-        private enum Tab { Events, Decrees, Map, Campaign, Builder }
+        private enum Tab { Events, Decrees, Map, Campaign }
 
         private static readonly IReadOnlyList<InputCategory> Categories =
             new[] { InputCategory.Kingdom, InputCategory.UI };
-        private static readonly Tab[] Tabs = { Tab.Events, Tab.Decrees, Tab.Map, Tab.Campaign, Tab.Builder };
+        private static readonly IReadOnlyList<InputCategory> MapCategories =
+            new[] { InputCategory.Kingdom, InputCategory.Exploration, InputCategory.UI };
+        private static readonly IReadOnlyList<InputCategory> GridCategories =
+            new[] { InputCategory.SettlementGrid, InputCategory.Kingdom, InputCategory.UI };
+        private static readonly Tab[] Tabs = { Tab.Events, Tab.Decrees, Tab.Map, Tab.Campaign };
 
-        private bool _builderSelected;
+        private bool _wasInBuilder;
         private Tab? _tabAfterBuilder;
         private ControlId _returnToCard;
 
@@ -30,8 +35,17 @@ namespace WrathAccess.Screens
         public override string Key => "ctx.kingdom";
         public override string ScreenName => Loc.T("screen.kingdom");
         public override bool Exclusive => true;
-        public override IReadOnlyList<InputCategory> InputCategories => Categories;
-        public override object InitialFocusStop => StopForTab(CurrentTab());
+        public override IReadOnlyList<InputCategory> InputCategories =>
+            HasBuilderGridFocus ? GridCategories : HasMapFocus ? MapCategories : Categories;
+        public override bool AllowsTypeahead => !HasMapFocus;
+        public override object InitialFocusStop => InBuilder ? KingdomBuilderNodes.GridStop : StopForTab(CurrentTab());
+
+        internal static bool MapOpen => Game.Instance?.CurrentMode == GameModeType.Kingdom
+            && KingdomState.Instance?.NavigationType == KingdomNavigationType.LocalMap;
+        internal static bool HasMapFocus => ScreenManager.Current is KingdomScreen && MapOpen
+            && Equals(Navigation.FocusedStopKey, KingdomMapNodes.MapStop);
+        internal static bool HasBuilderGridFocus => ScreenManager.Current is KingdomScreen && InBuilder
+            && Equals(Navigation.FocusedStopKey, KingdomBuilderNodes.GridStop);
 
         private static object StopForTab(Tab tab)
         {
@@ -39,6 +53,7 @@ namespace WrathAccess.Screens
             {
                 case Tab.Events: return KingdomEventScreen.AvailableStop;
                 case Tab.Decrees: return KingdomDecreeNodes.FilterStop;
+                case Tab.Map: return KingdomMapNodes.MapStop;
                 default: return tab;
             }
         }
@@ -51,10 +66,9 @@ namespace WrathAccess.Screens
 
         private Tab CurrentTab()
         {
-            if (InBuilder) return Tab.Builder;
             switch (KingdomState.Instance?.NavigationType)
             {
-                case KingdomNavigationType.LocalMap: return _builderSelected ? Tab.Builder : Tab.Map;
+                case KingdomNavigationType.LocalMap: return Tab.Map;
                 case KingdomNavigationType.Army: return Tab.Campaign;
                 case KingdomNavigationType.Project:
                 case KingdomNavigationType.ProjectRankUp:
@@ -75,7 +89,8 @@ namespace WrathAccess.Screens
                 || (mode != GameModeType.Kingdom && mode != GameModeType.KingdomSettlement))
                 return;
 
-            int current = System.Array.IndexOf(Tabs, CurrentTab());
+            // The builder is opened from a settlement on the Map tab.
+            int current = System.Array.IndexOf(Tabs, InBuilder ? Tab.Map : CurrentTab());
             var next = Tabs[(current + direction + Tabs.Length) % Tabs.Length];
             if (mode == GameModeType.KingdomSettlement)
             {
@@ -104,7 +119,6 @@ namespace WrathAccess.Screens
         {
             var state = KingdomState.Instance;
             if (state == null) return;
-            _builderSelected = tab == Tab.Builder;
             switch (tab)
             {
                 case Tab.Events: state.NavigationType = KingdomNavigationType.Kingdom; break;
@@ -126,6 +140,11 @@ namespace WrathAccess.Screens
 
         public override void OnUpdate()
         {
+            if (!Loading && _wasInBuilder != InBuilder)
+            {
+                _wasInBuilder = InBuilder;
+                Navigation.FocusStop(InitialFocusStop);
+            }
             // The builder returns via a scene load. Wait for the new kingdom view before changing tabs.
             if (_tabAfterBuilder is Tab tab && !Loading && Game.Instance.CurrentMode == GameModeType.Kingdom
                 && KingdomState.Instance?.KingdomManagementActive == true
@@ -134,9 +153,6 @@ namespace WrathAccess.Screens
                 _tabAfterBuilder = null;
                 SelectTab(tab);
             }
-            if (KingdomState.Instance?.NavigationType != KingdomNavigationType.LocalMap)
-                _builderSelected = false;
-
             if (_returnToCard != null)
             {
                 var currentTab = CurrentTab();
@@ -145,27 +161,36 @@ namespace WrathAccess.Screens
             }
         }
 
-        public override void OnPop() => _builderSelected = false;
+        public override void OnPush()
+        {
+            GlobalMapCursor.Reset();
+            GlobalMapScanner.Reset();
+        }
+
+        public override void OnPop() => _wasInBuilder = false;
 
         public override void Build(GraphBuilder b)
         {
             var tab = CurrentTab();
+            if (InBuilder)
+            {
+                KingdomBuilderNodes.Build(b);
+                BuildSettlementToolbar(b);
+                return;
+            }
             if (tab == Tab.Events || tab == Tab.Decrees)
             {
                 if (!KingdomEventScreen.BuildLists(b, tab == Tab.Decrees)) return;
             }
+            else if (tab == Tab.Map)
+                KingdomMapNodes.Build(b);
             else
             {
                 b.BeginStop(tab);
                 b.AddItem(ControlId.Structural("kingdom:tab:" + tab), GraphNodes.Text(() => TabName(tab)));
-                if (tab == Tab.Builder && !InBuilder)
-                    b.AddItem(ControlId.Structural("kingdom:builder_entry"), GraphNodes.Text(() => Loc.T("kingdom.builder_entry")));
             }
 
-            if (InBuilder)
-                BuildSettlementToolbar(b);
-            else
-                GlobalMapToolbarNodes.Build(b, kingdom: true);
+            GlobalMapToolbarNodes.Build(b, kingdom: true);
         }
 
         private static string TabName(Tab tab) => Loc.T("kingdom." + tab.ToString().ToLowerInvariant());
@@ -199,12 +224,7 @@ namespace WrathAccess.Screens
         {
             if (_tabAfterBuilder.HasValue || Loading) return;
             if (InBuilder)
-            {
-                _builderSelected = false;
                 Object.FindObjectOfType<CityBuilderUIBack>()?.BackToMap();
-            }
-            else if (_builderSelected)
-                SelectTab(Tab.Map);
             else if (KingdomEventScreen.HasOpenCard()
                 || Object.FindObjectOfType<KingdomUISettlementWindow>() != null
                 || Object.FindObjectOfType<KingdomRegionWindow>() != null)
@@ -217,6 +237,27 @@ namespace WrathAccess.Screens
         {
             if (!Loading)
                 EventBus.RaiseEvent(delegate (IEscMenuHandler h) { h.HandleOpen(); });
+        }
+
+        internal static void StepFocusedTab(int direction)
+        {
+            if (ScreenManager.Current is KingdomScreen screen)
+                screen.StepTab(direction);
+            else if (ScreenManager.Current is KingdomMapDetailScreen || ScreenManager.Current is KingdomBuildingScreen)
+                foreach (var s in ScreenManager.Stack)
+                    if (s is KingdomScreen kingdom)
+                    {
+                        if (ScreenManager.Current is KingdomBuildingScreen building)
+                            building.InvokeAction(ActionIds.Back);
+                        kingdom.StepTab(direction);
+                        break;
+                    }
+        }
+
+        internal static void StepBuilderGrid(int direction)
+        {
+            if (HasBuilderGridFocus && Navigation.Active is GraphNavigator navigator)
+                navigator.RegionJump(direction);
         }
 
         public override IEnumerable<ElementAction> GetActions()

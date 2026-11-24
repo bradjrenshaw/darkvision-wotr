@@ -13,6 +13,7 @@ using WrathAccess.Exploration.Overlays;
 using WrathAccess.Input;
 using WrathAccess.Screens;
 using WrathAccess.UI; // NavDirection
+using WrathAccess.UI.Graph;
 
 namespace WrathAccess
 {
@@ -318,7 +319,7 @@ namespace WrathAccess
                 var key = WrathAccess.Screens.ScreenManager.Current?.Key;
                 if (key == "ctx.ingame") inArea?.Invoke();
                 else if (key == WrathAccess.Screens.LocalMapScreen.ScreenKey) localMap?.Invoke();
-                else if (key == "ctx.globalmap") worldMap?.Invoke();
+                else if (key == "ctx.globalmap" || KingdomScreen.HasMapFocus) worldMap?.Invoke();
                 else if (key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey) tactical?.Invoke();
             };
 
@@ -358,7 +359,7 @@ namespace WrathAccess
                 ("ui", "Menus", new[] { InputCategory.UI }),
                 ("explore", "Exploration", new[] { InputCategory.Exploration }),
                 ("worldmap", "World map", new[] { InputCategory.WorldMap }),
-                ("kingdom", "Kingdom management", new[] { InputCategory.Kingdom }),
+                ("kingdom", "Kingdom management", new[] { InputCategory.Kingdom, InputCategory.SettlementGrid }),
                 ("localmap", "Local map", new[] { InputCategory.LocalMap }),
                 ("formation", "Formation editor", new[] { InputCategory.Formation }),
             };
@@ -536,9 +537,21 @@ namespace WrathAccess
                 .AddBinding(KeyCode.DownArrow, ctrl: true).Repeating();
 
             InputManager.Register("kingdom.next_tab", "Next kingdom tab", InputCategory.Kingdom,
-                () => (ScreenManager.Current as KingdomScreen)?.StepTab(1)).AddBinding(KeyCode.Tab, ctrl: true);
+                () => KingdomScreen.StepFocusedTab(1)).AddBinding(KeyCode.Tab, ctrl: true);
             InputManager.Register("kingdom.prev_tab", "Previous kingdom tab", InputCategory.Kingdom,
-                () => (ScreenManager.Current as KingdomScreen)?.StepTab(-1)).AddBinding(KeyCode.Tab, ctrl: true, shift: true);
+                () => KingdomScreen.StepFocusedTab(-1)).AddBinding(KeyCode.Tab, ctrl: true, shift: true);
+            InputManager.Register("kingdom.next_grid", "Next settlement grid", InputCategory.Kingdom,
+                () => KingdomScreen.StepBuilderGrid(1)).AddBinding(KeyCode.RightArrow, ctrl: true);
+            InputManager.Register("kingdom.prev_grid", "Previous settlement grid", InputCategory.Kingdom,
+                () => KingdomScreen.StepBuilderGrid(-1)).AddBinding(KeyCode.LeftArrow, ctrl: true);
+            InputManager.Register("kingdom.scan_grid_up", "Scan settlement grid up", InputCategory.SettlementGrid,
+                () => KingdomBuilderNodes.Scan(GraphDir.Up)).AddBinding(KeyCode.UpArrow, shift: true);
+            InputManager.Register("kingdom.scan_grid_down", "Scan settlement grid down", InputCategory.SettlementGrid,
+                () => KingdomBuilderNodes.Scan(GraphDir.Down)).AddBinding(KeyCode.DownArrow, shift: true);
+            InputManager.Register("kingdom.scan_grid_left", "Scan settlement grid left", InputCategory.SettlementGrid,
+                () => KingdomBuilderNodes.Scan(GraphDir.Left)).AddBinding(KeyCode.LeftArrow, shift: true);
+            InputManager.Register("kingdom.scan_grid_right", "Scan settlement grid right", InputCategory.SettlementGrid,
+                () => KingdomBuilderNodes.Scan(GraphDir.Right)).AddBinding(KeyCode.RightArrow, shift: true);
 
             // ---- Exploration: the in-game world (live in ctx.ingame; shared chords - arrows, Enter,
             // Space, Escape, Backspace - are won by the HUD while it's focused, by these while not) ----

@@ -45,6 +45,11 @@ namespace WrathAccess.Exploration
 
         public static void Interact()
         {
+            if (Screens.KingdomScreen.HasMapFocus)
+            {
+                Screens.KingdomMapNodes.OpenAt(Position, NearestWithin());
+                return;
+            }
             // Only act in the pure global-map mode. Under a rest / dialog / book-event / battle overlay the
             // overlay owns input — acting here (Go → HandleClick) restarts the journey that re-fires the
             // event, the infinite loop. (Travel "pauses" under those overlays too, so we can't rely on

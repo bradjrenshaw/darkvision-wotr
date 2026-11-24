@@ -45,5 +45,7 @@ namespace WrathAccess.Input
         LocalMap,
         /// <summary>Kingdom management tab selection, owned by the Kingdom screen.</summary>
         Kingdom,
+        /// <summary>Building grid keys, active while a settlement grid is focused.</summary>
+        SettlementGrid,
     }
 }

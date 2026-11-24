@@ -18,6 +18,9 @@ namespace WrathAccess
         private static readonly Regex RichTextTag = new Regex("<[^>]+>", RegexOptions.Compiled);
         private static readonly Regex Whitespace = new Regex(@"\s+", RegexOptions.Compiled);
 
+        internal static string GridCoordinate(int column, int row) =>
+            Loc.T("tactical.coordinate", new { column = ((char)('A' + column)).ToString(), row = row + 1 });
+
         public static string StripRichText(string s)
         {
             if (string.IsNullOrEmpty(s)) return s;
