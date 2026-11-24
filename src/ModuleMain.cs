@@ -358,6 +358,7 @@ namespace WrathAccess
                 ("ui", "Menus", new[] { InputCategory.UI }),
                 ("explore", "Exploration", new[] { InputCategory.Exploration }),
                 ("worldmap", "World map", new[] { InputCategory.WorldMap }),
+                ("kingdom", "Kingdom management", new[] { InputCategory.Kingdom }),
                 ("localmap", "Local map", new[] { InputCategory.LocalMap }),
                 ("formation", "Formation editor", new[] { InputCategory.Formation }),
             };
@@ -533,6 +534,11 @@ namespace WrathAccess
                 .AddBinding(KeyCode.UpArrow, ctrl: true).Repeating();
             InputManager.Register("ui.regionNext", "Next sheet region", InputCategory.UI)
                 .AddBinding(KeyCode.DownArrow, ctrl: true).Repeating();
+
+            InputManager.Register("kingdom.next_tab", "Next kingdom tab", InputCategory.Kingdom,
+                () => (ScreenManager.Current as KingdomScreen)?.StepTab(1)).AddBinding(KeyCode.Tab, ctrl: true);
+            InputManager.Register("kingdom.prev_tab", "Previous kingdom tab", InputCategory.Kingdom,
+                () => (ScreenManager.Current as KingdomScreen)?.StepTab(-1)).AddBinding(KeyCode.Tab, ctrl: true, shift: true);
 
             // ---- Exploration: the in-game world (live in ctx.ingame; shared chords - arrows, Enter,
             // Space, Escape, Backspace - are won by the HUD while it's focused, by these while not) ----

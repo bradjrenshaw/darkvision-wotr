@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Kingmaker;
 using Kingmaker.Blueprints.Root.Strings; // UIStrings
 using Kingmaker.Kingdom; // KingdomResource, KingdomUIRoot
 using Kingmaker.UI; // UISoundType
@@ -31,8 +30,7 @@ namespace WrathAccess.Screens
         // The host only DISPOSES the VM on close (its reference stays set), so a disposed one is "closed".
         private static RecruitBuyResourcesVM Vm()
         {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            var vm = rc?.GlobalMapVM?.KingdomInfoVM?.BuyResourcesVM?.Value;
+            var vm = GlobalMapToolbarNodes.MapVm()?.KingdomInfoVM?.BuyResourcesVM?.Value;
             if (vm != null && !vm.IsDisposed) return vm;
             vm = GlobalMapRecruitScreen.Vm()?.BuyResourcesVM.Value; // the recruit window's own Buy Resources
             return vm != null && !vm.IsDisposed ? vm : null;

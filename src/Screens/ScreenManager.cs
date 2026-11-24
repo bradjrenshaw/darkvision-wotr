@@ -165,8 +165,7 @@ namespace WrathAccess.Screens
             Register(new GameOverScreen()); // death/game-over screen (party wipe etc.); layer 18, below save/load
             Register(new EscMenuScreen()); // the in-game pause/Escape menu (EscMenuVM buttons); layer 24
             Register(new BookEventScreen()); // book event (storybook passage + choices); layer 15
-            Register(new PredicateScreen("ctx.kingdom", Loc.T("screen.kingdom"), 0, () => RC()?.IsKingdom ?? false));
-            Register(new PredicateScreen("ctx.citybuilder", Loc.T("screen.city"), 0, () => RC()?.IsCityBuilder ?? false));
+            Register(new KingdomScreen());
 
             // Service windows (layer 10) — one at a time, via CurrentServiceWindow.
             Register(new InventoryScreen()); // inventory window (Inventory/Equipment/SmartItem), navigable; layer 10
