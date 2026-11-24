@@ -407,6 +407,7 @@
   "bind.toggle_focus": "Toggle focus mode",
   "bind.speak_test": "Speak test",
   "bind.game.quickSave": "Quick save",
+  "bind.game.quickLoad": "Quick load",
   "bind.mod.menu": "Open mod menu",
   "bind.speech.resetPrism": "Reset speech to Prism",
   "bind.ui.up": "Navigate up",

@@ -166,6 +166,7 @@ namespace WrathAccess.Screens
             Register(new EscMenuScreen()); // the in-game pause/Escape menu (EscMenuVM buttons); layer 24
             Register(new BookEventScreen()); // book event (storybook passage + choices); layer 15
             Register(new KingdomScreen());
+            Register(new KingdomEventScreen()); // event card detail, above the kingdom lists
 
             // Service windows (layer 10) — one at a time, via CurrentServiceWindow.
             Register(new InventoryScreen()); // inventory window (Inventory/Equipment/SmartItem), navigable; layer 10

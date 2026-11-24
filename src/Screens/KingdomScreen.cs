@@ -4,6 +4,7 @@ using Kingmaker.EntitySystem.Persistence;
 using Kingmaker.GameModes;
 using Kingmaker.Kingdom;
 using Kingmaker.Kingdom.UI;
+using Kingmaker.PubSubSystem;
 using Kingmaker.UI.Kingdom;
 using UnityEngine;
 using WrathAccess.Input;
@@ -22,6 +23,7 @@ namespace WrathAccess.Screens
 
         private bool _builderSelected;
         private Tab? _tabAfterBuilder;
+        private ControlId _returnToEvent;
 
         public KingdomScreen() { Wrap = true; }
 
@@ -29,6 +31,9 @@ namespace WrathAccess.Screens
         public override string ScreenName => Loc.T("screen.kingdom");
         public override bool Exclusive => true;
         public override IReadOnlyList<InputCategory> InputCategories => Categories;
+        public override object InitialFocusStop => StopForTab(CurrentTab());
+
+        private static object StopForTab(Tab tab) => tab == Tab.Events ? (object)KingdomEventScreen.AvailableStop : tab;
 
         private static bool InBuilder => Game.Instance?.RootUiContext?.IsCityBuilder == true;
         private static bool Loading => LoadingProcess.Instance?.IsLoadingScreenActive == true
@@ -99,7 +104,16 @@ namespace WrathAccess.Screens
                 case Tab.Campaign: state.NavigationType = KingdomNavigationType.Army; break;
                 default: state.NavigationType = KingdomNavigationType.LocalMap; break;
             }
-            Navigation.FocusStop(tab);
+            if (tab == Tab.Events) Tts.Speak(TabName(tab));
+            Navigation.FocusStop(StopForTab(tab));
+        }
+
+        public override void OnFocus()
+        {
+            if (ScreenManager.PreviousFocused is KingdomEventScreen details)
+                _returnToEvent = details.LastCardId;
+            else
+                base.OnFocus();
         }
 
         public override void OnUpdate()
@@ -114,6 +128,12 @@ namespace WrathAccess.Screens
             }
             if (KingdomState.Instance?.NavigationType != KingdomNavigationType.LocalMap)
                 _builderSelected = false;
+
+            if (_returnToEvent != null)
+            {
+                if (CurrentTab() == Tab.Events) Navigation.FocusNode(_returnToEvent);
+                _returnToEvent = null;
+            }
         }
 
         public override void OnPop() => _builderSelected = false;
@@ -121,10 +141,17 @@ namespace WrathAccess.Screens
         public override void Build(GraphBuilder b)
         {
             var tab = CurrentTab();
-            b.BeginStop(tab);
-            b.AddItem(ControlId.Structural("kingdom:tab:" + tab), GraphNodes.Text(() => TabName(tab)));
-            if (tab == Tab.Builder && !InBuilder)
-                b.AddItem(ControlId.Structural("kingdom:builder_entry"), GraphNodes.Text(() => Loc.T("kingdom.builder_entry")));
+            if (tab == Tab.Events)
+            {
+                if (!KingdomEventScreen.BuildLists(b)) return;
+            }
+            else
+            {
+                b.BeginStop(tab);
+                b.AddItem(ControlId.Structural("kingdom:tab:" + tab), GraphNodes.Text(() => TabName(tab)));
+                if (tab == Tab.Builder && !InBuilder)
+                    b.AddItem(ControlId.Structural("kingdom:builder_entry"), GraphNodes.Text(() => Loc.T("kingdom.builder_entry")));
+            }
 
             if (InBuilder)
                 BuildSettlementToolbar(b);
@@ -136,7 +163,7 @@ namespace WrathAccess.Screens
 
         private void BuildSettlementToolbar(GraphBuilder b)
         {
-            b.BeginStop("toolbar").PushContext(Loc.T("worldmap.toolbar"), "toolbar");
+            b.BeginStop("toolbar").PushContext(Loc.T("worldmap.toolbar"));
             b.AddItem(ControlId.Structural("kingdom:settlement"), GraphNodes.Text(
                 () => KingdomState.Instance?.CurrentSettlement?.Name ?? ""));
             BuildResource(b, KingdomResource.Finances, r => r.Finances);
@@ -144,6 +171,8 @@ namespace WrathAccess.Screens
             BuildResource(b, KingdomResource.Favors, r => r.Favors);
             b.AddItem(ControlId.Structural("kingdom:builder_back"), GraphNodes.Button(
                 () => Loc.T("kingdom.builder_back"), Back));
+            b.AddItem(ControlId.Structural("kingdom:game_menu"), GraphNodes.Button(
+                () => Loc.T("hud.game_menu"), OpenGameMenu));
             b.PopContext();
         }
 
@@ -167,8 +196,18 @@ namespace WrathAccess.Screens
             }
             else if (_builderSelected)
                 SelectTab(Tab.Map);
-            else
+            else if (KingdomEventScreen.HasOpenCard()
+                || Object.FindObjectOfType<KingdomUISettlementWindow>() != null
+                || Object.FindObjectOfType<KingdomRegionWindow>() != null)
                 Game.Instance.UI.EscManager.OnEscPressed();
+            else
+                OpenGameMenu();
+        }
+
+        private static void OpenGameMenu()
+        {
+            if (!Loading)
+                EventBus.RaiseEvent(delegate (IEscMenuHandler h) { h.HandleOpen(); });
         }
 
         public override IEnumerable<ElementAction> GetActions()

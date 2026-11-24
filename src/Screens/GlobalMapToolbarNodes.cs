@@ -41,7 +41,7 @@ namespace WrathAccess.Screens
         {
             var tb = Toolbar();
             if (tb == null) return;
-            b.BeginStop("toolbar").PushContext(Loc.T("worldmap.toolbar"), "toolbar");
+            b.BeginStop("toolbar").PushContext(Loc.T("worldmap.toolbar"));
 
             // The strip's readouts, in screen order (left part: location; right: morale, clock, date).
             b.AddItem(ControlId.Structural("tb:location"), GraphNodes.Text(() => Toolbar()?.LocationName.Value ?? ""));

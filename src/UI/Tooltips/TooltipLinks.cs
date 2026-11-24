@@ -35,6 +35,10 @@ namespace WrathAccess.UI.Tooltips
             "<link=\"?(?<id>[^\">]+)\"?>(?<txt>.*?)</link>",
             RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
+        internal static string OmitLinkLabels(string raw, string idPrefix)
+            => string.IsNullOrEmpty(raw) ? raw : LinkTag.Replace(raw, match =>
+                match.Groups["id"].Value.StartsWith(idPrefix, StringComparison.OrdinalIgnoreCase) ? "" : match.Value);
+
         /// <summary>The followable links in <paramref name="raw"/>, in document order, de-duped by link
         /// ID. Each link is offered to <paramref name="custom"/> first (an element's own non-glossary
         /// resolver, e.g. dialogue skill-checks); if it declines, the link falls through to the standard

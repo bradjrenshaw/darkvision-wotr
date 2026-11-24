@@ -282,15 +282,15 @@ namespace WrathAccess
         }
 
         // F8 quick-load: the game's own QuickLoadGame (newest quick save; it refuses during character
-        // creation itself). Focus mode only, like F5. Allowed wherever a game is loaded — an area, the
-        // world map, a crusade battle — so a lost fight can be reloaded straight away; never from the
-        // main menu or a loading screen.
+        // creation itself). Focus mode only, like F5. Available in an area, on the world map,
+        // in kingdom management or in a crusade battle. Blocked at the main menu or during loading.
         private static void QuickLoad()
         {
             if (!FocusMode.Active) return;
             var game = Game.Instance;
             var rc = game?.RootUiContext;
-            if (rc == null || rc.IsMainMenu || !(rc.IsInGame || rc.IsGlobalMap || rc.IsTacticalCombat)) return;
+            if (rc == null || rc.IsMainMenu
+                || !(rc.IsInGame || rc.IsGlobalMap || rc.IsTacticalCombat || rc.IsKingdom || rc.IsCityBuilder)) return;
             var lp = Kingmaker.EntitySystem.Persistence.LoadingProcess.Instance;
             if (lp != null && lp.IsLoadingScreenActive) return;
             try
