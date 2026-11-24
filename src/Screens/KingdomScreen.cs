@@ -23,7 +23,7 @@ namespace WrathAccess.Screens
 
         private bool _builderSelected;
         private Tab? _tabAfterBuilder;
-        private ControlId _returnToEvent;
+        private ControlId _returnToCard;
 
         public KingdomScreen() { Wrap = true; }
 
@@ -33,7 +33,15 @@ namespace WrathAccess.Screens
         public override IReadOnlyList<InputCategory> InputCategories => Categories;
         public override object InitialFocusStop => StopForTab(CurrentTab());
 
-        private static object StopForTab(Tab tab) => tab == Tab.Events ? (object)KingdomEventScreen.AvailableStop : tab;
+        private static object StopForTab(Tab tab)
+        {
+            switch (tab)
+            {
+                case Tab.Events: return KingdomEventScreen.AvailableStop;
+                case Tab.Decrees: return KingdomDecreeNodes.FilterStop;
+                default: return tab;
+            }
+        }
 
         private static bool InBuilder => Game.Instance?.RootUiContext?.IsCityBuilder == true;
         private static bool Loading => LoadingProcess.Instance?.IsLoadingScreenActive == true
@@ -104,14 +112,14 @@ namespace WrathAccess.Screens
                 case Tab.Campaign: state.NavigationType = KingdomNavigationType.Army; break;
                 default: state.NavigationType = KingdomNavigationType.LocalMap; break;
             }
-            if (tab == Tab.Events) Tts.Speak(TabName(tab));
+            if (tab == Tab.Events || tab == Tab.Decrees) Tts.Speak(TabName(tab));
             Navigation.FocusStop(StopForTab(tab));
         }
 
         public override void OnFocus()
         {
             if (ScreenManager.PreviousFocused is KingdomEventScreen details)
-                _returnToEvent = details.LastCardId;
+                _returnToCard = details.LastCardId;
             else
                 base.OnFocus();
         }
@@ -129,10 +137,11 @@ namespace WrathAccess.Screens
             if (KingdomState.Instance?.NavigationType != KingdomNavigationType.LocalMap)
                 _builderSelected = false;
 
-            if (_returnToEvent != null)
+            if (_returnToCard != null)
             {
-                if (CurrentTab() == Tab.Events) Navigation.FocusNode(_returnToEvent);
-                _returnToEvent = null;
+                var currentTab = CurrentTab();
+                if (currentTab == Tab.Events || currentTab == Tab.Decrees) Navigation.FocusNode(_returnToCard);
+                _returnToCard = null;
             }
         }
 
@@ -141,9 +150,9 @@ namespace WrathAccess.Screens
         public override void Build(GraphBuilder b)
         {
             var tab = CurrentTab();
-            if (tab == Tab.Events)
+            if (tab == Tab.Events || tab == Tab.Decrees)
             {
-                if (!KingdomEventScreen.BuildLists(b)) return;
+                if (!KingdomEventScreen.BuildLists(b, tab == Tab.Decrees)) return;
             }
             else
             {

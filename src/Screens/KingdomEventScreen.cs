@@ -28,6 +28,7 @@ namespace WrathAccess.Screens
         private static readonly FieldInfo Footer = AccessTools.Field(typeof(KingdomUIEventWindow), "m_Footer");
         private static readonly FieldInfo FooterEvent = AccessTools.Field(typeof(KingdomUIEventWindowFooter), "m_KingdomEventView");
         private static readonly FieldInfo Duration = AccessTools.Field(typeof(KingdomUIEventWindow), "m_Duration");
+        private static readonly FieldInfo Repeatable = AccessTools.Field(typeof(KingdomUIEventWindow), "m_Repeatable");
         private static readonly FieldInfo Result = AccessTools.Field(typeof(KingdomUIEventWindow), "m_ResultDescription");
         private static readonly FieldInfo Start = AccessTools.Field(typeof(KingdomUIEventWindowFooter), "m_StartEvent");
         private static readonly FieldInfo StartLabel = AccessTools.Field(typeof(KingdomUIEventWindowFooter), "m_StartEventLabel");
@@ -56,9 +57,8 @@ namespace WrathAccess.Screens
         public override int Layer => 15;
         public override bool Exclusive => true;
 
-        private static bool EventsVisible => Game.Instance?.RootUiContext?.IsKingdom == true
-            && Game.Instance.RootUiContext.IsCityBuilder == false
-            && KingdomState.Instance?.NavigationType == KingdomNavigationType.Kingdom;
+        private static bool InKingdom => Game.Instance?.RootUiContext?.IsKingdom == true
+            && Game.Instance.RootUiContext.IsCityBuilder == false;
 
         private static void FindViews()
         {
@@ -80,11 +80,13 @@ namespace WrathAccess.Screens
 
         private static KingdomEventUIView ShownEvent()
         {
-            if (!EventsVisible) return null;
+            if (!InKingdom) return null;
             FindViews();
             if (_window == null || !_window.isActiveAndEnabled) return null;
             var ev = Read<KingdomEventUIView>(SelectedEvent, _window);
-            return IsEvent(ev) ? ev : null;
+            // The game can open a completed decree even while another kingdom tab is selected.
+            return ev?.IsProject == true || (IsEvent(ev) && KingdomState.Instance?.NavigationType == KingdomNavigationType.Kingdom)
+                ? ev : null;
         }
 
         private static KingdomUIEventWindowFooter BoundFooter(KingdomEventUIView ev)
@@ -96,18 +98,19 @@ namespace WrathAccess.Screens
 
         public override bool IsActive() => ShownEvent() != null;
 
-        internal static bool BuildLists(GraphBuilder b)
+        internal static bool BuildLists(GraphBuilder b, bool decrees)
         {
             FindViews();
             // The hand controllers still contain the previous tab's cards until the bar's Update.
             if (_bar == null || PendingBarUpdate?.GetValue(_bar) is true) return false;
-            BuildList(b, AvailableStop, "kingdom.events_available", _bar.Available);
-            BuildList(b, "events.progress", "kingdom.events_in_progress", _bar.InProgress);
-            BuildList(b, "events.completed", "kingdom.events_completed", _bar.Complete);
+            if (decrees) KingdomDecreeNodes.BuildFilters(b);
+            BuildList(b, decrees ? "decrees.available" : AvailableStop, "kingdom.events_available", _bar.Available, decrees);
+            BuildList(b, decrees ? "decrees.progress" : "events.progress", "kingdom.events_in_progress", _bar.InProgress, decrees);
+            BuildList(b, decrees ? "decrees.completed" : "events.completed", "kingdom.events_completed", _bar.Complete, decrees);
             return true;
         }
 
-        private static void BuildList(GraphBuilder b, string stop, string label, KingdomEventHand hand)
+        private static void BuildList(GraphBuilder b, string stop, string label, KingdomEventHand hand, bool decrees)
         {
             b.BeginStop(stop).PushContext(Loc.T(label), "list");
             bool any = false;
@@ -115,7 +118,7 @@ namespace WrathAccess.Screens
                 foreach (var card in hand.CartList)
                 {
                     var ev = card != null ? card.KingdomEventUIView : null;
-                    if (!IsEvent(ev)) continue;
+                    if (!(decrees ? ev?.IsProject == true : IsEvent(ev))) continue;
                     any = true;
                     var node = GraphNodes.Button(() => TextUtil.StripRichText(ev.Blueprint.LocalizedName), () =>
                     {
@@ -132,7 +135,8 @@ namespace WrathAccess.Screens
                     b.AddItem(CardId(ev), node);
                 }
             if (!any)
-                b.AddItem(ControlId.Structural(stop + ":empty"), GraphNodes.Text(() => Loc.T("kingdom.events_empty")));
+                b.AddItem(ControlId.Structural(stop + ":empty"),
+                    GraphNodes.Text(() => Loc.T(decrees ? "kingdom.decrees_empty" : "kingdom.events_empty")));
             b.PopContext();
         }
 
@@ -142,7 +146,7 @@ namespace WrathAccess.Screens
                 : null;
 
         private static ControlId CardId(KingdomEventUIView ev) => ControlId.ForObject((object)ev.HistoryEntry ?? ev);
-        private static ControlId DetailId(KingdomEventUIView ev, object row) => ControlId.Structural((CardId(ev).StructuralKey, row));
+        internal static ControlId DetailId(KingdomEventUIView ev, object row) => ControlId.Structural((CardId(ev).StructuralKey, row));
 
         public override void OnPush() => LastCardId = null;
 
@@ -158,7 +162,7 @@ namespace WrathAccess.Screens
             }
             else if (ev.IsFinished && !_wasFinished)
             {
-                var result = VisibleText(Result, _window);
+                var result = ResultText(ev);
                 Navigation.FocusNode(DetailId(ev, string.IsNullOrWhiteSpace(result) ? "completed" : "result"));
             }
             _wasFinished = ev.IsFinished;
@@ -172,13 +176,18 @@ namespace WrathAccess.Screens
             b.BeginStop("details").PushContext(Loc.T("kingdom.event_details"));
             TextRow(b, ev, "title", ev.Blueprint.LocalizedName);
             TextRow(b, ev, "description", ev.Blueprint.LocalizedDescription);
+            if (ev.IsProject)
+                TextRow(b, ev, "effect", ev.ProjectBlueprint.MechanicalDescription);
             if (ev.IsFinished)
                 TextRow(b, ev, "completed", Loc.T("kingdom.events_completed"));
             if (footer != null)
             {
                 TextRow(b, ev, "duration", VisibleText(Duration, _window));
+                TextRow(b, ev, "repeatable", VisibleText(Repeatable, _window));
                 TextRow(b, ev, "throne_room_hint", VisibleText(ThroneRoomHint, footer));
-                TextRow(b, ev, "result", VisibleText(Result, _window));
+                if (ev.IsProject && ev.IsAvailable)
+                    KingdomDecreeNodes.BuildRequirements(b, ev, CanPress(ev, Read<OwlcatButton>(Start, footer)));
+                TextRow(b, ev, "result", ResultText(ev));
             }
             if (ev.IsIgnored)
                 TextRow(b, ev, "ignored", KingdomUIRoot.Instance.Texts.KingdomEventWasIgnoreLabel);
@@ -206,21 +215,35 @@ namespace WrathAccess.Screens
             {
                 var button = Read<OwlcatButton>(action.Button, footer);
                 if (button == null || !button.isActiveAndEnabled) continue;
-                b.AddItem(DetailId(ev, action.Button.Name), GraphNodes.Button(
-                    () => action.Label == null ? (string)KingdomUIRoot.Instance.Texts.ToThroneRoomLabel : Loc.T(action.Label),
-                    () => action.Press(footer), () => CanPress(ev, button)));
+                bool abandonDecree = ev.IsProject && action.Label == "kingdom.event_abandon";
+                var node = GraphNodes.Button(
+                    () => action.Label == null ? (string)KingdomUIRoot.Instance.Texts.ToThroneRoomLabel
+                        : Loc.T(abandonDecree ? "kingdom.decree_abandon" : action.Label),
+                    () => action.Press(footer), () => CanPress(ev, button));
+                if (abandonDecree)
+                    node.Announcements = new List<NodeAnnouncement>(node.Announcements)
+                    {
+                        new NodeAnnouncement(() => KingdomDecreeNodes.RefundSummary(ev)),
+                    };
+                b.AddItem(DetailId(ev, action.Button.Name), node);
             }
             var card = Read<KingdomEventHandCartController>(SelectedCard, _window);
-            if (card != null && card.Hand?.CartList?.Count > 1)
+            if (CanBrowse(ev, card))
             {
-                b.AddItem(DetailId(ev, "previous"), GraphNodes.Button(() => Loc.T("kingdom.event_previous"),
-                    () => { if (ShownEvent() == ev) _window.OnPrevClick(); }, sound: null));
-                b.AddItem(DetailId(ev, "next"), GraphNodes.Button(() => Loc.T("kingdom.event_next"),
-                    () => { if (ShownEvent() == ev) _window.OnNextClick(); }, sound: null));
+                b.AddItem(DetailId(ev, "previous"), GraphNodes.Button(
+                    () => Loc.T(ev.IsProject ? "kingdom.decree_previous" : "kingdom.event_previous"),
+                    () => { if (CanBrowse(ev, card)) _window.OnPrevClick(); }, sound: null));
+                b.AddItem(DetailId(ev, "next"), GraphNodes.Button(
+                    () => Loc.T(ev.IsProject ? "kingdom.decree_next" : "kingdom.event_next"),
+                    () => { if (CanBrowse(ev, card)) _window.OnNextClick(); }, sound: null));
             }
             b.AddItem(DetailId(ev, "close"), GraphNodes.Button(() => Loc.T("action.close"), Close, sound: null));
             b.PopContext();
         }
+
+        private static bool CanBrowse(KingdomEventUIView ev, KingdomEventHandCartController card)
+            => card != null && ShownEvent() == ev && BoundFooter(ev) != null
+                && card.Hand?.CartList?.Count > 1 && card.Hand.CartList.Contains(card);
 
         private static void AddChoice(GraphBuilder b, KingdomEventUIView ev, KingdomUIEventWindowFooterSolution choice)
         {
@@ -239,6 +262,17 @@ namespace WrathAccess.Screens
         private static void AddStart(GraphBuilder b, KingdomEventUIView ev, KingdomUIEventWindowFooter footer, bool choicesHidden)
         {
             var button = Read<OwlcatButton>(Start, footer);
+            if (ev.IsProject && ev.IsAvailable && ev.Task != null)
+            {
+                var issue = GraphNodes.Button(() => KingdomUIRoot.Instance.Texts.KingdomStartProjectLabel,
+                    footer.OnStart, () => CanPress(ev, button));
+                issue.Announcements = new List<NodeAnnouncement>(issue.Announcements)
+                {
+                    new NodeAnnouncement(() => KingdomDecreeNodes.IssueSummary(ev)),
+                };
+                b.AddItem(DetailId(ev, "start"), issue);
+                return;
+            }
             if (button == null || !button.isActiveAndEnabled) return;
             var label = VisibleText(StartLabel, footer) ?? KingdomUIRoot.Instance.Texts.KingdomStartEventLabel;
             var answer = choicesHidden ? footer.CurrentEventSolution?.SolutionText : null;
@@ -268,6 +302,17 @@ namespace WrathAccess.Screens
         {
             var text = Read<TMP_Text>(field, view);
             return text != null && text.gameObject.activeInHierarchy ? text.text : null;
+        }
+
+        private static string ResultText(KingdomEventUIView ev)
+        {
+            if (ev.IsProject && ev.IsFinished && (ev.HistoryEntry?.Type is EventHistoryType.FinishedEvent
+                or EventHistoryType.RecurrenceResolved or EventHistoryType.RecurrenceTick))
+            {
+                var recorded = ev.GetResultDescription();
+                if (!string.IsNullOrWhiteSpace(recorded)) return recorded;
+            }
+            return VisibleText(Result, _window);
         }
 
         private static void TextRow(GraphBuilder b, KingdomEventUIView ev, string key, string raw)
