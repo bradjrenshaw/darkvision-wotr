@@ -47,5 +47,7 @@ namespace WrathAccess.Input
         Kingdom,
         /// <summary>Building grid keys, active while a settlement grid is focused.</summary>
         SettlementGrid,
+        /// <summary>Cursor and scanner keys while the Kingdom World Map tab is focused.</summary>
+        KingdomMap,
     }
 }

@@ -33,7 +33,6 @@ namespace WrathAccess.Exploration
         /// right-click on its pawn). Points have no info window; the in-area wording covers "nothing".</summary>
         public static void InspectReview()
         {
-            if (Screens.KingdomScreen.HasMapFocus) { Interact(); return; }
             if (_selectedArmy != null) GlobalMapActions.ArmyInfo(_selectedArmy);
             else Tts.Speak(Loc.T("inspect.none"), interrupt: true);
         }
@@ -140,12 +139,6 @@ namespace WrathAccess.Exploration
         // ---- interact (i): act on the review cursor ----
         public static void Interact()
         {
-            if (Screens.KingdomScreen.HasMapFocus)
-            {
-                if (_selected != null) Screens.KingdomMapNodes.OpenAt(_selected.transform.position, _selected);
-                else Tts.Speak(Loc.T(_selectedArmy == null ? "worldmap.scan_none" : "kingdom.map_read_only"));
-                return;
-            }
             if (_selectedArmy != null) { GlobalMapActions.ArmyInteract(_selectedArmy); return; }
             if (_selected == null) { Tts.Speak(Loc.T("worldmap.scan_none")); return; }
             GlobalMapActions.Go(_selected);

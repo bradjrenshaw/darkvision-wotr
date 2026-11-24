@@ -4,7 +4,6 @@ using System.Linq;
 using HarmonyLib;
 using Kingmaker.Armies;
 using Kingmaker.Blueprints.Root.Strings;
-using Kingmaker.Globalmap.View;
 using Kingmaker.Kingdom;
 using Kingmaker.Kingdom.Blueprints;
 using Kingmaker.Kingdom.Settlements;
@@ -12,7 +11,6 @@ using Kingmaker.PubSubSystem;
 using Kingmaker.UI.Kingdom;
 using Kingmaker.UI.MVVM._VM.Tooltip.Templates;
 using UnityEngine;
-using WrathAccess.Exploration;
 using WrathAccess.Input;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
@@ -24,7 +22,7 @@ namespace WrathAccess.Screens
     {
         internal const string MapStop = "kingdom:world_map";
 
-        private static IEnumerable<SettlementState> Settlements =>
+        internal static IEnumerable<SettlementState> Settlements =>
             KingdomState.Instance.SettlementsManager.Settlements.Where(s =>
                 !s.Destroyed && s.MarkerManager.SettlementMarker != null);
 
@@ -38,7 +36,7 @@ namespace WrathAccess.Screens
         internal static void Build(GraphBuilder b)
         {
             b.BeginStop(MapStop).AddItem(ControlId.Structural(MapStop),
-                GraphNodes.Button(() => Loc.T("screen.world_map"), GlobalMapCursor.Interact, sound: null));
+                GraphNodes.Button(() => Loc.T("screen.world_map"), KingdomWorldMap.InteractCursor, sound: null));
 
             b.BeginStop("kingdom:regions").PushContext(Loc.T("kingdom.regions"), "list");
             foreach (var region in Regions)
@@ -57,27 +55,12 @@ namespace WrathAccess.Screens
             b.PopContext();
         }
 
-        internal static void OpenAt(Vector3 position, GlobalMapPointView point)
+        internal static void OpenSettlement(SettlementState settlement)
         {
-            if (!KingdomScreen.HasMapFocus) return;
-            var settlement = point?.Blueprint != null
-                ? Settlements.FirstOrDefault(s => s.SettlementLocationRef.Is(point.Blueprint))
-                : null;
-            if (settlement == null)
-                settlement = Settlements.Where(s => Geo.Distance(position, s.MarkerManager.SettlementMarker.transform.position) <= 2f)
-                    .OrderBy(s => Geo.Distance(position, s.MarkerManager.SettlementMarker.transform.position)).FirstOrDefault();
-            if (settlement != null) { OpenSettlement(settlement); return; }
-            var region = RegionObject.Instances.FirstOrDefault(r => r.TitleView != null
-                && r.TitleView.isActiveAndEnabled && Geo.Distance(position, r.TitleView.transform.position) <= 2f
-                && Regions.Contains(r.Blueprint));
-            if (region != null) { OpenRegion(region.Blueprint); return; }
-            Tts.Speak(Loc.T("kingdom.map_read_only"));
-        }
-
-        private static void OpenSettlement(SettlementState settlement)
-        {
-            if (!KingdomScreen.MapOpen) return;
-            settlement.MarkerManager.SettlementMarker?.HandleClick();
+            var marker = settlement.MarkerManager.SettlementMarker;
+            if (!KingdomScreen.MapOpen || marker == null) return;
+            KingdomWorldMap.RememberSettlement(settlement);
+            marker.HandleClick();
         }
 
         private static void OpenRegion(BlueprintRegion region)
@@ -204,7 +187,10 @@ namespace WrathAccess.Screens
         private static void AnnounceSettlement(KingdomUISettlementWindow window)
         {
             if (SettlementField.GetValue(window) is SettlementState settlement)
+            {
+                KingdomWorldMap.RememberSettlement(settlement);
                 Tts.Speak(string.Join(", ", settlement.Name, KingdomMapNodes.Tier(settlement)));
+            }
         }
 
         private static void AnnounceRegion(KingdomRegionWindow window)

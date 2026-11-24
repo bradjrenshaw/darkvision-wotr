@@ -7,7 +7,6 @@ using Kingmaker.Kingdom.UI;
 using Kingmaker.PubSubSystem;
 using Kingmaker.UI.Kingdom;
 using UnityEngine;
-using WrathAccess.Exploration;
 using WrathAccess.Input;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
@@ -21,7 +20,7 @@ namespace WrathAccess.Screens
         private static readonly IReadOnlyList<InputCategory> Categories =
             new[] { InputCategory.Kingdom, InputCategory.UI };
         private static readonly IReadOnlyList<InputCategory> MapCategories =
-            new[] { InputCategory.Kingdom, InputCategory.Exploration, InputCategory.UI };
+            new[] { InputCategory.Kingdom, InputCategory.KingdomMap, InputCategory.UI };
         private static readonly IReadOnlyList<InputCategory> GridCategories =
             new[] { InputCategory.SettlementGrid, InputCategory.Kingdom, InputCategory.UI };
         private static readonly Tab[] Tabs = { Tab.Events, Tab.Decrees, Tab.Map, Tab.Campaign };
@@ -42,7 +41,7 @@ namespace WrathAccess.Screens
 
         internal static bool MapOpen => Game.Instance?.CurrentMode == GameModeType.Kingdom
             && KingdomState.Instance?.NavigationType == KingdomNavigationType.LocalMap;
-        internal static bool HasMapFocus => ScreenManager.Current is KingdomScreen && MapOpen
+        internal static bool HasMapFocus => ScreenManager.Current is KingdomScreen && MapOpen && !Loading
             && Equals(Navigation.FocusedStopKey, KingdomMapNodes.MapStop);
         internal static bool HasBuilderGridFocus => ScreenManager.Current is KingdomScreen && InBuilder
             && Equals(Navigation.FocusedStopKey, KingdomBuilderNodes.GridStop);
@@ -161,11 +160,7 @@ namespace WrathAccess.Screens
             }
         }
 
-        public override void OnPush()
-        {
-            GlobalMapCursor.Reset();
-            GlobalMapScanner.Reset();
-        }
+        public override void OnPush() => KingdomWorldMap.Reset();
 
         public override void OnPop() => _wasInBuilder = false;
 

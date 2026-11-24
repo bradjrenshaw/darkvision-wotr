@@ -186,6 +186,7 @@ namespace WrathAccess
                 WrathAccess.Screens.SetupWizardScreen.Open();
             }
             ScreenManager.Tick();
+            KingdomWorldMap.Tick();
             WrathAccess.UI.Navigation.TickTypeahead(); // typed letters → type-ahead search (after dispatch)
             ControlState.Tick(); // settle the debounced control state before its consumers below
             TickPause(); // announce the game's pause state whenever it changes (ours OR the game's own)
@@ -319,7 +320,7 @@ namespace WrathAccess
                 var key = WrathAccess.Screens.ScreenManager.Current?.Key;
                 if (key == "ctx.ingame") inArea?.Invoke();
                 else if (key == WrathAccess.Screens.LocalMapScreen.ScreenKey) localMap?.Invoke();
-                else if (key == "ctx.globalmap" || KingdomScreen.HasMapFocus) worldMap?.Invoke();
+                else if (key == "ctx.globalmap") worldMap?.Invoke();
                 else if (key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey) tactical?.Invoke();
             };
 
@@ -359,7 +360,7 @@ namespace WrathAccess
                 ("ui", "Menus", new[] { InputCategory.UI }),
                 ("explore", "Exploration", new[] { InputCategory.Exploration }),
                 ("worldmap", "World map", new[] { InputCategory.WorldMap }),
-                ("kingdom", "Kingdom management", new[] { InputCategory.Kingdom, InputCategory.SettlementGrid }),
+                ("kingdom", "Kingdom management", new[] { InputCategory.Kingdom, InputCategory.SettlementGrid, InputCategory.KingdomMap }),
                 ("localmap", "Local map", new[] { InputCategory.LocalMap }),
                 ("formation", "Formation editor", new[] { InputCategory.Formation }),
             };
@@ -540,6 +541,7 @@ namespace WrathAccess
                 () => KingdomScreen.StepFocusedTab(1)).AddBinding(KeyCode.Tab, ctrl: true);
             InputManager.Register("kingdom.prev_tab", "Previous kingdom tab", InputCategory.Kingdom,
                 () => KingdomScreen.StepFocusedTab(-1)).AddBinding(KeyCode.Tab, ctrl: true, shift: true);
+            KingdomWorldMap.RegisterInput();
             InputManager.Register("kingdom.next_grid", "Next settlement grid", InputCategory.Kingdom,
                 () => KingdomScreen.StepBuilderGrid(1)).AddBinding(KeyCode.RightArrow, ctrl: true);
             InputManager.Register("kingdom.prev_grid", "Previous settlement grid", InputCategory.Kingdom,
