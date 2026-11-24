@@ -422,8 +422,7 @@ namespace WrathAccess.UI
         {
             Func<string> label = () =>
             {
-                var name = slot.DisplayName.Value;
-                if (string.IsNullOrEmpty(name)) name = slot.Item.Value?.Name ?? "item";
+                var name = ItemNames.Of(slot);
                 int count = slot.Count.Value;
                 return count > 1 ? name + ", " + count : name;
             };
@@ -456,8 +455,7 @@ namespace WrathAccess.UI
         {
             Func<string> label = () =>
             {
-                var name = slot.DisplayName.Value;
-                if (string.IsNullOrEmpty(name)) name = slot.Item.Value?.Name ?? "item";
+                var name = ItemNames.Of(slot);
                 int count = slot.Count.Value;
                 return count > 1 ? name + ", " + count : name;
             };
@@ -478,8 +476,7 @@ namespace WrathAccess.UI
         {
             Func<string> label = () =>
             {
-                var name = slot.DisplayName.Value;
-                if (string.IsNullOrEmpty(name)) name = slot.Item.Value?.Name ?? "item";
+                var name = ItemNames.Of(slot);
                 int count = slot.Count.Value;
                 return count > 1 ? name + ", " + count : name;
             };
@@ -553,8 +550,7 @@ namespace WrathAccess.UI
             var boundCollection = boundItem?.Collection;   // ...and the collection it lived in at emission
             Func<string> label = () =>
             {
-                var name = slot.DisplayName.Value;
-                if (string.IsNullOrEmpty(name)) name = slot.Item.Value?.Name ?? "item";
+                var name = ItemNames.Of(slot);
                 var flags = new List<string>();
                 if (slot.IsMagic.Value) flags.Add(Loc.T("item.magic"));
                 if (slot.IsNotable.Value) flags.Add(Loc.T("item.notable"));

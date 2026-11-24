@@ -71,6 +71,7 @@ namespace WrathAccess
                 // Game-log reading (barks, rolls, loot, …) lives in the overlays' Log system — see
                 // Overlays.LogSystem (per-overlay, per-message-type toggles) fed by the LogFeed Harmony tap.
                 WarningReader.Initialize(); // speak the game's "can't do that" warnings (refusal reasons)
+                WrathAccess.Exploration.CombineMenu.Initialize(); // the game's combine radial (puzzle slab spaces) as a menu
                 WrathAccess.Events.EventBusAdapter.Initialize(); // turn game damage/buff events into mod events
                 DialogVisibility.Initialize(); // track when the dialogue window is actually shown/clickable
                 // Per-area curated data (assets/descriptions) re-reads on the next tick. A hot reload of an
@@ -115,6 +116,7 @@ namespace WrathAccess
             try { WrathAccess.Audio.WwiseRuntimeConfig.ReleaseFrameCap(); } catch (Exception e) { Log?.Error("[dispose] frame cap: " + e); }
             try { WrathAccess.Speech.SpeechManager.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] speech: " + e); }
             try { WarningReader.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] warnings: " + e); }
+            try { WrathAccess.Exploration.CombineMenu.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] combine: " + e); }
             try { WrathAccess.Events.EventBusAdapter.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] events: " + e); }
             try { DialogVisibility.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] dialog: " + e); }
             try { _harmony?.UnpatchAll(_harmony.Id); } catch (Exception e) { Log?.Error("[dispose] harmony: " + e); }

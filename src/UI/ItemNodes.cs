@@ -54,8 +54,7 @@ namespace WrathAccess.UI
         {
             Func<string> label = () =>
             {
-                var name = slot.DisplayName.Value;
-                if (string.IsNullOrEmpty(name)) name = slot.Item.Value?.Name ?? "item";
+                var name = ItemNames.Of(slot);
                 var flags = new List<string>();
                 if (slot.IsMagic.Value) flags.Add(Loc.T("item.magic"));
                 if (slot.IsNotable.Value) flags.Add(Loc.T("item.notable"));
@@ -136,8 +135,7 @@ namespace WrathAccess.UI
                         return slotName + ": " + (w.Name ?? "") + " " + Loc.T("slot.both_hands");
                     return slotName + ": " + Loc.T("slot.empty");
                 }
-                var name = slot.DisplayName.Value;
-                if (string.IsNullOrEmpty(name)) name = slot.Item.Value?.Name ?? "item";
+                var name = ItemNames.Of(slot);
                 var flags = new List<string>();
                 if (slot.IsMagic.Value) flags.Add(Loc.T("item.magic"));
                 if (slot.IsNotable.Value) flags.Add(Loc.T("item.notable"));

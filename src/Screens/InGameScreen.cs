@@ -88,7 +88,62 @@ namespace WrathAccess.Screens
             BuildTurnPanel(b);
             BuildMenuBar(b);
             BuildWindows(b);
+            BuildPuzzle(b);
         }
+
+        // ----- the slab puzzle (last stops; only standing at a puzzle) -----
+
+        // The board as a real grid, north up: arrows walk tile to tile exactly as the tiles lie on
+        // the floor (gaps are skipped — the sockets hang off the frame's edges), each tile reads the
+        // symbol showing on it, and Enter starts the real interaction with the tile's slab space or
+        // socket. A second stop lists the slabs the party is carrying. Both read the game's live
+        // state, so a slab placed or turned re-reads under focus.
+        private void BuildPuzzle(GraphBuilder b)
+        {
+            var p = SlabPuzzle.Current;
+            if (p == null || !SlabPuzzle.Present) return;
+
+            b.BeginStop("puzzle").PushContext(Loc.T("hud.puzzle"), positions: false);
+            foreach (var cell in p.Cells)
+            {
+                var c = cell; // capture for the live closures
+                System.Func<string> line = () => SlabPuzzle.CellLine(p, c);
+                b.AddNode(PuzzleId(c), new NodeVtable
+                {
+                    ControlType = ControlTypes.Text,
+                    Announcements = new List<NodeAnnouncement> { new NodeAnnouncement(line, live: true) },
+                    SearchText = line,
+                    OnActivate = () => SlabPuzzle.Activate(p, c),
+                });
+            }
+            foreach (var c in p.Cells)
+            {
+                if (c.Up != null) b.Connect(PuzzleId(c), GraphDir.Up, PuzzleId(c.Up));
+                if (c.Down != null) b.Connect(PuzzleId(c), GraphDir.Down, PuzzleId(c.Down));
+                if (c.Left != null) b.Connect(PuzzleId(c), GraphDir.Left, PuzzleId(c.Left));
+                if (c.Right != null) b.Connect(PuzzleId(c), GraphDir.Right, PuzzleId(c.Right));
+            }
+            b.PopContext();
+
+            b.BeginStop("puzzle:hand").PushContext(Loc.T("hud.puzzle_slabs"), "list");
+            int n = 0;
+            var inventory = Game.Instance?.Player?.Inventory;
+            if (inventory != null)
+                foreach (var item in inventory)
+                {
+                    var parsed = SlabPuzzle.Parse(item?.Blueprint);
+                    if (parsed == null || parsed.Set != p.Set) continue;
+                    var it = item;
+                    b.AddItem(ControlId.Referenced(it, "puzzle:hand:" + System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(it)),
+                        GraphNodes.Text(() => ItemNames.Decorate(it.Name, it)));
+                    n++;
+                }
+            if (n == 0)
+                b.AddItem(ControlId.Structural("puzzle:hand:none"), GraphNodes.Text(() => Loc.T("puzzle.no_slabs")));
+            b.PopContext();
+        }
+
+        private static ControlId PuzzleId(SlabPuzzle.Cell c) => ControlId.Structural("puzzle:cell:" + c.Key);
 
         // ----- the action bar (stop 1) -----
 

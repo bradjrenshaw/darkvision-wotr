@@ -23,6 +23,73 @@
       "y": 37.2,
       "z": 14.07,
       "key": "gp_snow_clearing"
+    },
+    {
+      "x": -23.61,
+      "y": 40.25,
+      "z": -168.37,
+      "key": "gp_cave_mouth"
+    },
+    {
+      "x": -11.86,
+      "y": 40.34,
+      "z": -163.87,
+      "key": "gp_cave_passage"
+    },
+    {
+      "x": 10.39,
+      "y": 40.68,
+      "z": -166.87,
+      "key": "gp_sphinx_hall"
+    },
+    {
+      "x": 10.14,
+      "y": 40.55,
+      "z": -184.62,
+      "key": "gp_burial_chamber"
+    }
+  ],
+  "names": [
+    {
+      "match": "^Domino_3_1_Combine$",
+      "key": "obj.gp_space_north"
+    },
+    {
+      "match": "^Domino_1_1_Combine$",
+      "key": "obj.gp_space_east"
+    },
+    {
+      "match": "^Domino_1_2_Combine$",
+      "key": "obj.gp_space_south"
+    },
+    {
+      "match": "^Domino_2_3_Combine$",
+      "key": "obj.gp_space_west"
+    },
+    {
+      "match": "^Slot_-1_2$",
+      "key": "obj.gp_socket_south",
+      "silent": true
+    },
+    {
+      "match": "^Slot_1_4$",
+      "key": "obj.gp_socket_west_inner",
+      "silent": true
+    },
+    {
+      "match": "^Slot_1_5$",
+      "key": "obj.gp_socket_west_outer",
+      "silent": true
+    },
+    {
+      "match": "^Slot_-?\\d+_\\d+$",
+      "key": "obj.gp_socket",
+      "silent": true
+    },
+    {
+      "match": "^[Aa]rt(_\\d_\\d)?$",
+      "key": "obj.gp_slab_art",
+      "silent": true
     }
   ]
 }

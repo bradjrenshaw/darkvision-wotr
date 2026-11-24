@@ -51,6 +51,14 @@ namespace WrathAccess.Exploration
             catch (Exception e) { Main.Log?.Warning("[desc] load failed for " + areaName + ": " + e.Message); }
         }
 
+        /// <summary>Drop the global asset table so the next <see cref="Refresh"/> re-reads _assets.json —
+        /// the dev /assets route deploys asset prose without a module reload.</summary>
+        internal static void ReloadAssets()
+        {
+            _assets.Clear();
+            _assetsLoaded = false;
+        }
+
         private static void LoadAssetsOnce()
         {
             if (_assetsLoaded) return;

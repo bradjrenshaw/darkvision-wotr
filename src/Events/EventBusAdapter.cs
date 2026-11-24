@@ -52,7 +52,9 @@ namespace WrathAccess.Events
                 var pos = view.transform.position;
                 if (WrathAccess.Exploration.Geo.Distance(WrathAccess.Exploration.Overlays.Cursor.PlayerPosition, pos) > ShownEventRadius) return;
                 if (Kingmaker.Controllers.FogOfWarController.IsInFogOfWar(pos)) return;
-                _visibility.Add(new VisibilityChange(new WrathAccess.Exploration.ProxyMapObject(mo), mo.IsInGame));
+                var proxy = new WrathAccess.Exploration.ProxyMapObject(mo);
+                if (proxy.Naming != null && proxy.Naming.Silent) return; // curated: something else speaks it
+                _visibility.Add(new VisibilityChange(proxy, mo.IsInGame));
                 _visibilityLast = UnityEngine.Time.realtimeSinceStartup;
             }
             catch (Exception e) { Main.Log?.Warning("[shown] " + e.Message); }

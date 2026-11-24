@@ -34,10 +34,12 @@ namespace WrathAccess.Dev
         private static string RefreshAssets()
         {
             WrathAccess.Localization.LocalizationManager.Initialize();
+            WrathAccess.Exploration.EnvDescriptions.ReloadAssets(); // _assets.json is otherwise load-once
             WrathAccess.Exploration.EnvDescriptions.Refresh(null);
             WrathAccess.Exploration.AreaDetails.Refresh(null);
             WrathAccess.Exploration.Composites.Refresh(null);
             WrathAccess.Exploration.ObjectNames.Refresh(null);
+            WrathAccess.Exploration.SlabPuzzle.Reload();
             WrathAccess.Exploration.RoomMap.InvalidateSoon(); // curated walls/merges live in the same file
             return "assets refreshed: locale + descriptions (room map rebuilding)\n";
         }

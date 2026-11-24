@@ -1,0 +1,116 @@
+{
+  "sets": [
+    {
+      "id": "orange",
+      "pair": "^DominoOrange(?<a>\\d)x(?<b>\\d)$",
+      "single": "^DominoOrangeKey_(?<a>\\d)_",
+      "symbols": {
+        "1": "sym.orange.1",
+        "2": "sym.orange.2",
+        "3": "sym.orange.3",
+        "4": "sym.orange.4"
+      }
+    }
+  ],
+  "puzzles": [
+    {
+      "area": "GlobalPuzzle_Start",
+      "set": "orange",
+      "slot": "Slot_{r}_{c}",
+      "rows_north": true,
+      "cols_east": false,
+      "spaces": [
+        {
+          "object": "Domino_3_1_Combine",
+          "cells": [
+            [
+              3,
+              1
+            ],
+            [
+              3,
+              2
+            ]
+          ]
+        },
+        {
+          "object": "Domino_1_1_Combine",
+          "cells": [
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              1
+            ]
+          ]
+        },
+        {
+          "object": "Domino_1_2_Combine",
+          "cells": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ]
+          ]
+        },
+        {
+          "object": "Domino_2_3_Combine",
+          "cells": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "sockets": [
+        {
+          "object": "Slot_-1_2",
+          "cell": [
+            -1,
+            2
+          ]
+        },
+        {
+          "object": "Slot_1_4",
+          "cell": [
+            1,
+            4
+          ]
+        },
+        {
+          "object": "Slot_1_5",
+          "cell": [
+            1,
+            5
+          ]
+        }
+      ],
+      "fixed": [
+        {
+          "cell": [
+            -2,
+            2
+          ],
+          "symbol": "2"
+        },
+        {
+          "cell": [
+            2,
+            2
+          ]
+        }
+      ]
+    }
+  ]
+}

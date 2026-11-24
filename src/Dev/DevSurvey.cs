@@ -263,6 +263,13 @@ namespace WrathAccess.Dev
             = new List<KeyValuePair<FogOfWarArea, bool>>();
         private static readonly List<KeyValuePair<FogOfWarArea, bool>> _savedFogEnabled
             = new List<KeyValuePair<FogOfWarArea, bool>>();
+        // Entities that were NOT revealed when the session began. With the fog feature off the game's
+        // FogOfWarController flags EVERY unit and map object revealed (once, on the transition), and
+        // nothing ever clears it — a survey left sealed-room loot and hidden puzzle slots listed in
+        // the player's scanner (Conundrum Unsolved cave, 2026-11-24). Restore() un-reveals these;
+        // whatever is really in sight is revealed again by the controller's next tick.
+        private static readonly List<Kingmaker.EntitySystem.EntityDataBase> _savedUnrevealed
+            = new List<Kingmaker.EntitySystem.EntityDataBase>();
 
         /// <summary>Aim the camera for a capture: fog cheat-revealed, immediate scroll to the point,
         /// held yaw (135 = canonical: north upper-right), normalized zoom (1 = in/FovMin, 0 = out/FovMax; the zoom
@@ -288,6 +295,11 @@ namespace WrathAccess.Dev
                         _savedFog.Add(new KeyValuePair<FogOfWarArea, bool>(f, f.IsCheatOffFog));
                         _savedFogEnabled.Add(new KeyValuePair<FogOfWarArea, bool>(f, f.enabled));
                     }
+                _savedUnrevealed.Clear();
+                foreach (var u in Game.Instance.State.Units)
+                    if (u != null && !u.IsRevealed) _savedUnrevealed.Add(u);
+                foreach (var m in Game.Instance.State.MapObjects)
+                    if (m != null && !m.IsRevealed) _savedUnrevealed.Add(m);
             }
             // IsCheatOffFog alone only lifts the fog OVERLAY — UNEXPLORED terrain still renders pure
             // black (a whole survey session's mystery, 2026-07-08). Disabling the FogOfWarArea itself
@@ -372,6 +384,9 @@ namespace WrathAccess.Dev
                 if (kv.Key != null) kv.Key.IsCheatOffFog = kv.Value;
             foreach (var kv in _savedFogEnabled)
                 if (kv.Key != null) kv.Key.enabled = kv.Value;
+            foreach (var e in _savedUnrevealed)
+                if (e != null && !e.IsDisposed) e.IsRevealed = false;
+            _savedUnrevealed.Clear();
             var rig = Game.Instance != null && Game.Instance.UI != null ? Game.Instance.UI.GetCameraRig() : null;
             if (rig != null)
             {

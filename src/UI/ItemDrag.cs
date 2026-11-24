@@ -30,7 +30,7 @@ namespace WrathAccess.UI
             {
                 if (slot == null || !slot.HasItem) { Tts.Speak(Loc.T("drag.empty"), interrupt: true); return; }
                 _source = slot;
-                _name = slot.DisplayName.Value ?? slot.Item.Value?.Name;
+                _name = ItemNames.Of(slot);
                 Tts.Speak(Loc.T("drag.picked", new { name = _name }), interrupt: true);
                 return;
             }
@@ -62,7 +62,7 @@ namespace WrathAccess.UI
             {
                 if (!slot.HasItem) { Tts.Speak(Loc.T("drag.empty"), interrupt: true); return; }
                 _source = slot;
-                _name = slot.DisplayName.Value ?? slot.Item.Value?.Name;
+                _name = ItemNames.Of(slot);
                 Tts.Speak(Loc.T("drag.picked", new { name = _name }), interrupt: true);
                 return;
             }

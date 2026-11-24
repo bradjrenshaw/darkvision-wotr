@@ -1,0 +1,16 @@
+{
+  "names": [
+    {
+      "match": "(?i)^areshkagal_props_canopic_\\d+.*_loot_object$",
+      "key": "obj.canopic_jar"
+    },
+    {
+      "match": "(?i)^areshkagal_props_sarcophagus_\\d+",
+      "key": "obj.sarcophagus"
+    },
+    {
+      "match": "(?i)^bones_\\d+",
+      "key": "obj.bones"
+    }
+  ]
+}

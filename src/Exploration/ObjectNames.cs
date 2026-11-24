@@ -21,6 +21,11 @@ namespace WrathAccess.Exploration
     /// optional keys phrase the shown/hidden events ("… glows" / "… stops glowing") and, for objects
     /// sharing a <c>group</c>, the ONE line spoken when several change at once (a failed combination
     /// wipes every rune in the same frame: "all runes stop glowing" instead of four overlapping lines).
+    ///
+    /// <para><c>assets/descriptions/_names.json</c> holds the same <c>"names"</c> list for the WHOLE
+    /// game — props reused across areas whose designer name is noise or a spoiler ("areshkagal props
+    /// canopic 02 (3) loot", "Bones 01 [Fire Essence]" naming the loot inside). The area's own
+    /// patterns are tried first, so an area can still name one instance specially.</para>
     /// </summary>
     internal static class ObjectNames
     {
@@ -33,6 +38,9 @@ namespace WrathAccess.Exploration
             public string hidden { get; set; }
             public string all_shown { get; set; }
             public string all_hidden { get; set; }
+            /// <summary>True = never announce this object appearing/vanishing (floor art a puzzle
+            /// reader already speaks in its own words — SlabPuzzle).</summary>
+            public bool silent { get; set; }
             [JsonIgnore] public Regex Regex;
         }
         private sealed class AreaFile { public List<Def> names { get; set; } }
@@ -46,6 +54,7 @@ namespace WrathAccess.Exploration
 
             public string Name => Message.Localized("ui", Def.key, Vars).Resolve();
             public string Group => Def.group;
+            public bool Silent => Def.silent;
             /// <summary>The event line for this object appearing/vanishing, or null to use the generic one.</summary>
             public Message Change(bool shown)
             {
@@ -60,43 +69,60 @@ namespace WrathAccess.Exploration
             }
         }
 
-        private static readonly List<Def> _defs = new List<Def>();
+        private static readonly List<Def> _defs = new List<Def>();       // the area's own, tried first
+        private static readonly List<Def> _global = new List<Def>();     // _names.json, every area
         private static string _loadedArea;
+        private const string GlobalFile = "_names";
 
-        /// <summary>Reload the area's curated names when the area changes.</summary>
+        /// <summary>Reload the curated names when the area changes: the area's own file, then the
+        /// game-wide one (re-read each time — it is small, and the dev /assets route resets us with
+        /// a null area to pick up edits to either).</summary>
         public static void Refresh(string areaName)
         {
             if (areaName == _loadedArea) return;
             _loadedArea = areaName;
             _defs.Clear();
+            _global.Clear();
             if (string.IsNullOrEmpty(areaName)) return;
-            try
-            {
-                var path = Path.Combine(Main.ModDir ?? "", "assets", "descriptions", areaName + ".json");
-                if (!File.Exists(path)) return;
-                var parsed = JsonConvert.DeserializeObject<AreaFile>(File.ReadAllText(path));
-                if (parsed?.names != null)
-                    foreach (var d in parsed.names)
-                    {
-                        if (d == null || string.IsNullOrEmpty(d.match) || string.IsNullOrEmpty(d.key)) continue;
-                        try { d.Regex = new Regex(d.match, RegexOptions.CultureInvariant); }
-                        catch (Exception e) { Main.Log?.Warning("[desc] bad name pattern " + d.match + ": " + e.Message); continue; }
-                        _defs.Add(d);
-                    }
-                if (_defs.Count > 0) Main.Log?.Log("[desc] " + areaName + ": " + _defs.Count + " object name patterns");
-            }
-            catch (Exception e) { Main.Log?.Warning("[desc] names load failed for " + areaName + ": " + e.Message); }
+            Load(areaName, _defs);
+            Load(GlobalFile, _global);
+            if (_defs.Count + _global.Count > 0)
+                Main.Log?.Log("[desc] " + areaName + ": " + _defs.Count + " area + " + _global.Count + " global object name patterns");
         }
 
-        public static bool Any => _defs.Count > 0;
+        private static void Load(string file, List<Def> into)
+        {
+            try
+            {
+                var path = Path.Combine(Main.ModDir ?? "", "assets", "descriptions", file + ".json");
+                if (!File.Exists(path)) return;
+                var parsed = JsonConvert.DeserializeObject<AreaFile>(File.ReadAllText(path));
+                if (parsed?.names == null) return;
+                foreach (var d in parsed.names)
+                {
+                    if (d == null || string.IsNullOrEmpty(d.match) || string.IsNullOrEmpty(d.key)) continue;
+                    try { d.Regex = new Regex(d.match, RegexOptions.CultureInvariant); }
+                    catch (Exception e) { Main.Log?.Warning("[desc] bad name pattern " + d.match + ": " + e.Message); continue; }
+                    into.Add(d);
+                }
+            }
+            catch (Exception e) { Main.Log?.Warning("[desc] names load failed for " + file + ": " + e.Message); }
+        }
+
+        public static bool Any => _defs.Count + _global.Count > 0;
 
         /// <summary>The curated naming for a scene object name, or null. Runs the patterns (allocates) —
         /// resolve ONCE per entity and cache.</summary>
         public static Naming Resolve(string sceneName)
         {
-            if (_defs.Count == 0 || string.IsNullOrEmpty(sceneName)) return null;
+            if (!Any || string.IsNullOrEmpty(sceneName)) return null;
             var name = sceneName.Replace("(Clone)", "").Trim();
-            foreach (var d in _defs)
+            return Resolve(name, _defs) ?? Resolve(name, _global);
+        }
+
+        private static Naming Resolve(string name, List<Def> defs)
+        {
+            foreach (var d in defs)
             {
                 var m = d.Regex.Match(name);
                 if (!m.Success) continue;

@@ -126,6 +126,13 @@ namespace WrathAccess.Exploration
             if (Targeting.Aiming) { Targeting.CommitOn(Selected); return; }
             DoInteract(Selected, Loc.T("scan.no_item"));
         }
+        /// <summary>Interact with a specific item — the same walk-up-and-act path as the scanner's
+        /// own interact key, for callers that already know their target (the puzzle view's cells).</summary>
+        internal static void InteractWith(ScanItem target)
+        {
+            if (!Active) return;
+            DoInteract(target, Loc.T("scan.no_item"));
+        }
         // Enter = left click: interact with the object/unit the cursor is INSIDE (not the scanner's list
         // selection). Same context-sensitive action a left click would do (select/attack/talk/open/loot).
         public static void InteractAtCursor()

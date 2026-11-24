@@ -41,6 +41,10 @@ namespace WrathAccess.Exploration
         /// <summary>Every in-area item (all kinds, unfiltered by fog). Consumers apply <c>IsVisible</c>.</summary>
         public static IReadOnlyCollection<ScanItem> Items => _items.Values;
 
+        /// <summary>The tracked item for a game entity (or other registry key), or null — a composite
+        /// member has no item of its own.</summary>
+        internal static ScanItem Find(object key) => key != null && _items.TryGetValue(key, out var it) ? it : null;
+
         public static event Action<ScanItem> Added;
         public static event Action<ScanItem> Removed;
 
@@ -67,6 +71,8 @@ namespace WrathAccess.Exploration
             // Mod-authored environmental descriptions (room ambiance + per-asset), loaded per area the same way.
             EnvDescriptions.Refresh(areaName);
             ObjectNames.Refresh(areaName); // curated scene-object names (puzzle runes), per area too
+            SlabPuzzle.Refresh(areaName);  // the area's slab puzzle, if it has one
+            SlabPuzzle.Tick();             // speaks slabs placed / turned / removed
             // Curated composites are per area too; a reload invalidates the per-entity classification.
             if (Composites.Refresh(areaName)) { _compositeOf.Clear(); _notComposite.Clear(); _liveComposites.Clear(); }
             // Frontier blobs are per-area too — entering a different area drops the stale set.
