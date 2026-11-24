@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Kingmaker;
 using Kingmaker.EntitySystem.Persistence;
 using Kingmaker.GameModes;
+using Kingmaker.Globalmap.View;
 using Kingmaker.Kingdom;
 using Kingmaker.Kingdom.UI;
 using Kingmaker.PubSubSystem;
@@ -23,8 +24,14 @@ namespace WrathAccess.Screens
             new[] { InputCategory.Kingdom, InputCategory.KingdomMap, InputCategory.UI };
         private static readonly IReadOnlyList<InputCategory> GridCategories =
             new[] { InputCategory.SettlementGrid, InputCategory.Kingdom, InputCategory.UI };
+        private static readonly IReadOnlyList<InputCategory> CampaignFocused =
+            new[] { InputCategory.Kingdom, InputCategory.UI, InputCategory.Exploration, InputCategory.WorldMap };
+        private static readonly IReadOnlyList<InputCategory> CampaignUnfocused =
+            new[] { InputCategory.Kingdom, InputCategory.Exploration, InputCategory.WorldMap, InputCategory.UI };
         private static readonly Tab[] Tabs = { Tab.Events, Tab.Decrees, Tab.Map, Tab.Campaign };
 
+        private readonly WorldMapNavigation _campaign = new WorldMapNavigation();
+        private bool _wasInCampaign;
         private bool _wasInBuilder;
         private Tab? _tabAfterBuilder;
         private ControlId _returnToCard;
@@ -32,15 +39,23 @@ namespace WrathAccess.Screens
         public KingdomScreen() { Wrap = true; }
 
         public override string Key => "ctx.kingdom";
-        public override string ScreenName => Loc.T("screen.kingdom");
+        public override string ScreenName => CampaignOpen ? TabName(Tab.Campaign) : Loc.T("screen.kingdom");
         public override bool Exclusive => true;
+        public override bool StartUnfocused => CampaignOpen;
         public override IReadOnlyList<InputCategory> InputCategories =>
-            HasBuilderGridFocus ? GridCategories : HasMapFocus ? MapCategories : Categories;
-        public override bool AllowsTypeahead => !HasMapFocus;
+            CampaignOpen ? (Navigation.HasFocus ? CampaignFocused : CampaignUnfocused)
+            : HasBuilderGridFocus ? GridCategories : HasMapFocus ? MapCategories : Categories;
+        public override bool AllowsTypeahead => !HasMapFocus && !CampaignOpen;
         public override object InitialFocusStop => InBuilder ? KingdomBuilderNodes.GridStop : StopForTab(CurrentTab());
 
         internal static bool MapOpen => Game.Instance?.CurrentMode == GameModeType.Kingdom
             && KingdomState.Instance?.NavigationType == KingdomNavigationType.LocalMap;
+        internal static bool CampaignOpen => Game.Instance?.RootUiContext?.IsKingdom == true && !InBuilder
+            && KingdomState.Instance?.NavigationType == KingdomNavigationType.Army;
+        internal static bool CampaignInteractive => CampaignOpen && !Loading
+            && Game.Instance.CurrentMode == GameModeType.Kingdom
+            && GlobalMapView.Instance != null
+            && Game.Instance.GlobalMapController?.SelectedArmy != null;
         internal static bool HasMapFocus => ScreenManager.Current is KingdomScreen && MapOpen && !Loading
             && Equals(Navigation.FocusedStopKey, KingdomMapNodes.MapStop);
         internal static bool HasBuilderGridFocus => ScreenManager.Current is KingdomScreen && InBuilder
@@ -53,7 +68,7 @@ namespace WrathAccess.Screens
                 case Tab.Events: return KingdomEventScreen.AvailableStop;
                 case Tab.Decrees: return KingdomDecreeNodes.FilterStop;
                 case Tab.Map: return KingdomMapNodes.MapStop;
-                default: return tab;
+                default: return null;
             }
         }
 
@@ -125,8 +140,9 @@ namespace WrathAccess.Screens
                 case Tab.Campaign: state.NavigationType = KingdomNavigationType.Army; break;
                 default: state.NavigationType = KingdomNavigationType.LocalMap; break;
             }
-            if (tab == Tab.Events || tab == Tab.Decrees) Tts.Speak(TabName(tab));
-            Navigation.FocusStop(StopForTab(tab));
+            if (tab == Tab.Events || tab == Tab.Decrees || tab == Tab.Campaign) Tts.Speak(TabName(tab));
+            SyncCampaign();
+            if (tab != Tab.Campaign) Navigation.FocusStop(StopForTab(tab));
         }
 
         public override void OnFocus()
@@ -139,6 +155,9 @@ namespace WrathAccess.Screens
 
         public override void OnUpdate()
         {
+            SyncCampaign();
+            if (CampaignInteractive) _campaign.Update();
+
             if (!Loading && _wasInBuilder != InBuilder)
             {
                 _wasInBuilder = InBuilder;
@@ -160,9 +179,28 @@ namespace WrathAccess.Screens
             }
         }
 
+        private void SyncCampaign()
+        {
+            var campaign = CampaignOpen;
+            if (campaign && !_wasInCampaign)
+            {
+                _campaign.Reset();
+                Navigation.FocusStop(null);
+                Navigation.Blur();
+            }
+            else if (!campaign && _wasInCampaign)
+                _campaign.Clear();
+            _wasInCampaign = campaign;
+        }
+
         public override void OnPush() => KingdomWorldMap.Reset();
 
-        public override void OnPop() => _wasInBuilder = false;
+        public override void OnPop()
+        {
+            _wasInBuilder = false;
+            _wasInCampaign = false;
+            _campaign.Clear();
+        }
 
         public override void Build(GraphBuilder b)
         {
@@ -179,11 +217,8 @@ namespace WrathAccess.Screens
             }
             else if (tab == Tab.Map)
                 KingdomMapNodes.Build(b);
-            else
-            {
-                b.BeginStop(tab);
-                b.AddItem(ControlId.Structural("kingdom:tab:" + tab), GraphNodes.Text(() => TabName(tab)));
-            }
+            else if (CampaignInteractive)
+                _campaign.Build(b);
 
             GlobalMapToolbarNodes.Build(b, kingdom: true);
         }

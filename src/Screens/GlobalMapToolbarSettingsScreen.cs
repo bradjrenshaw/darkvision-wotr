@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Kingmaker.Blueprints.Root.Strings; // UIStrings
 using Kingmaker.UI.MVVM._VM.GlobalMap.Toolbar; // GlobalMapToolbarSettingsVM
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 
@@ -22,7 +23,7 @@ namespace WrathAccess.Screens
         public override int Layer => 15; // a modal over the world-map base context, like the location panel
 
         private static GlobalMapToolbarSettingsVM Vm()
-            => GlobalMapToolbarNodes.MapVm()?.GlobalMapToolbarVM?.SettingsVM.Value;
+            => GlobalMapModel.CurrentVM?.GlobalMapToolbarVM?.SettingsVM.Value;
 
         public override bool IsActive() => Vm() != null;
 

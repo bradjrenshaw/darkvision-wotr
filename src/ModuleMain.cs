@@ -320,7 +320,7 @@ namespace WrathAccess
                 var key = WrathAccess.Screens.ScreenManager.Current?.Key;
                 if (key == "ctx.ingame") inArea?.Invoke();
                 else if (key == WrathAccess.Screens.LocalMapScreen.ScreenKey) localMap?.Invoke();
-                else if (key == "ctx.globalmap") worldMap?.Invoke();
+                else if (GlobalMapScreen.OwnsMapInput) worldMap?.Invoke();
                 else if (key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey) tactical?.Invoke();
             };
 

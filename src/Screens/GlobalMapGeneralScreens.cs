@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Kingmaker;
 using Kingmaker.Blueprints.Root; // BlueprintRoot (calendar)
 using Kingmaker.Blueprints.Root.Strings; // UIStrings
 using Kingmaker.UI.MVVM._VM.Crusade.ArmyInfo; // ArmyCartSetLeaderVM, ArmyCartBuyLeaderVM, ArmyLeaderInfoVM
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 using WrathAccess.UI.Tooltips; // SimpleTooltip
@@ -217,8 +217,7 @@ namespace WrathAccess.Screens
 
         private static ArmyCartBuyLeaderVM Vm()
         {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            var vm = rc?.GlobalMapVM?.BuyLeader?.Value;
+            var vm = GlobalMapModel.CurrentVM?.BuyLeader?.Value;
             return vm != null && !vm.IsDisposed ? vm : null;
         }
 

@@ -4,6 +4,7 @@ using HarmonyLib;
 using Kingmaker;
 using Kingmaker.UI.Models.Log.CombatLog_ThreadSystem; // CombatLogChannel
 using Kingmaker.UI.MVVM._VM.CombatLog; // CombatLogVM
+using WrathAccess.Exploration;
 using WrathAccess.Localization;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
@@ -50,12 +51,10 @@ namespace WrathAccess.Screens
 
         private static List<CombatLogChannel> Channels()
         {
-            // Two hosts (in-area static HUD, or the world map's own context) — same dual-context
-            // shape as ServiceWindows.Current, so Ctrl+L works on the global map too.
             var rc = Game.Instance?.RootUiContext;
-            // In an area, on the world map, or in a crusade battle (which carries its own log, with the battle channels).
+            // Crusade battles carry their own channels. Campaign shares the world map's log model.
             var clog = (rc != null && rc.IsTacticalCombat ? rc.TacticalCombatVM?.CombatLogVM : null)
-                ?? rc?.InGameVM?.StaticPartVM?.CombatLogVM ?? rc?.GlobalMapVM?.CombatLogVM;
+                ?? rc?.InGameVM?.StaticPartVM?.CombatLogVM ?? GlobalMapModel.CurrentVM?.CombatLogVM;
             return clog != null ? ChannelsField?.GetValue(clog) as List<CombatLogChannel> : null;
         }
 

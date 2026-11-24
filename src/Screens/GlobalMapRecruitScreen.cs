@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Kingmaker;
 using Kingmaker.Blueprints.Root.Strings; // UIStrings
 using Kingmaker.UI; // UISoundType
 using Kingmaker.UI.MVVM._VM.Crusade.Recruit; // RecruitVM, RecruitUnitVM, RecruitResourceVM, RecruitResourcePriceVM
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 using WrathAccess.UI.Tooltips; // SimpleTooltip
@@ -32,8 +32,7 @@ namespace WrathAccess.Screens
 
         internal static RecruitVM Vm()
         {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            var vm = rc?.GlobalMapVM?.RecruitVM?.Value;
+            var vm = GlobalMapModel.CurrentVM?.RecruitVM?.Value;
             return vm != null && !vm.IsDisposed ? vm : null;
         }
 

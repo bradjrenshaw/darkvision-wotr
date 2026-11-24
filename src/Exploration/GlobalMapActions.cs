@@ -78,6 +78,7 @@ namespace WrathAccess.Exploration
         /// view's own guards (revealed / travels-paused / not-in-cutscene) decide whether anything happens.</summary>
         public static void Go(GlobalMapPointView pv)
         {
+            if (Screens.KingdomScreen.CampaignOpen && !Screens.KingdomScreen.CampaignInteractive) return;
             if (pv != null) pv.HandleClick();
         }
 
