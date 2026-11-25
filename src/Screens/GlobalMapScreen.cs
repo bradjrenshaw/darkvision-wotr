@@ -34,7 +34,7 @@ namespace WrathAccess.Screens
 
         // Starts unfocused: arrows/WASD drive the movement cursor and Tab enters the lists — like the in-game
         // screen. Category order flips with focus. The scanner/review/cursor keys are the SHARED Exploration
-        // actions (Route()d to the world-map systems by screen); WorldMap holds only the Escape→menu key.
+        // actions (Route()d to the world-map systems by screen).
         public override bool StartUnfocused => true;
         private static readonly IReadOnlyList<InputCategory> Focused = new[] { InputCategory.UI, InputCategory.Exploration, InputCategory.WorldMap, InputCategory.Windows };
         private static readonly IReadOnlyList<InputCategory> Unfocused = new[] { InputCategory.Exploration, InputCategory.WorldMap, InputCategory.UI, InputCategory.Windows };
@@ -67,7 +67,11 @@ namespace WrathAccess.Screens
 
         public override void OnPop() => _map.Clear();
 
-        public override void OnUpdate() => _map.Update();
+        public override void OnUpdate()
+        {
+            _map.Update();
+            EnemyArmyRadarScreen.PlaceCursorOnReturn();
+        }
 
         public override void Build(GraphBuilder b)
         {

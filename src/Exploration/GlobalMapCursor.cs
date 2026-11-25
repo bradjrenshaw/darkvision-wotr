@@ -1,4 +1,5 @@
 using System.Linq;
+using Kingmaker.Armies;
 using Kingmaker.Globalmap.State; // GlobalMapArmyState
 using Kingmaker.Globalmap.View;
 using UnityEngine;
@@ -34,9 +35,21 @@ namespace WrathAccess.Exploration
 
         public static void JumpToReview()
         {
+            var army = GlobalMapScanner.SelectedArmy;
+            if (army != null && FocusArmy(army)) return;
             var p = GlobalMapScanner.SelectedPosition;
             if (!p.HasValue) { Tts.Speak(Loc.T("worldmap.scan_none")); return; }
             Overlays.Cursor.WorldMap.JumpTo(p.Value);
+        }
+
+        internal static bool FocusArmy(GlobalMapArmyState army)
+        {
+            var position = GlobalMapActions.ArmyPosition(army);
+            if (!position.HasValue) return false;
+            var cursor = Overlays.Cursor.WorldMap;
+            cursor.JumpTo(position.Value);
+            ((GlobalMapSpace)cursor.Space).ArmyAnchor = new GlobalMapPosition(army.Position);
+            return true;
         }
 
         internal static GlobalMapPointView RouteTarget()
@@ -49,15 +62,25 @@ namespace WrathAccess.Exploration
             // event, the infinite loop. (Travel "pauses" under those overlays too, so we can't rely on
             // TravelPaused alone.)
             if (!GlobalMapModel.Interactive) return;
+
+            var a = ArmyWithin();
+            var selectedArmy = Kingmaker.Game.Instance.GlobalMapController.SelectedArmy;
+            // A revealed enemy pawn can be on a hidden junction or partway along a road.
+            // In army mode, target the pawn before trying to resume or interact with a map point.
+            if (selectedArmy != null && a?.Data.Faction == ArmyFaction.Demons
+                && !selectedArmy.Position.IsSame(a.Position))
+            {
+                GlobalMapActions.OfferTravelToEnemy(selectedArmy, a);
+                return;
+            }
+
             // Mid-journey pause (the game's move-helper Continue): Enter resumes travel, like the game's own
             // primary travel input. Otherwise act on the point under the cursor.
             if (GlobalMapModel.TravelPaused) { GlobalMapActions.ResumeTravel(); return; }
             // An army pawn sits on top of its point. Enter means activate the map point; army selection /
             // inspection stays available through the review cursor (comma/period + I). A hidden point
             // cannot go through HandleClick, so offer the game's directional travel to it instead.
-            var a = ArmyWithin();
-            bool partyOnWorldMap = !Screens.KingdomScreen.CampaignOpen
-                && Kingmaker.Game.Instance.GlobalMapController.SelectedArmy == null;
+            bool partyOnWorldMap = !Screens.KingdomScreen.CampaignOpen && selectedArmy == null;
             if (a != null)
             {
                 var point = a.Location != null ? GlobalMapView.Instance?.GetPointView(a.Location) : null;

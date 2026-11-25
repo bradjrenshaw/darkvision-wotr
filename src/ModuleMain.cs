@@ -910,9 +910,10 @@ namespace WrathAccess
 
             // ---- World map: like the local map, the world-map screen REUSES the shared Exploration
             // actions (movement, PageUp/Down browse, review cycles, I travel, Enter/K/C//) — Route()d
-            // to the GlobalMap systems by screen. Only Escape stays world-map-specific: it opens the
-            // game menu even while the unfocused cursor owns the keys (the screen's GetActions Back
-            // only fires when focused) — mirrors the in-game screen.
+            // to the GlobalMap systems by screen. Escape opens the game menu even while the
+            // unfocused cursor owns the keys (the screen's Back action requires focus).
+            InputManager.Register("worldmap.enemyArmyRadar", "Open Enemy Army Radar", InputCategory.WorldMap,
+                EnemyArmyRadarScreen.Open).AddBinding(KeyCode.E, ctrl: true);
             InputManager.Register("worldmap.escape", "Open menu", InputCategory.WorldMap,
                 () => Kingmaker.PubSubSystem.EventBus.RaiseEvent(delegate (Kingmaker.PubSubSystem.IEscMenuHandler h) { h.HandleOpen(); }))
                 .AddBinding(KeyCode.Escape).Grouped("worldmap");

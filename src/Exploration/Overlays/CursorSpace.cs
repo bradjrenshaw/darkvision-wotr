@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Kingmaker.Globalmap.State;
+using Kingmaker.Globalmap.View;
 using Kingmaker.View; // ObstacleAnalyzer.TraceAlongNavmesh
 using UnityEngine;
 
@@ -159,12 +161,38 @@ namespace WrathAccess.Exploration.Overlays
     internal sealed class GlobalMapSpace : CursorSpace
     {
         private Vector3? _pos;
+        internal GlobalMapPosition ArmyAnchor { get; set; }
+        internal GlobalMapPointView RoadNode { get; private set; }
+        internal GlobalMapEdgeView ArrivalRoad { get; private set; }
 
         /// <summary>Forget the placed point (on entering the map) so the cursor starts on the traveler.</summary>
-        public void Reset() { _pos = null; _boundsArea = null; }
+        public void Reset()
+        {
+            _pos = null;
+            _boundsArea = null;
+            ClearRoadAnchor();
+        }
 
         public override Vector3 Get() => _pos ?? GlobalMapModel.TravelerPos;
-        public override void Set(Vector3 p) => _pos = Clamp(p);
+        public override void Set(Vector3 p)
+        {
+            _pos = Clamp(p);
+            ClearRoadAnchor();
+        }
+
+        internal void LandOnRoad(GlobalMapPointView node, GlobalMapEdgeView road)
+        {
+            Set(node.transform.position);
+            RoadNode = node;
+            ArrivalRoad = road;
+        }
+
+        private void ClearRoadAnchor()
+        {
+            ArmyAnchor = null;
+            RoadNode = null;
+            ArrivalRoad = null;
+        }
 
         // ---- the map's edge ----
 

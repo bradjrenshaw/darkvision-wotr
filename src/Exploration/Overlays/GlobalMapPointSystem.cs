@@ -36,13 +36,15 @@ namespace WrathAccess.Exploration.Overlays
 
         private void Baseline() { _inside = null; _insideArmy = null; _spoken = null; _spokenArmy = null; _baselined = false; }
         public override void OnExit(Overlay overlay) => Baseline();
+        private static GlobalMapPointView PointAtCursor()
+            => ((GlobalMapSpace)Cursor.WorldMap.Space).RoadNode ?? GlobalMapCursor.NearestWithin();
 
         public override void Tick(float dt, Overlay overlay)
         {
             var cursor = Cursor.WorldMap;
             if (!OverlayManager.Active || !ShouldPlay(overlay) || !cursor.Space.CanMove) { Baseline(); return; }
 
-            var inside = GlobalMapCursor.NearestWithin();
+            var inside = PointAtCursor();
             var army = GlobalMapCursor.ArmyWithin();
             // Object cue: same wavs + shared volume as the in-area ObjectCueSystem. Fires on a change of
             // what we're inside — enter when arriving on something (incl. a discrete tiled jump), leave to none.
@@ -63,7 +65,7 @@ namespace WrathAccess.Exploration.Overlays
         {
             if (!Enabled) yield break;
             // Live (a step moved the cursor this same frame). Army first: its pawn sits on top of the point.
-            var inside = GlobalMapCursor.NearestWithin();
+            var inside = PointAtCursor();
             var army = GlobalMapCursor.ArmyWithin();
             bool sayArmy = army != null, sayPoint = inside != null;
             if (ctx.Trigger == ReadoutTrigger.Settle)
@@ -76,7 +78,7 @@ namespace WrathAccess.Exploration.Overlays
             if (sayArmy) yield return new OverlayAnnouncement(ctx.Want, Message.Raw(GlobalMapActions.ArmyInPlace(army)), OverlayAnnouncement.OrderContents);
             // A bend or fork reads with its roads (it has no name of its own to tell it apart).
             if (sayPoint) yield return new OverlayAnnouncement(ctx.Want, Message.Raw(GlobalMapModel.IsSystemNode(inside)
-                ? ConnectedStep.DescribeNode(inside) : GlobalMapActions.InPlace(inside)), OverlayAnnouncement.OrderContents + 1);
+                ? ConnectedStep.DescribeNode(inside) : ConnectedStep.NodeLabel(inside)), OverlayAnnouncement.OrderContents + 1);
             if (sayArmy || sayPoint || ctx.Trigger == ReadoutTrigger.Settle) yield break;
             // An UNREVEALED bend or fork (no junction dot; the connected mode still stops on them): its roads.
             var node = ConnectedStep.SystemNodeWithin(ctx.Cursor);

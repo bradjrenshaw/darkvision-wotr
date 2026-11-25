@@ -683,6 +683,7 @@
   "bind.worldmap.cursorUp": "Move cursor up",
   "bind.worldmap.cycleOverlay": "Cycle overlay",
   "bind.worldmap.escape": "Open menu",
+  "bind.worldmap.enemyArmyRadar": "Open Enemy Army Radar",
   "bind.worldmap.interact": "Travel to / enter point",
   "bind.worldmap.reviewAllNext": "Next point (review)",
   "bind.worldmap.reviewAllPrev": "Previous point (review)",
