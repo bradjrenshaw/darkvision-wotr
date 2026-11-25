@@ -290,7 +290,8 @@ namespace WrathAccess.Screens
 
         internal static void StepBuilderGrid(int direction)
         {
-            if (HasBuilderGridFocus && Navigation.Active is GraphNavigator navigator)
+            if ((HasBuilderGridFocus || KingdomBuildingPlacementScreen.HasGridFocus)
+                && Navigation.Active is GraphNavigator navigator)
                 navigator.RegionJump(direction);
         }
 

@@ -17,11 +17,14 @@ namespace WrathAccess
             new Regex("<(sub|sup)>.*?</(sub|sup)>", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
         private static readonly Regex RichTextTag = new Regex("<[^>]+>", RegexOptions.Compiled);
         private static readonly Regex Whitespace = new Regex(@"\s+", RegexOptions.Compiled);
+        private static readonly Regex HorizontalWhitespace = new Regex(@"[^\S\r\n]+", RegexOptions.Compiled);
 
         internal static string GridCoordinate(int column, int row) =>
             Loc.T("tactical.coordinate", new { column = ((char)('A' + column)).ToString(), row = row + 1 });
 
-        public static string StripRichText(string s)
+        public static string StripRichText(string s) => StripRichText(s, preserveLineBreaks: false);
+
+        internal static string StripRichText(string s, bool preserveLineBreaks)
         {
             if (string.IsNullOrEmpty(s)) return s;
             s = SubSup.Replace(s, "");   // remove sub/superscript blocks entirely (content included)
@@ -29,7 +32,7 @@ namespace WrathAccess
             // are usually inline (e.g. a drop-cap "<size=200%>N</size>ew Game"), so a
             // space here would wrongly split words into "N ew Game".
             s = RichTextTag.Replace(s, "");
-            s = Whitespace.Replace(s, " ");
+            s = (preserveLineBreaks ? HorizontalWhitespace : Whitespace).Replace(s, " ");
             return s.Trim();
         }
 

@@ -25,7 +25,7 @@ namespace WrathAccess.Screens
 
         internal static void Scan(GraphDir direction)
         {
-            if (!KingdomScreen.HasBuilderGridFocus
+            if (!(KingdomScreen.HasBuilderGridFocus || KingdomBuildingPlacementScreen.HasGridFocus)
                 || !(Navigation.Active is GraphNavigator navigator)
                 || !(navigator.FocusedNodeId?.Reference is SettlementGridTopology.Slot slot))
                 return;
@@ -60,11 +60,35 @@ namespace WrathAccess.Screens
         {
             var settlement = KingdomState.Instance?.CurrentSettlement;
             if (settlement == null) return;
+            var locations = new Dictionary<SettlementBuilding, string>();
+            BuildGrid(b, settlement, (slot, left, bottom) =>
+            {
+                var node = slot.Building == null
+                    ? GraphNodes.Text(() => SlotLabel(slot, left, bottom))
+                    : GraphNodes.Button(() => SlotLabel(slot, left, bottom), () => Open(slot.Building));
+                if (slot.Building != null)
+                    node.OnTooltip = () => KingdomBuildingNodes.OpenTooltip(slot.Building);
+                return node;
+            }, locations);
+
+            b.BeginStop("kingdom:built").PushContext(Loc.T("kingdom.built"));
+            var sheet = new GraphSheet(b, "kingdom:built:");
+            sheet.Region(null).Line(GraphNodes.Button(() => Loc.T("kingdom.build_new"),
+                () => KingdomBuildingCatalogScreen.Open(settlement)));
+            KingdomBuildingNodes.BuildTable(sheet, settlement, Open,
+                building => locations.TryGetValue(building, out var location) ? location : null);
+            sheet.Finish();
+            b.PopContext();
+        }
+
+        internal static void BuildGrid(GraphBuilder b, SettlementState settlement,
+            Func<SettlementGridTopology.Slot, int, int, NodeVtable> cell,
+            Dictionary<SettlementBuilding, string> locations = null)
+        {
             b.BeginStop(GridStop).PushContext(Loc.T("kingdom.building_grid"), positions: false);
             var grids = settlement.Topology.Grids
                 .Select(grid => (Grid: grid, Slots: grid.AllSlots.Where(s => s.MinLevel <= settlement.Level).ToArray()))
                 .Where(grid => grid.Slots.Length > 0).ToArray();
-            var locations = new Dictionary<SettlementBuilding, string>();
             int gridNumber = 0;
             foreach (var (grid, slots) in grids)
             {
@@ -72,25 +96,21 @@ namespace WrathAccess.Screens
                 int left = slots.Min(s => s.X);
                 int bottom = slots.Min(s => s.Y);
                 var occupied = slots.Where(s => s.Building != null).GroupBy(s => s.Building).ToArray();
-                foreach (var building in occupied)
+                if (locations != null)
                 {
-                    var cells = string.Join(", ", building.OrderBy(s => s.Y).ThenBy(s => s.X)
-                        .Select(s => Coordinate(s, left, bottom)));
-                    locations[building.Key] = Loc.T("kingdom.building_grid_location", new { index, cells });
+                    foreach (var building in occupied)
+                    {
+                        var cells = string.Join(", ", building.OrderBy(s => s.Y).ThenBy(s => s.X)
+                            .Select(s => Coordinate(s, left, bottom)));
+                        locations[building.Key] = Loc.T("kingdom.building_grid_location", new { index, cells });
+                    }
                 }
                 var title = Loc.T("kingdom.grid_number", new { index, count = grids.Length });
                 var buildings = Loc.T(occupied.Length == 1 ? "kingdom.grid_one_building" : "kingdom.grid_building_count",
                     new { count = occupied.Length });
                 b.SetRegion(grid).PushContext(string.Join(", ", title, buildings), positions: false);
                 foreach (var slot in slots.OrderByDescending(s => s.Y).ThenBy(s => s.X))
-                {
-                    var node = slot.Building == null
-                        ? GraphNodes.Text(() => SlotLabel(slot, left, bottom))
-                        : GraphNodes.Button(() => SlotLabel(slot, left, bottom), () => Open(slot.Building));
-                    if (slot.Building != null)
-                        node.OnTooltip = () => KingdomBuildingNodes.OpenTooltip(slot.Building);
-                    b.AddNode(ControlId.ForObject(slot), node);
-                }
+                    b.AddNode(ControlId.ForObject(slot), cell(slot, left, bottom));
                 foreach (var row in slots.GroupBy(s => s.Y))
                     ConnectSlots(b, row.OrderBy(s => s.X), GraphDir.Right, GraphDir.Left);
                 foreach (var column in slots.GroupBy(s => s.X))
@@ -99,15 +119,6 @@ namespace WrathAccess.Screens
             }
             if (gridNumber == 0)
                 b.AddItem(ControlId.Structural("kingdom:no_slots"), GraphNodes.Text(() => Loc.T("kingdom.no_slots")));
-            b.PopContext();
-
-            b.BeginStop("kingdom:built").PushContext(Loc.T("kingdom.built"));
-            var sheet = new GraphSheet(b, "kingdom:built:");
-            sheet.Region(null).Line(GraphNodes.Button(() => Loc.T("kingdom.build_new"),
-                () => ScreenManager.Current?.PushChild(new BuildingCatalogScreen())));
-            KingdomBuildingNodes.BuildTable(sheet, settlement, Open,
-                building => locations.TryGetValue(building, out var location) ? location : null);
-            sheet.Finish();
             b.PopContext();
         }
 
@@ -127,7 +138,7 @@ namespace WrathAccess.Screens
             }
         }
 
-        private static string SlotLabel(SettlementGridTopology.Slot slot, int left, int bottom)
+        internal static string SlotLabel(SettlementGridTopology.Slot slot, int left, int bottom)
         {
             var name = slot.Building != null ? KingdomBuildingNodes.Name(slot.Building) : Loc.T("kingdom.empty_slot");
             var view = slot.GetSlotObject();
@@ -136,7 +147,7 @@ namespace WrathAccess.Screens
             return Loc.T("kingdom.grid_cell", new { name, cell = Coordinate(slot, left, bottom) });
         }
 
-        private static string Coordinate(SettlementGridTopology.Slot slot, int left, int bottom) =>
+        internal static string Coordinate(SettlementGridTopology.Slot slot, int left, int bottom) =>
             TextUtil.GridCoordinate(slot.X - left, slot.Y - bottom);
 
         private static void Open(SettlementBuilding building)
@@ -147,25 +158,11 @@ namespace WrathAccess.Screens
                 window.OnBuildClick(building);
         }
 
-        private sealed class BuildingCatalogScreen : Screen
-        {
-            public override string Key => "overlay.kingdom_catalog";
-            public override bool IsActive() => false; // opened as a child
-            public override string ScreenName => Loc.T("kingdom.build_catalog");
-            public override void Build(GraphBuilder b) =>
-                b.AddItem(ControlId.Structural(Key), GraphNodes.Text(() => Loc.T("kingdom.catalog_todo")));
-
-            public override IEnumerable<ElementAction> GetActions()
-            {
-                yield return new ElementAction(ActionIds.Back, Message.Localized("ui", "action.close"),
-                    _ => ParentScreen?.RemoveChild(this));
-            }
-        }
     }
 
     internal static class KingdomBuildingNodes
     {
-        private static readonly KingdomResource[] Resources =
+        internal static readonly KingdomResource[] Resources =
             { KingdomResource.Finances, KingdomResource.Materials, KingdomResource.Favors };
 
         internal static string Name(SettlementBuilding building) => TextUtil.StripRichText(building.Blueprint.Name);
@@ -197,7 +194,7 @@ namespace WrathAccess.Screens
                     {
                         Cell(col, building, () => TextUtil.StripRichText(building.Blueprint.Description)),
                         Cell(col + 1, building, () => Slots(building.Blueprint)),
-                        Cell(col + 2, building, () => Price(building.Owner.GetActualCost(building.Blueprint))),
+                        Cell(col + 2, building, () => Price(building.Owner.GetActualCost(building.Blueprint), "\n")),
                         Cell(col + 3, building, () => Status(building)),
                     });
                     sheet.RowAt(name, building, cells);
@@ -213,32 +210,35 @@ namespace WrathAccess.Screens
         }
 
         private static string Slots(BlueprintSettlementBuilding blueprint) =>
-            string.Join(", ", blueprint.SlotCount, blueprint.SpecialSlot == SettlementState.SpecialSlotType.None
+            string.Join(", ", blueprint.SlotCount, SlotType(blueprint));
+
+        internal static string SlotType(BlueprintSettlementBuilding blueprint) =>
+            blueprint.SpecialSlot == SettlementState.SpecialSlotType.None
                 ? Loc.T("kingdom.standard_slot")
-                : KingdomUIRoot.Instance.Settlement.GetSlotsName(blueprint.SpecialSlot));
+                : KingdomUIRoot.Instance.Settlement.GetSlotsName(blueprint.SpecialSlot);
 
         private static string Status(SettlementBuilding building) => !building.IsFinished
             ? string.Format(KingdomUIRoot.Instance.Settlement.DaysToBuildSimpleFormat,
                 Math.Max(1, building.FinishedOn - KingdomState.Instance.CurrentDay))
             : building.Blueprint.UpgradesTo != null ? Loc.T("kingdom.building_has_upgrade") : Loc.T("kingdom.building_finished");
 
-        internal static string Price(KingdomResourcesAmount amount)
+        internal static string Price(KingdomResourcesAmount amount, string separator = ", ")
         {
             var parts = ResourceLines(amount).ToArray();
-            return parts.Length == 0 ? Loc.T("kingdom.building_free") : string.Join(", ", parts);
+            return parts.Length == 0 ? Loc.T("kingdom.building_free") : string.Join(separator, parts);
         }
+
+        internal static string ResourceLine(KingdomResourcesAmount amount, KingdomResource resource) =>
+            Loc.T("crusade.price", new { count = amount.Get(resource), name = KingdomUIRoot.Instance.GetResourceElement(resource).Name });
 
         private static IEnumerable<string> ResourceLines(KingdomResourcesAmount amount)
         {
             foreach (var resource in Resources)
-            {
-                int value = amount.Get(resource);
-                if (value != 0)
-                    yield return Loc.T("crusade.price", new { count = value, name = KingdomUIRoot.Instance.GetResourceElement(resource).Name });
-            }
+                if (amount.Get(resource) != 0)
+                    yield return ResourceLine(amount, resource);
         }
 
-        private static IEnumerable<string> Changes(KingdomStats.Changes changes)
+        internal static IEnumerable<string> Changes(KingdomStats.Changes changes)
         {
             if (changes == null) yield break;
             foreach (KingdomStats.Type stat in Enum.GetValues(typeof(KingdomStats.Type)))

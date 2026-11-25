@@ -12,7 +12,7 @@ namespace WrathAccess
         public static void Speak(string text, bool interrupt = false)
         {
             if (string.IsNullOrEmpty(text)) return;
-            text = TextUtil.StripRichText(text); // game labels are TMP rich text
+            text = TextUtil.StripRichText(text, preserveLineBreaks: true); // game labels are TMP rich text
             if (string.IsNullOrEmpty(text)) return;
             Speech.SpeechManager.Output(text, interrupt);
         }
