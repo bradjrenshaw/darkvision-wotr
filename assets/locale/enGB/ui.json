@@ -615,6 +615,7 @@
   "worldmap.you_are_here": "you are here",
   "worldmap.closed": "closed",
   "worldmap.traveling": "Traveling to {name}",
+  "worldmap.repeated_warning": "{text}, x{count}",
   "worldmap.entering": "Entering {name}",
   "worldmap.no_route": "No route to {name}",
   "worldmap.route_no_node": "No map node at the cursor",

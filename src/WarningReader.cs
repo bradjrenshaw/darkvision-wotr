@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using Kingmaker.Blueprints.Root; // LocalizedTexts
 using Kingmaker.PubSubSystem; // EventBus, IWarningNotificationUIHandler
 using Kingmaker.UI; // WarningNotificationType
+using UnityEngine;
 
 namespace WrathAccess
 {
@@ -12,7 +14,16 @@ namespace WrathAccess
     /// </summary>
     internal sealed class WarningReader : IWarningNotificationUIHandler
     {
+        private const int ArmyWarningTimeoutMs = 250; // The first map frame can leave a gap over 150 ms.
         private static WarningReader _instance;
+        private readonly List<PendingArmyWarning> _armyWarnings = new List<PendingArmyWarning>();
+
+        private sealed class PendingArmyWarning
+        {
+            public string Text;
+            public int Count;
+            public double Deadline;
+        }
 
         /// <summary>Bumped each time the game raises a warning — callers snapshot it before an action and
         /// compare after to tell whether the game already explained a refusal (so they can supply a generic
@@ -41,8 +52,55 @@ namespace WrathAccess
             Speak(LocalizedTexts.Instance?.WarningNotification?.GetText(warningType));
         }
 
-        // Text form: already the reason text (e.g. an ability target restriction's message).
-        public void HandleWarning(string text, bool addToLog = true) { Count++; Speak(text); }
+        // Text form: already localized by the game. Army travel can raise the same warning repeatedly
+        // as the map opens. Give each distinct text its own quiet window before speaking it.
+        public void HandleWarning(string text, bool addToLog = true)
+        {
+            Count++;
+            if (!Main.Enabled || string.IsNullOrWhiteSpace(text)) return;
+
+            if (text == (string)LocalizedTexts.Instance?.UserInterfacesText?.GlobalMap?.DemonsArmyApproaching)
+                QueueArmyWarning(text);
+            else
+                Speak(text);
+        }
+
+        public static void Tick() => _instance?.FlushArmyWarnings(Time.realtimeSinceStartupAsDouble);
+
+        public static void ClearPending() => _instance?._armyWarnings.Clear();
+
+        private void QueueArmyWarning(string text)
+        {
+            double now = Time.realtimeSinceStartupAsDouble;
+            FlushArmyWarnings(now);
+
+            var warning = _armyWarnings.Find(pending => pending.Text == text);
+            if (warning == null)
+            {
+                warning = new PendingArmyWarning { Text = text };
+                _armyWarnings.Add(warning);
+            }
+            warning.Count++;
+            warning.Deadline = now + ArmyWarningTimeoutMs / 1000.0;
+        }
+
+        private void FlushArmyWarnings(double now)
+        {
+            for (int i = 0; i < _armyWarnings.Count;)
+            {
+                var warning = _armyWarnings[i];
+                if (now < warning.Deadline)
+                {
+                    i++;
+                    continue;
+                }
+
+                _armyWarnings.RemoveAt(i);
+                Speak(warning.Count == 1
+                    ? warning.Text
+                    : Loc.T("worldmap.repeated_warning", new { text = warning.Text, count = warning.Count }));
+            }
+        }
 
         private static void Speak(string text)
         {

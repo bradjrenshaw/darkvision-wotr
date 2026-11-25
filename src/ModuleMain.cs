@@ -165,6 +165,7 @@ namespace WrathAccess
                 if (_wasEnabled)
                 {
                     _wasEnabled = false;
+                    WarningReader.ClearPending();
                     try { KingdomBuildingCatalogScreen.CloseActive(); } catch (Exception e) { Log?.Error("[disable] building catalog: " + e); }
                     try { FocusMode.Set(false); WrathAccess.Audio.WwiseRuntimeConfig.ReleaseFrameCap(); } catch { }
                 }
@@ -192,6 +193,7 @@ namespace WrathAccess
                 WrathAccess.Screens.SetupWizardScreen.Open();
             }
             ScreenManager.Tick();
+            WarningReader.Tick();
             KingdomWorldMap.Tick();
             WrathAccess.UI.Navigation.TickTypeahead(); // typed letters → type-ahead search (after dispatch)
             ControlState.Tick(); // settle the debounced control state before its consumers below
