@@ -44,6 +44,8 @@ namespace WrathAccess.Exploration
             => Game.Instance?.CurrentMode == Kingmaker.GameModes.GameModeType.GlobalMap
                 || KingdomScreen.CampaignInteractive;
 
+        internal static bool CanReview => Interactive || KingdomScreen.CampaignMapReady;
+
         /// <summary>Travel is paused MID-JOURNEY awaiting a Continue — the game stopped the party (a discovery
         /// / event) and the next move resumes it. Enter on the cursor resumes via
         /// <see cref="GlobalMapActions.ResumeTravel"/>. Gated on <see cref="Interactive"/>: travel is also

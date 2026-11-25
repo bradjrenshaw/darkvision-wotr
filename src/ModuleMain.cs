@@ -765,13 +765,15 @@ namespace WrathAccess
                       worldMap: WrathAccess.Exploration.GlobalMapCursor.JumpToReview,
                       tactical: WrathAccess.Exploration.TacticalReview.JumpToReview))
                 .AddBinding(KeyCode.Home).AddBinding(KeyCode.Slash).Grouped("scanner");
-            InputManager.Register("scan.announceCursor", "Announce cursor position", InputCategory.Exploration,
+            InputManager.Register("scan.announceCursor", "Announce cursor position or route distance", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Scanner.AnnounceCursor,
                       localMap: WrathAccess.Exploration.LocalMapCursor.Announce,
-                      worldMap: WrathAccess.Exploration.GlobalMapCursor.Announce))
+                      worldMap: WrathAccess.Exploration.GlobalMapRoute.AnnounceDistance))
                 .AddBinding(KeyCode.K).Grouped("scanner");
-            InputManager.Register("scan.announceParty", "Announce party", InputCategory.Exploration,
-                WrathAccess.Exploration.Scanner.AnnounceParty).AddBinding(KeyCode.K, shift: true).Grouped("scanner");
+            InputManager.Register("scan.announceParty", "Announce party or route directions", InputCategory.Exploration,
+                Route(inArea: WrathAccess.Exploration.Scanner.AnnounceParty,
+                      worldMap: WrathAccess.Exploration.GlobalMapRoute.AnnounceDirections))
+                .AddBinding(KeyCode.K, shift: true).Grouped("scanner");
             InputManager.Register("scan.interact", "Interact with item", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Scanner.InteractSelected,
                       worldMap: WrathAccess.Exploration.GlobalMapScanner.Interact,

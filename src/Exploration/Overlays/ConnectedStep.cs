@@ -353,8 +353,28 @@ namespace WrathAccess.Exploration.Overlays
         }
 
         // A far end named briefly for a road list: the place's name, or the invisible node's shape.
-        private static string ShortLabel(GlobalMapPointView p)
+        internal static string ShortLabel(GlobalMapPointView p)
             => Unseen(p) ? Loc.T("worldmap.unseen_place") : GlobalMapActions.Name(p);
+
+        internal static string RouteDirection(GlobalMapEdgeView edge, GlobalMapPointView from,
+            GlobalMapPointView to, float? startFraction)
+        {
+            if (!startFraction.HasValue)
+            {
+                // Match the compass key Connected mode assigns to this exit.
+                foreach (var exit in Exits(from))
+                    if (exit.To == to) return Word(exit.Sector);
+            }
+
+            float start = startFraction ?? (edge.Point1 == from ? 0f : 1f);
+            float end = edge.Point1 == to ? 0f : 1f;
+            var spline = edge.Spline;
+            var origin = spline != null ? spline.EvaluatePosition(start) : from.transform.position;
+            var next = spline != null ? spline.EvaluatePosition(Mathf.Lerp(start, end, LeaveFraction)) : to.transform.position;
+            var delta = next - origin;
+            if (delta.sqrMagnitude < 1e-6f) delta = to.transform.position - origin;
+            return Word(SectorOf(MapFrame.ToMap(Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg)));
+        }
 
         private static readonly string[] Words8 =
             { "geo.north", "geo.northeast", "geo.east", "geo.southeast", "geo.south", "geo.southwest", "geo.west", "geo.northwest" };

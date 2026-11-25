@@ -55,7 +55,7 @@ namespace WrathAccess.Screens
         public override bool AllowsTypeahead => false; // letters are world-map hotkeys (b/m/n, i), not type-ahead
 
         internal static bool OwnsMapInput => ScreenManager.Current is GlobalMapScreen
-            || (ScreenManager.Current is KingdomScreen && KingdomScreen.CampaignInteractive);
+            || (ScreenManager.Current is KingdomScreen && KingdomScreen.CampaignMapReady);
 
         /// <summary>True while the location panel is up (now its own modal screen —
         /// <see cref="GlobalMapEnterScreen"/>). The world-map cursor + sonar check this and freeze.</summary>

@@ -220,7 +220,7 @@ namespace WrathAccess.Exploration.Overlays
 
         // No movement while a location panel tab stop is open (the player is reading/acting on it) or the
         // map isn't in its plain interactive state (rest / dialog / book event / battle overlays own input).
-        public override bool CanMove => !WrathAccess.Screens.GlobalMapScreen.PanelActive && GlobalMapModel.Interactive;
+        public override bool CanMove => !WrathAccess.Screens.GlobalMapScreen.PanelActive && GlobalMapModel.CanReview;
         public override bool OwnsKeys => WrathAccess.Screens.GlobalMapScreen.OwnsMapInput;
 
         public override bool Trace(Vector3 cur, Vector3 intended, bool slide, out Vector3 traced)

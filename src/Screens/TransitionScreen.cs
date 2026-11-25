@@ -2,12 +2,13 @@ using System.Collections.Generic;
 using Kingmaker;
 using Kingmaker.Blueprints.Root.Strings;
 using Kingmaker.UI.MVVM._VM.Transition;
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 
 namespace WrathAccess.Screens
 {
-    /// <summary>Destination legend for in-area exits that open a multi-entrance map.</summary>
+    /// <summary>Destination picker for multi-entrance maps opened from an area or the world map.</summary>
     public sealed class TransitionScreen : Screen
     {
         public override string Key => "ctx.transition";
@@ -24,7 +25,8 @@ namespace WrathAccess.Screens
         public override bool Exclusive => true;
 
         private static TransitionVM Vm() =>
-            Game.Instance?.RootUiContext?.InGameVM?.StaticPartVM?.TransitionVM?.Value;
+            Game.Instance?.RootUiContext?.InGameVM?.StaticPartVM?.TransitionVM?.Value
+            ?? GlobalMapModel.CurrentVM?.TransitionVM?.Value;
 
         public override bool IsActive() => Vm() != null;
 

@@ -52,9 +52,10 @@ namespace WrathAccess.Screens
             && KingdomState.Instance?.NavigationType == KingdomNavigationType.LocalMap;
         internal static bool CampaignOpen => Game.Instance?.RootUiContext?.IsKingdom == true && !InBuilder
             && KingdomState.Instance?.NavigationType == KingdomNavigationType.Army;
-        internal static bool CampaignInteractive => CampaignOpen && !Loading
+        internal static bool CampaignMapReady => CampaignOpen && !Loading
             && Game.Instance.CurrentMode == GameModeType.Kingdom
-            && GlobalMapView.Instance != null
+            && GlobalMapView.Instance != null;
+        internal static bool CampaignInteractive => CampaignMapReady
             && Game.Instance.GlobalMapController?.SelectedArmy != null;
         internal static bool HasMapFocus => ScreenManager.Current is KingdomScreen && MapOpen && !Loading
             && Equals(Navigation.FocusedStopKey, KingdomMapNodes.MapStop);

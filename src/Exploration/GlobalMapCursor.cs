@@ -13,8 +13,7 @@ namespace WrathAccess.Exploration
     /// shared glide / tile-step modes from the cursor settings' WORLD MAP context, read out through the
     /// engaged overlay (<see cref="GlobalMapPointSystem"/>). What stays here is what only the map has:
     /// <b>Enter</b> acts on the point under the cursor, <b>/</b> jumps to the review cursor, and the
-    /// point-footprint hit test the readout and the actions share. <b>C</b> recenters and <b>K</b> reads
-    /// through the cursor's own verbs.
+    /// point-footprint hit test the readout and the actions share. <b>C</b> recenters.
     /// </summary>
     internal static class GlobalMapCursor
     {
@@ -40,8 +39,8 @@ namespace WrathAccess.Exploration
             Overlays.Cursor.WorldMap.JumpTo(p.Value);
         }
 
-        // K: read what the cursor is on (manual readout).
-        public static void Announce() => Overlays.Cursor.WorldMap.AnnounceCurrent();
+        internal static GlobalMapPointView RouteTarget()
+            => ConnectedStep.NodeAt(Position) ?? HiddenPointWithin();
 
         public static void Interact()
         {
@@ -57,17 +56,20 @@ namespace WrathAccess.Exploration
             // inspection stays available through the review cursor (comma/period + I). A hidden point
             // cannot go through HandleClick, so offer the game's directional travel to it instead.
             var a = ArmyWithin();
+            bool partyOnWorldMap = !Screens.KingdomScreen.CampaignOpen
+                && Kingmaker.Game.Instance.GlobalMapController.SelectedArmy == null;
             if (a != null)
             {
                 var point = a.Location != null ? GlobalMapView.Instance?.GetPointView(a.Location) : null;
-                if (point != null && point.Blueprint != null && point.Blueprint != GlobalMapModel.CurrentLocation)
+                if (point != null && point.Blueprint != null)
                 {
-                    if (point.State != null && point.State.IsRevealed)
+                    bool away = point.Blueprint != GlobalMapModel.CurrentLocation;
+                    if ((away || partyOnWorldMap) && point.State != null && point.State.IsRevealed)
                     {
                         GlobalMapActions.Go(point);
                         return;
                     }
-                    if (Overlays.ConnectedStep.OfferTravelTo(point)) return;
+                    if (away && ConnectedStep.OfferTravelTo(point)) return;
                 }
                 GlobalMapActions.ArmyInteract(a);
                 return;
