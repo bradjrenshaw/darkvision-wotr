@@ -42,6 +42,7 @@ namespace WrathAccess.Exploration.Overlays
         /// heading as it leaves, and its length.</summary>
         private sealed class Exit
         {
+            public GlobalMapEdgeView Edge;
             public GlobalMapPointView To;
             public float LeaveDeg;   // map-frame heading over the first stretch of road
             public float Miles;      // geometric road length (spline)
@@ -112,10 +113,10 @@ namespace WrathAccess.Exploration.Overlays
                 // bend explored, bend to campsite not: the user's repro). Offer the journey, asking first
                 // since it costs time; No just moves the cursor. The same goes for a walk that stops at a
                 // bend or fork: those can't be picked from the location list, so the arrow is the only way
-                // there (the camp's north road is explored, but the walk halts at the three-way bend where
-                // the unexplored road starts). Other explored walks never prompt: the arrows are for
-                // looking, and travel to known places has its own keys.
-                if (GlobalMapModel.Interactive && (WalkExplores(exit, anchor) || WalkEndsAtUnrevealedPoint(exit, anchor)))
+                // there. A revealed destination can also require the arrow if its outgoing roads have
+                // not been opened yet: the stock location panel disables Travel in that state.
+                if (GlobalMapModel.Interactive && (WalkExplores(exit, anchor)
+                    || WalkEndsAtUnrevealedPoint(exit, anchor) || WalkRequiresArrow(exit, anchor)))
                     OfferTravel(exit, cursor);
                 else Land(exit.To, cursor);
                 return;
@@ -179,6 +180,16 @@ namespace WrathAccess.Exploration.Overlays
             var data = ArrowWalk(exit, from);
             var end = data != null ? WalkEnd(data, null) : null;
             return end != null && end.State != null && !end.State.IsRevealed;
+        }
+
+        /// <summary>Whether the game's arrow can reach a revealed stop whose location panel disables Travel.</summary>
+        private static bool WalkRequiresArrow(Exit exit, GlobalMapPointView from)
+        {
+            if (exit.Locked || !TravelerIsOn(from)
+                || Kingmaker.Globalmap.GlobalMapPathManager.IsHiddenLocationInEdge(exit.Edge, from.Blueprint))
+                return false;
+            var end = WalkEnd(ArrowWalk(exit, from), null);
+            return end?.State != null && end.State.IsRevealed && !end.State.EdgesOpened;
         }
 
         /// <summary>Where that walk ends (the bends it runs through are skipped), else the road's own end.</summary>
@@ -316,6 +327,7 @@ namespace WrathAccess.Exploration.Overlays
             // An explored road from the party's node whose arrow walk runs on into unexplored road: a
             // second press offers that journey, so say so.
             else if (WalkExplores(e, from)) parts.Add(Loc.T("worldmap.exit_unexplored_beyond"));
+            else if (WalkRequiresArrow(e, from)) parts.Add(Loc.T("worldmap.exit_travel_by_road"));
             return string.Join(", ", parts);
         }
 
@@ -475,6 +487,7 @@ namespace WrathAccess.Exploration.Overlays
                 var st = e.State;
                 exits.Add(new Exit
                 {
+                    Edge = e,
                     To = other,
                     LeaveDeg = MapFrame.ToMap(dir.Value),
                     Miles = Length(e),

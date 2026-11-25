@@ -642,6 +642,8 @@
   "worldmap.exit_locked": "road closed",
   "worldmap.exit_unexplored": "unexplored road",
   "worldmap.exit_unexplored_beyond": "unexplored road beyond",
+  "worldmap.exit_travel_by_road": "press this direction again to offer travel",
+  "worldmap.travel_by_road": "Direct travel is unavailable. From the connecting junction, use directional travel in Connected mode.",
   "worldmap.unseen_place": "somewhere unexplored",
   "worldmap.exit_party_away": "party not here",
   "worldmap.exit_toward": "toward {list}",

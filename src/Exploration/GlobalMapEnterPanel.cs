@@ -111,6 +111,10 @@ namespace WrathAccess.Exploration
             {
                 description = restriction.GetDescription();
             }
+            else if (!isCurrent && !location.State.EdgesOpened)
+            {
+                description = Loc.T("worldmap.travel_by_road");
+            }
             else if (isCurrent)
             {
                 description = location.Blueprint.OverrideEnterConfirmationText
