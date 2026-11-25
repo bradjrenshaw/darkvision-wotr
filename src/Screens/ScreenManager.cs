@@ -145,6 +145,7 @@ namespace WrathAccess.Screens
             Register(new GlobalMapScreen()); // world map: browse + cursor/scanner + the location panel as a tab stop
             Register(new GlobalMapEncounterScreen()); // world-map travel popup (encounter/discovery), FlowSheet like dialogue; layer 15
             Register(new GlobalMapEnterScreen()); // world-map location panel (description + travel/close), modal; layer 15
+            Register(new GlobalMapSpellTargetScreen());
             Register(new GlobalMapToolbarSettingsScreen()); // world-map toolbar gear popup (three switches + close), modal; layer 15
             Register(new GlobalMapBuyResourcesScreen()); // crusade Buy Resources window (two counters + buy/close), modal; layer 16
             Register(new GlobalMapRecruitScreen()); // crusade Recruit window (army cart, unit pool, mercenaries, resources), modal; layer 15

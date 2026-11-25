@@ -218,8 +218,11 @@ namespace WrathAccess.Screens
             }
             else if (tab == Tab.Map)
                 KingdomMapNodes.Build(b);
-            else if (CampaignInteractive)
-                _campaign.Build(b);
+            else if (CampaignMapReady)
+            {
+                GlobalMapSpellNodes.Build(b);
+                if (CampaignInteractive) _campaign.Build(b);
+            }
 
             GlobalMapToolbarNodes.Build(b, kingdom: true);
         }

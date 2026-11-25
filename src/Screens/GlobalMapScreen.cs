@@ -72,6 +72,7 @@ namespace WrathAccess.Screens
         public override void Build(GraphBuilder b)
         {
             if (!GlobalMapModel.Active) return;
+            GlobalMapSpellNodes.Build(b);
             _map.Build(b);
             GlobalMapToolbarNodes.Build(b);
         }
