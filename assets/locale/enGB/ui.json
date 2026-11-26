@@ -1045,6 +1045,8 @@
   "loot.your_inventory": "Your inventory",
   "loot.items": "Items",
   "loot.stash_empty": "Nothing to put in",
+  "loot.interaction_slot_empty": "Empty item slot",
+  "loot.no_matching_item": "No matching item in your inventory",
   "wizard.back": "Back",
   "wizard.next": "Next",
   "wizard.finish": "Finish",
