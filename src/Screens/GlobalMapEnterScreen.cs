@@ -44,8 +44,7 @@ namespace WrathAccess.Screens
 
         private static GlobalMapEnterMessageVM PanelVm()
         {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            return rc?.GlobalMapVM?.GlobalMapEnterMessageVM?.Value;
+            return GlobalMapModel.CurrentVM?.GlobalMapEnterMessageVM?.Value;
         }
 
         private static void Sync()
@@ -122,7 +121,8 @@ namespace WrathAccess.Screens
         private static void AcceptLive()
         {
             var vm = PanelVm();
-            if (vm == null) return;
+            if (vm == null || (Game.Instance?.RootUiContext?.IsKingdom == true && !KingdomScreen.CampaignInteractive))
+                return;
             PlayClick();
             var army = Game.Instance.GlobalMapController != null ? Game.Instance.GlobalMapController.SelectedArmy : null;
             bool entering = vm.IsCurrentLocation;

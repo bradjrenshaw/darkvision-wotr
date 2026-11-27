@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Generic;
+using HarmonyLib;
 using Kingmaker;
 using Kingmaker.Blueprints.Root.Strings; // UIStrings
+using Kingmaker.GameModes;
 using Kingmaker.Kingdom; // KingdomResource, KingdomUIRoot
 using Kingmaker.UI; // UISoundType
 using Kingmaker.UI.MVVM._VM.Crusade.Recruit; // RecruitBuyResourcesVM, RecruitBuyResourceItemVM
+using Kingmaker.UI.Settlement;
+using UniRx;
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 
@@ -22,6 +27,11 @@ namespace WrathAccess.Screens
     /// </summary>
     public sealed class GlobalMapBuyResourcesScreen : Screen
     {
+        private static readonly System.Reflection.FieldInfo SettlementVmField =
+            AccessTools.Field(typeof(SettlementToolbar), "m_BuyResourcesVM");
+        private static readonly System.Reflection.FieldInfo SettlementBuyButtonField =
+            AccessTools.Field(typeof(SettlementToolbar), "m_BuyResourceButton");
+
         public GlobalMapBuyResourcesScreen() { Wrap = true; }
 
         public override string Key => "overlay.worldmap_buy_resources";
@@ -31,14 +41,28 @@ namespace WrathAccess.Screens
         // The host only DISPOSES the VM on close (its reference stays set), so a disposed one is "closed".
         private static RecruitBuyResourcesVM Vm()
         {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            var vm = rc?.GlobalMapVM?.KingdomInfoVM?.BuyResourcesVM?.Value;
+            if (Game.Instance?.CurrentMode == GameModeType.KingdomSettlement)
+            {
+                var toolbar = UnityEngine.Object.FindObjectOfType<SettlementToolbar>();
+                var settlementVm = toolbar == null ? null
+                    : (SettlementVmField.GetValue(toolbar) as ReactiveProperty<RecruitBuyResourcesVM>)?.Value;
+                return settlementVm != null && !settlementVm.IsDisposed ? settlementVm : null;
+            }
+            var vm = GlobalMapModel.CurrentVM?.KingdomInfoVM?.BuyResourcesVM?.Value;
             if (vm != null && !vm.IsDisposed) return vm;
             vm = GlobalMapRecruitScreen.Vm()?.BuyResourcesVM.Value; // the recruit window's own Buy Resources
             return vm != null && !vm.IsDisposed ? vm : null;
         }
 
         public override bool IsActive() => Vm() != null;
+
+        internal static void OpenSettlementPurchase()
+        {
+            var toolbar = UnityEngine.Object.FindObjectOfType<SettlementToolbar>();
+            if (toolbar != null && SettlementBuyButtonField.GetValue(toolbar) is Owlcat.Runtime.UI.Controls.Button.OwlcatButton button
+                && button != null && button.isActiveAndEnabled && button.Interactable)
+                button.OnPointerClick(new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current));
+        }
 
         public override void Build(GraphBuilder b)
         {

@@ -8,6 +8,7 @@ using Kingmaker.UI.MVVM._VM.Kingdom.KingdomInfo; // KingdomInfoVM
 using Kingmaker.UI.MVVM._VM.Tooltip.Templates; // TooltipTemplateKingdomMorale
 using Kingmaker.UI; // UISoundType
 using Owlcat.Runtime.UI.Tooltips; // TooltipBaseTemplate
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 
@@ -27,23 +28,14 @@ namespace WrathAccess.Screens
     /// </summary>
     internal static class GlobalMapToolbarNodes
     {
-        private static GlobalMapToolbarVM Toolbar()
-        {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            return rc?.GlobalMapVM?.GlobalMapToolbarVM;
-        }
+        private static GlobalMapToolbarVM Toolbar() => GlobalMapModel.CurrentVM?.GlobalMapToolbarVM;
+        private static KingdomInfoVM Info() => GlobalMapModel.CurrentVM?.KingdomInfoVM;
 
-        private static KingdomInfoVM Info()
-        {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            return rc?.GlobalMapVM?.KingdomInfoVM;
-        }
-
-        public static void Build(GraphBuilder b)
+        public static void Build(GraphBuilder b, bool kingdom = false)
         {
             var tb = Toolbar();
             if (tb == null) return;
-            b.BeginStop("toolbar").PushContext(Loc.T("worldmap.toolbar"), "toolbar");
+            b.BeginStop("toolbar").PushContext(Loc.T("worldmap.toolbar"));
 
             // The strip's readouts, in screen order (left part: location; right: morale, clock, date).
             b.AddItem(ControlId.Structural("tb:location"), GraphNodes.Text(() => Toolbar()?.LocationName.Value ?? ""));
@@ -67,24 +59,8 @@ namespace WrathAccess.Screens
 
             // The party/army flags: shown only with a crusader army on the map (the PC view hides the
             // block otherwise), one toggle whose live value is the current mode.
-            if (tb.CanChangeArmyMode.Value)
-                b.AddItem(ControlId.Structural("tb:armymode"), ArmyModeToggle());
-            else if (CanAddArmy())
-                b.AddItem(ControlId.Structural("tb:recruit"), GraphNodes.Button(
-                    () => UIStrings.Instance.CrusadeTexts.Recruit, () => Toolbar()?.AddArmy()));
-
-            // The map menu's Recruit button (shown with the crusade, or in army mode), carrying the
-            // menu's "recruits have grown" marker. Opens the recruit window (GlobalMapRecruitScreen).
-            var menu = Game.Instance.RootUiContext?.GlobalMapVM?.GlobalMapMenuVM;
-            if (menu != null && menu.RecruitBlockEnabled.Value && (tb.CanChangeArmyMode.Value || !CanAddArmy())) // not twice: the strip's own Recruit shows when there is no army
-                b.AddItem(ControlId.Structural("tb:recruitmenu"), GraphNodes.Button(
-                    () =>
-                    {
-                        var m = Game.Instance.RootUiContext?.GlobalMapVM?.GlobalMapMenuVM;
-                        string l = UIStrings.Instance.CrusadeTexts.Recruit;
-                        return m != null && m.ShowRecruitNotification.Value ? l + ", " + Loc.T("crusade.new_recruits") : l;
-                    },
-                    () => Game.Instance.RootUiContext?.GlobalMapVM?.GlobalMapMenuVM?.OnRecruitClick()));
+            if (!kingdom) BuildWorldMapActions(b, tb);
+            else if (KingdomScreen.CampaignOpen) BuildRecruit(b);
 
             // The gear: opens the settings popup, which is its own modal screen
             // (GlobalMapToolbarSettingsScreen) exactly as the panel takes over on screen.
@@ -103,7 +79,35 @@ namespace WrathAccess.Screens
                     announceOnActivate: true));
                 if (info.IsOn.Value) BuildStatsPanel(b);
             }
+            if (kingdom)
+                b.AddItem(ControlId.Structural("tb:exit"), GraphNodes.Button(
+                    () => Loc.T("kingdom.exit"), UIUtility.LeaveKingdom));
             b.PopContext();
+        }
+
+        private static void BuildWorldMapActions(GraphBuilder b, GlobalMapToolbarVM toolbar)
+        {
+            if (toolbar.CanChangeArmyMode.Value)
+                b.AddItem(ControlId.Structural("tb:armymode"), ArmyModeToggle());
+            else if (CanAddArmy())
+                b.AddItem(ControlId.Structural("tb:recruit"), GraphNodes.Button(
+                    () => UIStrings.Instance.CrusadeTexts.Recruit, () => Toolbar()?.AddArmy()));
+
+            if (toolbar.CanChangeArmyMode.Value || !CanAddArmy()) BuildRecruit(b);
+        }
+
+        private static void BuildRecruit(GraphBuilder b)
+        {
+            if (GlobalMapModel.CurrentVM?.GlobalMapMenuVM?.RecruitBlockEnabled.Value == true)
+                b.AddItem(ControlId.Structural("tb:recruitmenu"), GraphNodes.Button(
+                    () =>
+                    {
+                        var current = GlobalMapModel.CurrentVM?.GlobalMapMenuVM;
+                        string label = UIStrings.Instance.CrusadeTexts.Recruit;
+                        return current != null && current.ShowRecruitNotification.Value
+                            ? label + ", " + Loc.T("crusade.new_recruits") : label;
+                    },
+                    () => GlobalMapModel.CurrentVM?.GlobalMapMenuVM?.OnRecruitClick()));
         }
 
         // The PC view's morale strip: "{MoraleTitle}: {band}", the band chosen by the same thresholds.
@@ -146,7 +150,7 @@ namespace WrathAccess.Screens
                 OnActivate = () =>
                 {
                     var t = Toolbar();
-                    if (t == null || !t.CanChangeArmyMode.Value) return;
+                    if (KingdomScreen.CampaignOpen || t == null || !t.CanChangeArmyMode.Value) return;
                     UiSound.Play(UISoundType.GlobalMapModeSwitch);
                     t.ChangeArmyMode();
                 },

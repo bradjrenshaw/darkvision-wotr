@@ -34,7 +34,7 @@ namespace WrathAccess.Screens
 
         // Starts unfocused: arrows/WASD drive the movement cursor and Tab enters the lists — like the in-game
         // screen. Category order flips with focus. The scanner/review/cursor keys are the SHARED Exploration
-        // actions (Route()d to the world-map systems by screen); WorldMap holds only the Escape→menu key.
+        // actions (Route()d to the world-map systems by screen).
         public override bool StartUnfocused => true;
         private static readonly IReadOnlyList<InputCategory> Focused = new[] { InputCategory.UI, InputCategory.Exploration, InputCategory.WorldMap, InputCategory.Windows };
         private static readonly IReadOnlyList<InputCategory> Unfocused = new[] { InputCategory.Exploration, InputCategory.WorldMap, InputCategory.UI, InputCategory.Windows };
@@ -54,10 +54,44 @@ namespace WrathAccess.Screens
 
         public override bool AllowsTypeahead => false; // letters are world-map hotkeys (b/m/n, i), not type-ahead
 
+        internal static bool OwnsMapInput => ScreenManager.Current is GlobalMapScreen
+            || (ScreenManager.Current is KingdomScreen && KingdomScreen.CampaignMapReady);
+
         /// <summary>True while the location panel is up (now its own modal screen —
         /// <see cref="GlobalMapEnterScreen"/>). The world-map cursor + sonar check this and freeze.</summary>
         public static bool PanelActive => GlobalMapEnterScreen.PanelActive;
 
+        private readonly WorldMapNavigation _map = new WorldMapNavigation();
+
+        public override void OnPush() => _map.Reset();
+
+        public override void OnPop() => _map.Clear();
+
+        public override void OnUpdate()
+        {
+            _map.Update();
+            EnemyArmyRadarScreen.PlaceCursorOnReturn();
+        }
+
+        public override void Build(GraphBuilder b)
+        {
+            if (!GlobalMapModel.Active) return;
+            GlobalMapSpellNodes.Build(b);
+            _map.Build(b);
+            GlobalMapToolbarNodes.Build(b);
+        }
+
+        // Escape opens the game menu (the game's own EscManager is muted while focus mode owns the keyboard).
+        public override IEnumerable<ElementAction> GetActions()
+        {
+            yield return new ElementAction(ActionIds.Back, Message.Localized("ui", "hud.game_menu"),
+                _ => EventBus.RaiseEvent(delegate (IEscMenuHandler h) { h.HandleOpen(); }));
+        }
+    }
+
+    /// <summary>The map body and travel feedback shared by the world map and the Campaign tab.</summary>
+    internal sealed class WorldMapNavigation
+    {
         // The location list's ORDER, frozen at map entry (nearest-first from where you arrived) — live
         // distance sorting would shuffle the list under the cursor as the traveler moves. The SET still
         // reads live each render; only the ordering is a per-entry presentation choice (as before).
@@ -70,15 +104,21 @@ namespace WrathAccess.Screens
         // end of a battle), so the change is announced from the state, not from our own actions.
         private Kingmaker.Globalmap.State.GlobalMapArmyState _lastArmy;
 
-        public override void OnPush()
+        public void Reset()
         {
-            _order = null; _wasPaused = false;
+            _order = null;
+            _wasPaused = false;
             _lastArmy = Game.Instance?.GlobalMapController?.SelectedArmy; // entering mid-mode is not a change
             GlobalMapScanner.Reset(); GlobalMapCursor.Reset(); // the sonar is an overlay system now (resets on overlay exit)
         }
-        public override void OnPop() { _order = null; _wasPaused = false; }
 
-        public override void OnUpdate() { SyncTravelPause(); SyncTraveler(); }
+        public void Clear()
+        {
+            _order = null;
+            _lastArmy = null;
+        }
+
+        public void Update() { SyncTravelPause(); SyncTraveler(); }
 
         // Party <-> army (or army -> another army): say who now takes travel orders, and re-freeze the
         // location list nearest-first from the new traveler (bearings are already live from it).
@@ -100,19 +140,14 @@ namespace WrathAccess.Screens
         private void SyncTravelPause()
         {
             bool paused = GlobalMapModel.TravelPaused;
-            if (paused && !_wasPaused && !PanelActive) Tts.Speak(Loc.T("worldmap.travel_paused"));
+            if (paused && !_wasPaused && !GlobalMapScreen.PanelActive) Tts.Speak(Loc.T("worldmap.travel_paused"));
             _wasPaused = paused;
         }
-
-
-        public override void Build(GraphBuilder b)
+        public void Build(GraphBuilder b)
         {
-            if (!GlobalMapModel.Active) return;
             BuildLocations(b); // the location panel is its own modal screen now (GlobalMapEnterScreen)
             GlobalMapArmyNodes.Build(b); // army mode only: the armies card list + the selected army's cart
-            GlobalMapToolbarNodes.Build(b); // the always-visible top strip + the crusade Stats fold-out
         }
-
         private void BuildLocations(GraphBuilder b)
         {
             if (_order == null)
@@ -138,11 +173,5 @@ namespace WrathAccess.Screens
             b.PopContext();
         }
 
-        // Escape opens the game menu (the game's own EscManager is muted while focus mode owns the keyboard).
-        public override IEnumerable<ElementAction> GetActions()
-        {
-            yield return new ElementAction(ActionIds.Back, Message.Localized("ui", "hud.game_menu"),
-                _ => EventBus.RaiseEvent(delegate (IEscMenuHandler h) { h.HandleOpen(); }));
-        }
     }
 }

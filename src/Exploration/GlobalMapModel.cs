@@ -5,7 +5,9 @@ using Kingmaker.Armies; // ArmyFaction
 using Kingmaker.Globalmap.Blueprints;
 using Kingmaker.Globalmap.State; // GlobalMapArmyState
 using Kingmaker.Globalmap.View;
+using Kingmaker.UI.MVVM._VM.GlobalMap;
 using UnityEngine;
+using WrathAccess.Screens;
 
 namespace WrathAccess.Exploration
 {
@@ -17,6 +19,15 @@ namespace WrathAccess.Exploration
     /// </summary>
     internal static class GlobalMapModel
     {
+        internal static GlobalMapVM CurrentVM
+        {
+            get
+            {
+                var rc = Game.Instance?.RootUiContext;
+                return rc?.IsKingdom == true ? rc.KingdomVM : rc?.GlobalMapVM;
+            }
+        }
+
         public static bool Active
         {
             get
@@ -27,13 +38,13 @@ namespace WrathAccess.Exploration
             }
         }
 
-        /// <summary>The world map is in its PURE interactive mode — the global map is the CURRENT game mode,
-        /// not sitting under a rest / dialog / book-event / battle overlay. (Those keep GlobalMap in the mode
-        /// stack — <c>IsGlobalMap</c> stays true — but aren't the current mode.) The movement cursor and the
-        /// travel-Continue must only act here: under an overlay the overlay owns input, and "resuming travel"
-        /// just restarts the journey that re-fires the event → the infinite loop.</summary>
+        /// <summary>The regular world map or Campaign is ready for travel input.
+        /// The movement cursor and Continue wait while a rest, dialogue, or battle owns input.</summary>
         public static bool Interactive
-            => Game.Instance != null && Game.Instance.CurrentMode == Kingmaker.GameModes.GameModeType.GlobalMap;
+            => Game.Instance?.CurrentMode == Kingmaker.GameModes.GameModeType.GlobalMap
+                || KingdomScreen.CampaignInteractive;
+
+        internal static bool CanReview => Interactive || KingdomScreen.CampaignMapReady;
 
         /// <summary>Travel is paused MID-JOURNEY awaiting a Continue — the game stopped the party (a discovery
         /// / event) and the next move resumes it. Enter on the cursor resumes via

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using Kingmaker;
 using Kingmaker.Blueprints.Root.Strings; // UIStrings
 using Kingmaker.UI.MVVM._VM.Crusade.ArmyInfo; // ArmyLeaderSkillVM
 using Kingmaker.UI.MVVM._VM.Crusade.LeaderLevelUp; // LeaderLevelUpVM
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 
@@ -26,8 +26,7 @@ namespace WrathAccess.Screens
 
         private static LeaderLevelUpVM Vm()
         {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            var vm = rc?.GlobalMapVM?.LeaderLevelUpVM?.Value;
+            var vm = GlobalMapModel.CurrentVM?.LeaderLevelUpVM?.Value;
             return vm != null && !vm.IsDisposed ? vm : null;
         }
 

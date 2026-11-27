@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Kingmaker;
 using Kingmaker.Blueprints.Root.Strings; // UIStrings
 using Kingmaker.UI; // UISoundType
 using Kingmaker.UI.MVVM._VM.Crusade.ArmyInfo; // ArmyInfoVM, ArmyInfoArmyCartVM, ArmyInfoSquadVM
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 
@@ -31,8 +31,7 @@ namespace WrathAccess.Screens
 
         internal static ArmyInfoVM Vm()
         {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            var vm = rc?.GlobalMapVM?.ArmyInfoVM?.Value;
+            var vm = GlobalMapModel.CurrentVM?.ArmyInfoVM?.Value;
             return vm != null && !vm.IsDisposed ? vm : null;
         }
 

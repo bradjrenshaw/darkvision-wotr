@@ -43,5 +43,11 @@ namespace WrathAccess.Input
         /// the in-area ones — the same physical keys (WASD, comma/period/N/M/B, Enter/Backspace) route
         /// to whichever screen is up (mirrors <see cref="WorldMap"/>). Declared by the map screen.</summary>
         LocalMap,
+        /// <summary>Kingdom management tab selection, owned by the Kingdom screen.</summary>
+        Kingdom,
+        /// <summary>Building grid keys, active while a settlement grid is focused.</summary>
+        SettlementGrid,
+        /// <summary>Cursor and scanner keys while the Kingdom World Map tab is focused.</summary>
+        KingdomMap,
     }
 }

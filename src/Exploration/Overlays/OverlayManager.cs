@@ -51,7 +51,7 @@ namespace WrathAccess.Exploration.Overlays
                 // component consults: cursor movement is gated on it in Overlay.Tick (so it can't drift during
                 // a cutscene), while the audio systems decide for themselves (today: they keep playing).
                 var key = ScreenManager.Current.Key;
-                return key == "ctx.ingame" || key == "ctx.globalmap"
+                return key == "ctx.ingame" || GlobalMapScreen.OwnsMapInput
                     || key == WrathAccess.Screens.LocalMapScreen.ScreenKey // map screen: same systems, ears on the map cursor
                     || key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey; // crusade battle: its grid cursor + readout
             }
@@ -66,7 +66,7 @@ namespace WrathAccess.Exploration.Overlays
             get
             {
                 var key = ScreenManager.Current?.Key;
-                if (key == "ctx.globalmap") return OverlayScope.WorldMap;
+                if (GlobalMapScreen.OwnsMapInput) return OverlayScope.WorldMap;
                 if (key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey) return OverlayScope.Tactical;
                 return OverlayScope.InArea;
             }

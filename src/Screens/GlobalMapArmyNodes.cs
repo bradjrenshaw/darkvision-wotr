@@ -5,7 +5,7 @@ using Kingmaker.Armies.State; // SquadState
 using Kingmaker.Blueprints.Root.Strings; // UIStrings
 using Kingmaker.UI.MVVM._VM.Crusade.Armies; // GlobalMapCrusadeArmyVM
 using Kingmaker.UI.MVVM._VM.Crusade.ArmyInfo; // ArmyInfoArmyCartVM, ArmyInfoSquadVM
-using Kingmaker.UI.MVVM._VM.GlobalMap; // GlobalMapVM
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 using WrathAccess.UI.Tooltips; // SimpleTooltip
@@ -24,22 +24,16 @@ namespace WrathAccess.Screens
     /// </summary>
     internal static class GlobalMapArmyNodes
     {
-        private static GlobalMapVM Map()
-        {
-            var rc = Game.Instance != null ? Game.Instance.RootUiContext : null;
-            return rc?.GlobalMapVM;
-        }
-
         private static ArmyInfoArmyCartVM Cart()
         {
-            var c = Map()?.ArmyInfoHUDVM.Value;
+            var c = GlobalMapModel.CurrentVM?.ArmyInfoHUDVM.Value;
             return c != null && !c.IsDisposed ? c : null;
         }
 
         public static void Build(GraphBuilder b)
         {
             var controller = Game.Instance?.GlobalMapController;
-            var map = Map();
+            var map = GlobalMapModel.CurrentVM;
             if (controller == null || map == null || !controller.ArmyMode.Value) return;
 
             var cards = map.ArmiesVM?.Armies;

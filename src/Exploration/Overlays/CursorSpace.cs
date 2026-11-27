@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Kingmaker.Globalmap.State;
+using Kingmaker.Globalmap.View;
 using Kingmaker.View; // ObstacleAnalyzer.TraceAlongNavmesh
 using UnityEngine;
 
@@ -159,12 +161,38 @@ namespace WrathAccess.Exploration.Overlays
     internal sealed class GlobalMapSpace : CursorSpace
     {
         private Vector3? _pos;
+        internal GlobalMapPosition ArmyAnchor { get; set; }
+        internal GlobalMapPointView RoadNode { get; private set; }
+        internal GlobalMapEdgeView ArrivalRoad { get; private set; }
 
         /// <summary>Forget the placed point (on entering the map) so the cursor starts on the traveler.</summary>
-        public void Reset() { _pos = null; _boundsArea = null; }
+        public void Reset()
+        {
+            _pos = null;
+            _boundsArea = null;
+            ClearRoadAnchor();
+        }
 
         public override Vector3 Get() => _pos ?? GlobalMapModel.TravelerPos;
-        public override void Set(Vector3 p) => _pos = Clamp(p);
+        public override void Set(Vector3 p)
+        {
+            _pos = Clamp(p);
+            ClearRoadAnchor();
+        }
+
+        internal void LandOnRoad(GlobalMapPointView node, GlobalMapEdgeView road)
+        {
+            Set(node.transform.position);
+            RoadNode = node;
+            ArrivalRoad = road;
+        }
+
+        private void ClearRoadAnchor()
+        {
+            ArmyAnchor = null;
+            RoadNode = null;
+            ArrivalRoad = null;
+        }
 
         // ---- the map's edge ----
 
@@ -220,8 +248,8 @@ namespace WrathAccess.Exploration.Overlays
 
         // No movement while a location panel tab stop is open (the player is reading/acting on it) or the
         // map isn't in its plain interactive state (rest / dialog / book event / battle overlays own input).
-        public override bool CanMove => !WrathAccess.Screens.GlobalMapScreen.PanelActive && GlobalMapModel.Interactive;
-        public override bool OwnsKeys => WrathAccess.Screens.ScreenManager.Current?.Key == "ctx.globalmap";
+        public override bool CanMove => !WrathAccess.Screens.GlobalMapScreen.PanelActive && GlobalMapModel.CanReview;
+        public override bool OwnsKeys => WrathAccess.Screens.GlobalMapScreen.OwnsMapInput;
 
         public override bool Trace(Vector3 cur, Vector3 intended, bool slide, out Vector3 traced)
         {

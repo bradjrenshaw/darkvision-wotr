@@ -145,6 +145,7 @@ namespace WrathAccess.Screens
             Register(new GlobalMapScreen()); // world map: browse + cursor/scanner + the location panel as a tab stop
             Register(new GlobalMapEncounterScreen()); // world-map travel popup (encounter/discovery), FlowSheet like dialogue; layer 15
             Register(new GlobalMapEnterScreen()); // world-map location panel (description + travel/close), modal; layer 15
+            Register(new GlobalMapSpellTargetScreen());
             Register(new GlobalMapToolbarSettingsScreen()); // world-map toolbar gear popup (three switches + close), modal; layer 15
             Register(new GlobalMapBuyResourcesScreen()); // crusade Buy Resources window (two counters + buy/close), modal; layer 16
             Register(new GlobalMapRecruitScreen()); // crusade Recruit window (army cart, unit pool, mercenaries, resources), modal; layer 15
@@ -160,13 +161,16 @@ namespace WrathAccess.Screens
             Register(new LootScreen()); // loot window (container/corpse); layer 15, above contexts + service windows
             Register(new VendorScreen()); // vendor/trade window (VendorVM); layer 15, four trade tables + actions
             Register(new RestScreen()); // camping window (management/in-process/results); layer 15, same family
+            Register(new TransitionScreen()); // destination picker for exits with multiple entrances
             Register(new GroupChangerScreen()); // party selection on area exit (Group manager); layer 16, hard modal
             Register(new FormationScreen()); // party formation window (selector + WASD editor); layer 16, Exclusive
             Register(new GameOverScreen()); // death/game-over screen (party wipe etc.); layer 18, below save/load
             Register(new EscMenuScreen()); // the in-game pause/Escape menu (EscMenuVM buttons); layer 24
             Register(new BookEventScreen()); // book event (storybook passage + choices); layer 15
-            Register(new PredicateScreen("ctx.kingdom", Loc.T("screen.kingdom"), 0, () => RC()?.IsKingdom ?? false));
-            Register(new PredicateScreen("ctx.citybuilder", Loc.T("screen.city"), 0, () => RC()?.IsCityBuilder ?? false));
+            Register(new KingdomScreen());
+            Register(new KingdomMapDetailScreen());
+            Register(new KingdomBuildingScreen());
+            Register(new KingdomEventScreen()); // event card detail, above the kingdom lists
 
             // Service windows (layer 10) — one at a time, via CurrentServiceWindow.
             Register(new InventoryScreen()); // inventory window (Inventory/Equipment/SmartItem), navigable; layer 10

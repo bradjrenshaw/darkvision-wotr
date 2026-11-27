@@ -59,7 +59,7 @@ namespace WrathAccess.Exploration.Overlays
         public static string Coordinate(UnityEngine.Vector2Int cell)
         {
             var sc = TacticalModel.ScreenCell(cell); // columns left to right and rows bottom to top AS SEEN
-            return Loc.T("tactical.coordinate", new { column = ((char)('A' + sc.x)).ToString(), row = sc.y + 1 });
+            return TextUtil.GridCoordinate(sc.x, sc.y);
         }
     }
 }

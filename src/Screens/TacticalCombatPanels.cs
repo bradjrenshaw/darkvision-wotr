@@ -7,6 +7,7 @@ using Kingmaker.PubSubSystem;                                // EventBus, IEscMe
 using Kingmaker.UI.MVVM._VM.TacticalCombat;                  // LeaderCardVM
 using Kingmaker.UI.MVVM._VM.TacticalCombat.Result;           // TacticalCombatResultsVM, TacticalCombatResultUnitVM
 using WrathAccess.Input;                                     // InputCategory
+using WrathAccess.Exploration;
 using WrathAccess.UI;
 using WrathAccess.UI.Graph;
 
@@ -72,7 +73,8 @@ namespace WrathAccess.Screens
         private static TacticalCombatResultsVM Vm()
         {
             var rc = Game.Instance?.RootUiContext;
-            return rc?.TacticalCombatVM?.TacticalCombatResultsVM?.Value ?? rc?.GlobalMapVM?.AutoCombatResultsVM?.Value;
+            return rc?.TacticalCombatVM?.TacticalCombatResultsVM?.Value
+                ?? GlobalMapModel.CurrentVM?.AutoCombatResultsVM?.Value;
         }
         public override bool IsActive() { var vm = Vm(); return vm != null && !vm.IsDisposed; }
 

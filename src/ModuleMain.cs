@@ -13,6 +13,7 @@ using WrathAccess.Exploration.Overlays;
 using WrathAccess.Input;
 using WrathAccess.Screens;
 using WrathAccess.UI; // NavDirection
+using WrathAccess.UI.Graph;
 
 namespace WrathAccess
 {
@@ -111,6 +112,7 @@ namespace WrathAccess
         /// generations would double-subscribe and double-speak.</summary>
         public void Dispose()
         {
+            try { KingdomBuildingCatalogScreen.CloseActive(); } catch (Exception e) { Log?.Error("[dispose] building catalog: " + e); }
             try { FocusMode.Set(false); } catch (Exception e) { Log?.Error("[dispose] focus: " + e); } // releases the KeyboardAccess scope
             try { OverlayManager.DisengageForReload(); } catch (Exception e) { Log?.Error("[dispose] overlays: " + e); } // overlay systems release their NAudio voices
             try { WrathAccess.Audio.AudioEngines.ShutdownAll(); } catch (Exception e) { Log?.Error("[dispose] audio: " + e); }
@@ -162,7 +164,13 @@ namespace WrathAccess
         {
             if (!Enabled)
             {
-                if (_wasEnabled) { _wasEnabled = false; try { FocusMode.Set(false); WrathAccess.Audio.WwiseRuntimeConfig.ReleaseFrameCap(); } catch { } }
+                if (_wasEnabled)
+                {
+                    _wasEnabled = false;
+                    WarningReader.ClearPending();
+                    try { KingdomBuildingCatalogScreen.CloseActive(); } catch (Exception e) { Log?.Error("[disable] building catalog: " + e); }
+                    try { FocusMode.Set(false); WrathAccess.Audio.WwiseRuntimeConfig.ReleaseFrameCap(); } catch { }
+                }
                 return;
             }
             _wasEnabled = true;
@@ -188,6 +196,8 @@ namespace WrathAccess
             }
             WrathAccess.ModUI.ModUi.Tick(); // is another mod's window open? (before the stack resolves, so its screen lands this frame)
             ScreenManager.Tick();
+            WarningReader.Tick();
+            KingdomWorldMap.Tick();
             WrathAccess.UI.Navigation.TickTypeahead(); // typed letters → type-ahead search (after dispatch)
             ControlState.Tick(); // settle the debounced control state before its consumers below
             TickPause(); // announce the game's pause state whenever it changes (ours OR the game's own)
@@ -285,15 +295,15 @@ namespace WrathAccess
         }
 
         // F8 quick-load: the game's own QuickLoadGame (newest quick save; it refuses during character
-        // creation itself). Focus mode only, like F5. Allowed wherever a game is loaded — an area, the
-        // world map, a crusade battle — so a lost fight can be reloaded straight away; never from the
-        // main menu or a loading screen.
+        // creation itself). Focus mode only, like F5. Available in an area, on the world map,
+        // in kingdom management or in a crusade battle. Blocked at the main menu or during loading.
         private static void QuickLoad()
         {
             if (!FocusMode.Active) return;
             var game = Game.Instance;
             var rc = game?.RootUiContext;
-            if (rc == null || rc.IsMainMenu || !(rc.IsInGame || rc.IsGlobalMap || rc.IsTacticalCombat)) return;
+            if (rc == null || rc.IsMainMenu
+                || !(rc.IsInGame || rc.IsGlobalMap || rc.IsTacticalCombat || rc.IsKingdom || rc.IsCityBuilder)) return;
             var lp = Kingmaker.EntitySystem.Persistence.LoadingProcess.Instance;
             if (lp != null && lp.IsLoadingScreenActive) return;
             try
@@ -321,7 +331,7 @@ namespace WrathAccess
                 var key = WrathAccess.Screens.ScreenManager.Current?.Key;
                 if (key == "ctx.ingame") inArea?.Invoke();
                 else if (key == WrathAccess.Screens.LocalMapScreen.ScreenKey) localMap?.Invoke();
-                else if (key == "ctx.globalmap") worldMap?.Invoke();
+                else if (GlobalMapScreen.OwnsMapInput) worldMap?.Invoke();
                 else if (key == WrathAccess.Screens.TacticalCombatScreen.ScreenKey) tactical?.Invoke();
             };
 
@@ -361,6 +371,7 @@ namespace WrathAccess
                 ("ui", "Menus", new[] { InputCategory.UI }),
                 ("explore", "Exploration", new[] { InputCategory.Exploration }),
                 ("worldmap", "World map", new[] { InputCategory.WorldMap }),
+                ("kingdom", "Kingdom management", new[] { InputCategory.Kingdom, InputCategory.SettlementGrid, InputCategory.KingdomMap }),
                 ("localmap", "Local map", new[] { InputCategory.LocalMap }),
                 ("formation", "Formation editor", new[] { InputCategory.Formation }),
             };
@@ -536,6 +547,24 @@ namespace WrathAccess
                 .AddBinding(KeyCode.UpArrow, ctrl: true).Repeating();
             InputManager.Register("ui.regionNext", "Next sheet region", InputCategory.UI)
                 .AddBinding(KeyCode.DownArrow, ctrl: true).Repeating();
+
+            InputManager.Register("kingdom.next_tab", "Next kingdom tab", InputCategory.Kingdom,
+                () => KingdomScreen.StepFocusedTab(1)).AddBinding(KeyCode.Tab, ctrl: true);
+            InputManager.Register("kingdom.prev_tab", "Previous kingdom tab", InputCategory.Kingdom,
+                () => KingdomScreen.StepFocusedTab(-1)).AddBinding(KeyCode.Tab, ctrl: true, shift: true);
+            KingdomWorldMap.RegisterInput();
+            InputManager.Register("kingdom.next_grid", "Next settlement grid", InputCategory.Kingdom,
+                () => KingdomScreen.StepBuilderGrid(1)).AddBinding(KeyCode.RightArrow, ctrl: true);
+            InputManager.Register("kingdom.prev_grid", "Previous settlement grid", InputCategory.Kingdom,
+                () => KingdomScreen.StepBuilderGrid(-1)).AddBinding(KeyCode.LeftArrow, ctrl: true);
+            InputManager.Register("kingdom.scan_grid_up", "Scan settlement grid up", InputCategory.SettlementGrid,
+                () => KingdomBuilderNodes.Scan(GraphDir.Up)).AddBinding(KeyCode.UpArrow, shift: true);
+            InputManager.Register("kingdom.scan_grid_down", "Scan settlement grid down", InputCategory.SettlementGrid,
+                () => KingdomBuilderNodes.Scan(GraphDir.Down)).AddBinding(KeyCode.DownArrow, shift: true);
+            InputManager.Register("kingdom.scan_grid_left", "Scan settlement grid left", InputCategory.SettlementGrid,
+                () => KingdomBuilderNodes.Scan(GraphDir.Left)).AddBinding(KeyCode.LeftArrow, shift: true);
+            InputManager.Register("kingdom.scan_grid_right", "Scan settlement grid right", InputCategory.SettlementGrid,
+                () => KingdomBuilderNodes.Scan(GraphDir.Right)).AddBinding(KeyCode.RightArrow, shift: true);
 
             // ---- Exploration: the in-game world (live in ctx.ingame; shared chords - arrows, Enter,
             // Space, Escape, Backspace - are won by the HUD while it's focused, by these while not) ----
@@ -747,13 +776,15 @@ namespace WrathAccess
                       worldMap: WrathAccess.Exploration.GlobalMapCursor.JumpToReview,
                       tactical: WrathAccess.Exploration.TacticalReview.JumpToReview))
                 .AddBinding(KeyCode.Home).AddBinding(KeyCode.Slash).Grouped("scanner");
-            InputManager.Register("scan.announceCursor", "Announce cursor position", InputCategory.Exploration,
+            InputManager.Register("scan.announceCursor", "Announce cursor position or route distance", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Scanner.AnnounceCursor,
                       localMap: WrathAccess.Exploration.LocalMapCursor.Announce,
-                      worldMap: WrathAccess.Exploration.GlobalMapCursor.Announce))
+                      worldMap: WrathAccess.Exploration.GlobalMapRoute.AnnounceDistance))
                 .AddBinding(KeyCode.K).Grouped("scanner");
-            InputManager.Register("scan.announceParty", "Announce party", InputCategory.Exploration,
-                WrathAccess.Exploration.Scanner.AnnounceParty).AddBinding(KeyCode.K, shift: true).Grouped("scanner");
+            InputManager.Register("scan.announceParty", "Announce party or route directions", InputCategory.Exploration,
+                Route(inArea: WrathAccess.Exploration.Scanner.AnnounceParty,
+                      worldMap: WrathAccess.Exploration.GlobalMapRoute.AnnounceDirections))
+                .AddBinding(KeyCode.K, shift: true).Grouped("scanner");
             InputManager.Register("scan.interact", "Interact with item", InputCategory.Exploration,
                 Route(inArea: WrathAccess.Exploration.Scanner.InteractSelected,
                       worldMap: WrathAccess.Exploration.GlobalMapScanner.Interact,
@@ -882,9 +913,10 @@ namespace WrathAccess
 
             // ---- World map: like the local map, the world-map screen REUSES the shared Exploration
             // actions (movement, PageUp/Down browse, review cycles, I travel, Enter/K/C//) — Route()d
-            // to the GlobalMap systems by screen. Only Escape stays world-map-specific: it opens the
-            // game menu even while the unfocused cursor owns the keys (the screen's GetActions Back
-            // only fires when focused) — mirrors the in-game screen.
+            // to the GlobalMap systems by screen. Escape opens the game menu even while the
+            // unfocused cursor owns the keys (the screen's Back action requires focus).
+            InputManager.Register("worldmap.enemyArmyRadar", "Open Enemy Army Radar", InputCategory.WorldMap,
+                EnemyArmyRadarScreen.Open).AddBinding(KeyCode.E, ctrl: true);
             InputManager.Register("worldmap.escape", "Open menu", InputCategory.WorldMap,
                 () => Kingmaker.PubSubSystem.EventBus.RaiseEvent(delegate (Kingmaker.PubSubSystem.IEscMenuHandler h) { h.HandleOpen(); }))
                 .AddBinding(KeyCode.Escape).Grouped("worldmap");

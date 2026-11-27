@@ -19,8 +19,8 @@ namespace WrathAccess.Screens
     ///
     /// <para>ONE-SLOT containers (a puzzle socket, a quest pedestal — <c>LootWindowMode.OneSlot</c>)
     /// are a different window in the game and here: the single slot (Enter takes its item back),
-    /// then your inventory with the items that FIT listed first (the game dims the rest; Enter places
-    /// one), then the game's Apply button. No take-all — there is no collector in this mode.</para>
+    /// then your inventory with the items that fit (Enter places one), then the game's Apply button.
+    /// Slab puzzles also announce carried slabs that the board piece refuses.</para>
     /// </summary>
     public sealed class LootScreen : Screen
     {
@@ -42,10 +42,16 @@ namespace WrathAccess.Screens
             var vm = Vm();
             if (vm == null) return;
             string k = "loot:" + vm.GetHashCode() + ":"; // a new LootVM = a fresh window = fresh keys
-
             if (vm.Mode == LootContextVM.LootWindowMode.OneSlot && vm.InteractionSlot != null)
             {
-                BuildOneSlot(b, vm, k);
+                var group = OneSlotGroup(vm);
+                var puzzleTitle = WrathAccess.Exploration.SlabPuzzle.ContainerName(group?.MechanicCollection);
+                if (puzzleTitle != null)
+                    BuildSlabSlot(b, vm, k, group, puzzleTitle);
+                else
+                    BuildInteractionSlot(b, vm, k);
+                b.BeginStop(k + "apply").AddItem(ControlId.Structural(k + "apply"),
+                    GraphNodes.Button(() => TextUtil.StripRichText(UIStrings.Instance.SettingsUI.Apply), vm.Close));
                 return;
             }
 
@@ -138,7 +144,7 @@ namespace WrathAccess.Screens
                         // entity too: a positional "item:N" key makes the re-dealt neighbour look like
                         // the same node (silent). Reference hash, like the vendor sheet's row keys.
                         object ent = (object)slot.Item.Value ?? slot;
-                        var row = GraphNodes.StashItem(vm, slot);
+                        var row = GraphNodes.StashItem(slot, () => vm.HandleTryTransferInventorySlot(slot));
                         row.LandGroup = k + "stash"; // depositing lands on the next stash row, not the filters
                         b.AddItem(ControlId.Referenced(ent, k + "stash:item:" + System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(ent)), row);
                     }
@@ -185,17 +191,15 @@ namespace WrathAccess.Screens
             return group?.MechanicCollection != null && group.MechanicCollection.Items.Count > 0;
         }
 
-        private static void BuildOneSlot(GraphBuilder b, LootVM vm, string k)
+        private static void BuildSlabSlot(GraphBuilder b, LootVM vm, string k,
+            Kingmaker.UI.MVVM._VM.Slots.SlotsGroupVM<Kingmaker.UI.MVVM._VM.Slots.ItemSlotVM> group, string title)
         {
             var part = vm.InteractionSlot;
-            var group = OneSlotGroup(vm);
 
             // The slot itself: what it holds (Enter takes it back out), or that it is empty.
             b.BeginStop(k + "slot");
             // A puzzle's container reads by the board piece it belongs to (the game's own title for
             // these is a generic "Loot").
-            string title = WrathAccess.Exploration.SlabPuzzle.ContainerName(group?.MechanicCollection)
-                ?? (string.IsNullOrWhiteSpace(part.Name) ? Loc.T("loot.container") : TextUtil.StripRichText(part.Name));
             b.PushContext(title, "list");
             if (!string.IsNullOrWhiteSpace(part.Description))
                 b.AddItem(ControlId.Structural(k + "slot:desc"), GraphNodes.Text(() => TextUtil.StripRichText(part.Description)));
@@ -251,10 +255,6 @@ namespace WrathAccess.Screens
                 }
                 b.PopContext();
             }
-
-            // The game's own button for this window: Apply = close.
-            b.BeginStop(k + "apply").AddItem(ControlId.Structural(k + "apply"),
-                GraphNodes.Button(() => TextUtil.StripRichText(UIStrings.Instance.SettingsUI.Apply), vm.Close));
         }
 
         // An inventory item in the one-slot window: Enter places it (the sighted double-click —
@@ -288,6 +288,46 @@ namespace WrathAccess.Screens
                 },
                 OnTooltip = () => ItemNodes.OpenItemInfo(slot),
             };
+        }
+
+        private static void BuildInteractionSlot(GraphBuilder b, LootVM vm, string k)
+        {
+            var interaction = vm.InteractionSlot;
+
+            b.BeginStop(k + "interaction");
+            b.PushContext(string.IsNullOrWhiteSpace(interaction.Name) ? Loc.T("loot.container") : TextUtil.StripRichText(interaction.Name));
+            var slot = interaction.ItemSlot.Value;
+            bool occupied = slot != null && slot.HasItem;
+            if (occupied)
+                b.AddItem(ControlId.Structural(k + "interaction:item"), GraphNodes.LootItem(vm, slot));
+            else
+                b.AddItem(ControlId.Structural(k + "interaction:empty"), GraphNodes.Text(() => Loc.T("loot.interaction_slot_empty")));
+            if (!string.IsNullOrWhiteSpace(interaction.Description))
+                b.AddItem(ControlId.Structural(k + "interaction:description"),
+                    GraphNodes.Text(() => TextUtil.StripRichText(interaction.Description)));
+            b.PopContext();
+
+            if (occupied) return;
+
+            b.BeginStop(k + "insert");
+            b.PushContext(Loc.T("loot.your_inventory"), "list");
+            bool any = false;
+            var slots = vm.InventoryStash?.InsertableSlotsGroup?.VisibleCollection;
+            if (slots != null)
+            {
+                foreach (var candidate in slots)
+                {
+                    if (candidate == null || !candidate.HasItem || !candidate.CanInsert.Value) continue;
+                    any = true;
+                    var item = candidate.Item.Value;
+                    var row = GraphNodes.StashItem(candidate, () => vm.HandleTryInsertSlot(candidate));
+                    b.AddItem(ControlId.Referenced(item, k + "insert:item:" +
+                        System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(item)), row);
+                }
+            }
+            if (!any)
+                b.AddItem(ControlId.Structural(k + "insert:none"), GraphNodes.Text(() => Loc.T("loot.no_matching_item")));
+            b.PopContext();
         }
 
         // Escape closes the window (the game's own EscManager is muted while focus mode owns the keyboard).

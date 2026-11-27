@@ -3,6 +3,8 @@ using Kingmaker;
 using Kingmaker.Armies; // ArmyFaction
 using Kingmaker.Globalmap.State; // GlobalMapArmyState
 using Kingmaker.Globalmap.View;
+using Kingmaker.PubSubSystem;
+using Kingmaker.UI;
 using UnityEngine;
 
 namespace WrathAccess.Exploration
@@ -22,7 +24,8 @@ namespace WrathAccess.Exploration
         {
             // The war camp's junction has no name of its own: use the game's camp label.
             if (GlobalMapModel.IsWarCamp(p)) return Kingmaker.Blueprints.Root.Strings.UIStrings.Instance.CrusadeTexts.WarCamp;
-            var n = (string)p.Blueprint.Name;
+            // A fort can give an otherwise unnamed waypoint its displayed name.
+            var n = TextUtil.StripRichText(p.State?.Name ?? (string)p.Blueprint.Name);
             if (!string.IsNullOrEmpty(n)) return n;
             // A system waypoint is a road's bend or fork: say which (the connected mode's word for it).
             if (GlobalMapModel.IsSystemNode(p)) return Overlays.ConnectedStep.ShapeLabel(p);
@@ -78,6 +81,7 @@ namespace WrathAccess.Exploration
         /// view's own guards (revealed / travels-paused / not-in-cutscene) decide whether anything happens.</summary>
         public static void Go(GlobalMapPointView pv)
         {
+            if (Screens.KingdomScreen.CampaignOpen && !Screens.KingdomScreen.CampaignInteractive) return;
             if (pv != null) pv.HandleClick();
         }
 
@@ -142,6 +146,48 @@ namespace WrathAccess.Exploration
         /// army analogue of <see cref="InPlace"/>).</summary>
         public static string ArmyInPlace(GlobalMapArmyState army)
             => ArmyName(army) + ", " + Loc.T(army.Data.Faction == ArmyFaction.Crusaders ? "worldmap.army_ally" : "worldmap.army_enemy");
+
+        internal static void OfferTravelToEnemy(GlobalMapArmyState army, GlobalMapArmyState enemy)
+        {
+            var map = GlobalMapView.Instance?.State;
+            var paths = map?.PathManager;
+            if (paths == null) return;
+
+            GlobalMapTravelData RouteToEnemy()
+            {
+                if (enemy.IsDestroy || !enemy.IsRevealed) return null;
+                var route = paths.CalculateArmyPathToPosition(army, enemy.Position);
+                return route != null && route.Path.Count > 0 ? route : null;
+            }
+
+            var name = ArmyName(enemy);
+            var preview = RouteToEnemy();
+            if (preview == null)
+            {
+                Tts.Speak(Loc.T("worldmap.no_route", new { name }));
+                return;
+            }
+
+            int points = paths.GetArmyPathCost(preview, army.Position);
+            var cost = points > 0 ? Loc.T("worldmap.travel_cost", new { points }) : "";
+            var prompt = Loc.T("worldmap.travel_to_enemy_confirm", new { name, cost });
+            EventBus.RaiseEvent<IMessageModalUIHandler>(h => h.HandleOpen(prompt, MessageModalBase.ModalType.Dialog, button =>
+            {
+                if (button != MessageModalBase.ButtonType.Yes || !GlobalMapModel.Interactive
+                    || Game.Instance.CutsceneLock.Active || GlobalMapView.Instance?.State != map
+                    || Game.Instance.GlobalMapController.SelectedArmy != army) return;
+
+                // The target can move while the confirmation is open.
+                var route = RouteToEnemy();
+                if (route == null)
+                {
+                    Tts.Speak(Loc.T("worldmap.no_route", new { name }));
+                    return;
+                }
+                army.StartTravel(route, fromClick: true);
+                Tts.Speak(Loc.T("worldmap.traveling", new { name }));
+            }));
+        }
 
         /// <summary>Act on an army (the review cursor's i, the movement cursor's Enter): your own army is
         /// the pawn click — select it (army mode), with the game's select sound; the screen announces the

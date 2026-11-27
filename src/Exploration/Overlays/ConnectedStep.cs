@@ -16,8 +16,9 @@ namespace WrathAccess.Exploration.Overlays
     /// pressing the same direction again moves the cursor to the far end and reads the landing through
     /// the engaged lens. The far end may be a place, a visible junction, or one of the game's invisible
     /// system waypoints where a road bends or forks: those are stops too (named "fork" / "bend", with a
-    /// hint of the places beyond), so the cursor traces the road the way a sighted eye does. Off any
-    /// node, a press first snaps the cursor to the nearest visible point. Roads are filtered by the
+    /// hint of the places beyond), so the cursor traces the road the way a sighted eye does. A focused
+    /// army anchors the cursor to its node or its position along a road. A free cursor off the graph
+    /// first snaps to the nearest visible point. Roads are filtered by the
     /// current traveler (an army can't take a party-only road); a place has to be revealed to be offered,
     /// the invisible nodes never are "revealed" in any sense the sighted see.
     ///
@@ -42,6 +43,7 @@ namespace WrathAccess.Exploration.Overlays
         /// heading as it leaves, and its length.</summary>
         private sealed class Exit
         {
+            public GlobalMapEdgeView Edge;
             public GlobalMapPointView To;
             public float LeaveDeg;   // map-frame heading over the first stretch of road
             public float Miles;      // geometric road length (spline)
@@ -57,6 +59,7 @@ namespace WrathAccess.Exploration.Overlays
         private float _gestureStart;
         private int _armedSector = -1, _gestureArmed = -1;
         private Vector3 _anchor;
+        private GlobalMapPosition _armyAnchor;
 
         public override void Idle(Cursor cursor) { _lastDx = 0; _lastDz = 0; }
         public override void OnExit(Cursor cursor) { _armedSector = -1; }
@@ -84,9 +87,19 @@ namespace WrathAccess.Exploration.Overlays
         private void Press(int sector, Cursor cursor)
         {
             var at = cursor.Position;
-            if ((at - _anchor).sqrMagnitude > 1e-4f) { _armedSector = -1; _gestureArmed = -1; } // moved elsewhere since
-            var anchor = NodeAt(at);
-            if (anchor == null)
+            var space = (GlobalMapSpace)cursor.Space;
+            var army = space.ArmyAnchor;
+            if ((at - _anchor).sqrMagnitude > 1e-4f || army != _armyAnchor)
+            {
+                _armedSector = -1;
+                _gestureArmed = -1;
+            }
+            _armyAnchor = army;
+            var map = GlobalMapView.Instance;
+            var edge = army?.Edge != null ? map?.GetEdgeView(army.Edge) : null;
+            var armyNode = army?.Location != null ? map?.GetPointView(army.Location) : null;
+            var anchor = armyNode ?? space.RoadNode ?? (edge == null ? NodeAt(at) : null);
+            if (anchor == null && edge == null)
             {
                 // Off the roads: join the graph at the nearest visible point first.
                 anchor = Nearest(at);
@@ -94,7 +107,9 @@ namespace WrathAccess.Exploration.Overlays
                 Land(anchor, cursor);
                 return;
             }
-            var exits = Exits(anchor);
+            var exits = edge != null
+                ? RoadEnds(edge, army.EdgePosition, at)
+                : Exits(anchor, includeUnexplored: armyNode?.State?.IsRevealed == false, arrivalRoad: space.ArrivalRoad);
             Exit exit = null;
             foreach (var e in exits) if (e.Sector == sector) { exit = e; break; }
             if (exit == null)
@@ -112,23 +127,24 @@ namespace WrathAccess.Exploration.Overlays
                 // bend explored, bend to campsite not: the user's repro). Offer the journey, asking first
                 // since it costs time; No just moves the cursor. The same goes for a walk that stops at a
                 // bend or fork: those can't be picked from the location list, so the arrow is the only way
-                // there (the camp's north road is explored, but the walk halts at the three-way bend where
-                // the unexplored road starts). Other explored walks never prompt: the arrows are for
-                // looking, and travel to known places has its own keys.
-                if (WalkExplores(exit, anchor) || WalkEndsAtUnrevealedPoint(exit, anchor)) OfferTravel(exit, cursor);
-                else Land(exit.To, cursor);
+                // there. A revealed destination can also require the arrow if its outgoing roads have
+                // not been opened yet: the stock location panel disables Travel in that state.
+                if (anchor != null && GlobalMapModel.Interactive && (WalkExplores(exit, anchor)
+                    || WalkEndsAtUnrevealedPoint(exit, anchor) || WalkRequiresArrow(exit, anchor)))
+                    OfferTravel(exit, cursor);
+                else Land(exit.To, cursor, exit.Edge);
                 return;
             }
             _armedSector = sector;
             _anchor = at;
-            Tts.Speak(Preview(exit, anchor), interrupt: true);
+            Tts.Speak(Preview(exit, anchor, at), interrupt: true);
         }
 
         private bool _announcePending;
 
-        private void Land(GlobalMapPointView p, Cursor cursor, bool deferAnnounce = false)
+        private void Land(GlobalMapPointView p, Cursor cursor, GlobalMapEdgeView road = null, bool deferAnnounce = false)
         {
-            cursor.Position = p.transform.position;
+            ((GlobalMapSpace)cursor.Space).LandOnRoad(p, road);
             _anchor = cursor.Position;
             if (deferAnnounce) _announcePending = true;
             else cursor.Announce(Context, ReadoutTrigger.Step);
@@ -180,6 +196,16 @@ namespace WrathAccess.Exploration.Overlays
             return end != null && end.State != null && !end.State.IsRevealed;
         }
 
+        /// <summary>Whether the game's arrow can reach a revealed stop whose location panel disables Travel.</summary>
+        private static bool WalkRequiresArrow(Exit exit, GlobalMapPointView from)
+        {
+            if (exit.Locked || !TravelerIsOn(from)
+                || Kingmaker.Globalmap.GlobalMapPathManager.IsHiddenLocationInEdge(exit.Edge, from.Blueprint))
+                return false;
+            var end = WalkEnd(ArrowWalk(exit, from), null);
+            return end?.State != null && end.State.IsRevealed && !end.State.EdgesOpened;
+        }
+
         /// <summary>Where that walk ends (the bends it runs through are skipped), else the road's own end.</summary>
         private static GlobalMapPointView WalkEnd(Kingmaker.Globalmap.State.GlobalMapTravelData data, GlobalMapPointView fallback)
         {
@@ -195,7 +221,7 @@ namespace WrathAccess.Exploration.Overlays
         {
             var t = Traveler;
             var pm = GlobalMapView.Instance?.State?.PathManager;
-            if (t == null || pm == null || exit.To.Blueprint == null) { Land(exit.To, cursor); return; }
+            if (t == null || pm == null || exit.To.Blueprint == null) { Land(exit.To, cursor, exit.Edge); return; }
             var data = pm.CalculatePathByDirection(t, exit.To.Blueprint);
             if (data == null) { Tts.Speak(Loc.T("worldmap.no_route", new { name = NodeLabel(exit.To) }), interrupt: true); return; }
             string cost = "";
@@ -221,7 +247,7 @@ namespace WrathAccess.Exploration.Overlays
                     delegate(Kingmaker.UI.MessageModalBase.ButtonType button)
                     {
                         if (button == Kingmaker.UI.MessageModalBase.ButtonType.Yes) Travel(to);
-                        else if (button == Kingmaker.UI.MessageModalBase.ButtonType.No) Land(to, cursor, deferAnnounce: true); // no lens while the modal is up
+                        else if (button == Kingmaker.UI.MessageModalBase.ButtonType.No) Land(to, cursor, exit.Edge, deferAnnounce: true); // no lens while the modal is up
                     });
             });
         }
@@ -286,7 +312,7 @@ namespace WrathAccess.Exploration.Overlays
 
         // ---- speech ----
 
-        private static string Preview(Exit e, GlobalMapPointView from)
+        private static string Preview(Exit e, GlobalMapPointView from, Vector3 at)
         {
             var parts = new List<string>
             {
@@ -296,12 +322,12 @@ namespace WrathAccess.Exploration.Overlays
             // An invisible node: say which places the roads beyond it lead to, so the stop means something.
             if (GlobalMapModel.IsSystemNode(e.To))
             {
-                var beyond = Beyond(e.To, from);
+                var beyond = Beyond(e.To, from ?? e.Edge.GetOppositeLocation(e.To));
                 if (beyond.Count > 0) parts.Add(Loc.T("worldmap.exit_toward", new { list = string.Join(", ", beyond) }));
             }
             // The road sets off one way but delivers you another: say where the far end really lies.
-            float dx = e.To.transform.position.x - from.transform.position.x, dz = e.To.transform.position.z - from.transform.position.z;
-            int trueSector = SectorOf(MapFrame.ToMap(Mathf.Atan2(dx, dz) * Mathf.Rad2Deg));
+            var delta = e.To.transform.position - (from != null ? from.transform.position : at);
+            int trueSector = SectorOf(MapFrame.ToMap(Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg));
             if (trueSector != e.Sector) parts.Add(Loc.T("worldmap.exit_bears", new { bearing = Word(trueSector) }));
             if (e.Locked) parts.Add(Loc.T("worldmap.exit_locked"));
             else if (e.Unexplored)
@@ -310,11 +336,12 @@ namespace WrathAccess.Exploration.Overlays
                 // Exploring is offered only from the party's own node (the game draws explore arrows only at
                 // the pawn): say when a second press would just move the cursor. Not when the party stands at
                 // the far end — that road is explored from there, and the label already says "you are here".
-                if (!TravelerIsOn(from) && !TravelerIsOn(e.To)) parts.Add(Loc.T("worldmap.exit_party_away"));
+                if ((from == null || !TravelerIsOn(from)) && !TravelerIsOn(e.To)) parts.Add(Loc.T("worldmap.exit_party_away"));
             }
             // An explored road from the party's node whose arrow walk runs on into unexplored road: a
             // second press offers that journey, so say so.
-            else if (WalkExplores(e, from)) parts.Add(Loc.T("worldmap.exit_unexplored_beyond"));
+            else if (from != null && WalkExplores(e, from)) parts.Add(Loc.T("worldmap.exit_unexplored_beyond"));
+            else if (from != null && WalkRequiresArrow(e, from)) parts.Add(Loc.T("worldmap.exit_travel_by_road"));
             return string.Join(", ", parts);
         }
 
@@ -352,8 +379,28 @@ namespace WrathAccess.Exploration.Overlays
         }
 
         // A far end named briefly for a road list: the place's name, or the invisible node's shape.
-        private static string ShortLabel(GlobalMapPointView p)
+        internal static string ShortLabel(GlobalMapPointView p)
             => Unseen(p) ? Loc.T("worldmap.unseen_place") : GlobalMapActions.Name(p);
+
+        internal static string RouteDirection(GlobalMapEdgeView edge, GlobalMapPointView from,
+            GlobalMapPointView to, float? startFraction)
+        {
+            if (!startFraction.HasValue)
+            {
+                // Match the compass key Connected mode assigns to this exit.
+                foreach (var exit in Exits(from))
+                    if (exit.To == to) return Word(exit.Sector);
+            }
+
+            float start = startFraction ?? (edge.Point1 == from ? 0f : 1f);
+            float end = edge.Point1 == to ? 0f : 1f;
+            var spline = edge.Spline;
+            var origin = spline != null ? spline.EvaluatePosition(start) : from.transform.position;
+            var next = spline != null ? spline.EvaluatePosition(Mathf.Lerp(start, end, LeaveFraction)) : to.transform.position;
+            var delta = next - origin;
+            if (delta.sqrMagnitude < 1e-6f) delta = to.transform.position - origin;
+            return Word(SectorOf(MapFrame.ToMap(Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg)));
+        }
 
         private static readonly string[] Words8 =
             { "geo.north", "geo.northeast", "geo.east", "geo.southeast", "geo.south", "geo.southwest", "geo.west", "geo.northwest" };
@@ -439,7 +486,8 @@ namespace WrathAccess.Exploration.Overlays
 
         /// <summary>The roads out of <paramref name="from"/>, one exit each to the adjacent node, with a
         /// unique compass sector apiece.</summary>
-        private static List<Exit> Exits(GlobalMapPointView from)
+        private static List<Exit> Exits(GlobalMapPointView from, bool includeUnexplored = false,
+            GlobalMapEdgeView arrivalRoad = null)
         {
             var exits = new List<Exit>();
             if (from.Edges == null) return exits;
@@ -448,12 +496,14 @@ namespace WrathAccess.Exploration.Overlays
             {
                 if (!Passable(e)) continue;
                 var other = e.GetOppositeLocation(from);
-                if (!Offerable(e, from) || !taken.Add(other)) continue;
+                if (other == null || other.State == null
+                    || (!includeUnexplored && e != arrivalRoad && !Offerable(e, from)) || !taken.Add(other)) continue;
                 var dir = LeaveDirection(e, from);
                 if (!dir.HasValue) continue;
                 var st = e.State;
                 exits.Add(new Exit
                 {
+                    Edge = e,
                     To = other,
                     LeaveDeg = MapFrame.ToMap(dir.Value),
                     Miles = Length(e),
@@ -461,6 +511,35 @@ namespace WrathAccess.Exploration.Overlays
                     Unexplored = st != null && !st.Revealed,
                 });
             }
+            AssignSectors(exits);
+            return exits;
+        }
+
+        // An army partway along a road anchors the two previews to the remaining stretches.
+        private static List<Exit> RoadEnds(GlobalMapEdgeView edge, float start, Vector3 at)
+        {
+            var exits = new List<Exit>();
+            if (!Passable(edge)) return exits;
+            void AddEnd(GlobalMapPointView point, float end)
+            {
+                if (point?.State == null || Mathf.Approximately(start, end)) return;
+                var spline = edge.Spline;
+                var delta = spline != null
+                    ? spline.EvaluatePosition(Mathf.Lerp(start, end, LeaveFraction)) - spline.EvaluatePosition(start)
+                    : point.transform.position - at;
+                if (delta.sqrMagnitude < 1e-6f) delta = point.transform.position - at;
+                exits.Add(new Exit
+                {
+                    Edge = edge,
+                    To = point,
+                    LeaveDeg = MapFrame.ToMap(Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg),
+                    Miles = Length(edge) * Mathf.Abs(end - start),
+                    Locked = edge.IsLocked,
+                    Unexplored = edge.State?.Revealed == false,
+                });
+            }
+            AddEnd(edge.Point1, 0f);
+            AddEnd(edge.Point2, 1f);
             AssignSectors(exits);
             return exits;
         }

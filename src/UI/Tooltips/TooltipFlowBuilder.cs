@@ -82,6 +82,13 @@ namespace WrathAccess.UI.Tooltips
             return string.IsNullOrEmpty(line.Suffix) ? text : text + ", " + line.Suffix;
         }
 
+        internal static IEnumerable<string> BodyText(TooltipBaseTemplate template)
+        {
+            foreach (var row in Rows(template, TooltipTemplateType.Info))
+                if (!row.FromHeader)
+                    yield return TextUtil.StripRichText(row.Text);
+        }
+
         // The document's rows, flat: headings inline, each brick's renderer lines, plain drill-in-free
         // multi-line text split one row per line (each reads on its own).
         private static IEnumerable<BrickLine> Rows(TooltipBaseTemplate template, TooltipTemplateType type)

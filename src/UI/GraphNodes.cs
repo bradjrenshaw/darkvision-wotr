@@ -447,11 +447,9 @@ namespace WrathAccess.UI
             };
         }
 
-        /// <summary>An item on the loot window's INVENTORY side (chests / zone exits): Enter moves it
-        /// INTO the container — the sighted double-click / drag, <c>LootVM.HandleTryTransferInventorySlot</c>
-        /// (the VM plays the collect sound). Name + count; the item tooltip on Space.</summary>
-        public static NodeVtable StashItem(Kingmaker.UI.MVVM._VM.Loot.LootVM loot,
-            Kingmaker.UI.MVVM._VM.Slots.ItemSlotVM slot)
+        /// <summary>An item on the loot window's inventory side. Enter transfers it to the container
+        /// through the supplied game action, and Space opens its item info.</summary>
+        public static NodeVtable StashItem(Kingmaker.UI.MVVM._VM.Slots.ItemSlotVM slot, Action transfer)
         {
             Func<string> label = () =>
             {
@@ -464,7 +462,7 @@ namespace WrathAccess.UI
                 ControlType = ControlTypes.Item,
                 Announcements = new[] { LabelPart(label) },
                 SearchText = label,
-                OnActivate = () => loot.HandleTryTransferInventorySlot(slot),
+                OnActivate = transfer,
                 OnTooltip = () => ItemNodes.OpenItemInfo(slot), // the game's Information action (fires show-info callbacks)
             };
         }
