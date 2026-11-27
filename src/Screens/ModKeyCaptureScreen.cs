@@ -138,7 +138,7 @@ namespace WrathAccess.Screens
         // Keyboard keys we can bind to: every KeyCode except None, the modifier keys, Escape, and the
         // mouse/joystick range (which start at Mouse0). Built once.
         private static KeyCode[] _captureKeys;
-        private static KeyCode[] CaptureKeys
+        internal static KeyCode[] CaptureKeys
         {
             get
             {

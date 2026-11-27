@@ -382,9 +382,20 @@ namespace WrathAccess.ModUI.Imgui
                 Parent = p.Cur,
                 Scope = p.Scope, // the ENCLOSING scope (restored on close)
             };
+            // Its own identity (kind + id within the enclosing scope, numbered when repeated), so an
+            // adapter can re-find the scope itself next frame, not just the leaves inside it.
+            n.Text = kind + ":" + n.ScopeId;
+            var self = new ImguiTarget(ImguiKind.Scope, p.Scope, n.Text, null, 0);
+            int occ;
+            p.Occ.TryGetValue(self, out occ);
+            n.Occurrence = occ;
+            p.Occ[self] = occ + 1;
             p.Cur.Children.Add(n);
             p.Cur = n;
             p.Scope = string.IsNullOrEmpty(p.Scope) ? n.ScopeId : p.Scope + "/" + n.ScopeId;
+            // A scope is a unit of identity: a control inside it must not be identified by
+            // whatever text happened to be drawn before the scope (the row above in a list).
+            p.LastText = null;
             return true;
         }
 

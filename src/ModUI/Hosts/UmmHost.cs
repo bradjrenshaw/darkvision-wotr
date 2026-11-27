@@ -281,12 +281,13 @@ namespace WrathAccess.ModUI.Hosts
                     if (c.Kind == ImguiKind.Label && c.Style == "umm h2") continue;
                     _shell.Build(ctx, expandedBox.Children, i, i + 1);
                 }
-                ModAdapters.ForMod(expandedId).Build(ctx, expandedBox.Children, start, expandedBox.Children.Count);
+                var adapter = ModAdapters.ForMod(expandedId);
+                adapter.Build(ctx, expandedBox.Children, start, expandedBox.Children.Count);
                 b.PopContext();
                 if (_focusOptionsOf != null && _focusOptionsOf == expandedName)
                 {
                     _focusOptionsOf = null;
-                    WrathAccess.UI.Navigation.FocusStop(StopOptions);
+                    WrathAccess.UI.Navigation.FocusStop(adapter.LandingStop ?? StopOptions);
                 }
             }
 

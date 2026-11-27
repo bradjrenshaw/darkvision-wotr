@@ -47,6 +47,11 @@ namespace WrathAccess.ModUI
         /// belongs to this adapter's mod.</summary>
         public virtual void Build(ModUiContext ctx, ImguiNode region) => EmitChildren(ctx, region);
 
+        /// <summary>Where focus should land when the host follows the player into this mod's options
+        /// (they just expanded it). Null = the host's own options stop; an adapter that lays its mod
+        /// out as several Tab stops names the one to start on. Read AFTER <c>Build</c>.</summary>
+        public virtual object LandingStop => null;
+
         /// <summary>Present ONE node as itself (a horizontal group stays a row), where
         /// <see cref="Build(ModUiContext, ImguiNode)"/> presents a region's CONTENTS.</summary>
         public void BuildNode(ModUiContext ctx, ImguiNode node) => Emit(ctx, node);
@@ -84,7 +89,7 @@ namespace WrathAccess.ModUI
         // Generic emission
         // =====================================================================================
 
-        protected void EmitChildren(ModUiContext ctx, ImguiNode n)
+        protected virtual void EmitChildren(ModUiContext ctx, ImguiNode n)
         {
             if (n.Children == null) return;
             for (int i = 0; i < n.Children.Count; i++) Emit(ctx, n.Children[i]);
@@ -534,7 +539,7 @@ namespace WrathAccess.ModUI
 
         /// <summary>Scratch lists for the row collector (a build walks hundreds of rows; don't
         /// allocate a list for each, ten times a second).</summary>
-        private static class Lists
+        protected static class Lists
         {
             private static readonly Stack<List<ImguiNode>> _free = new Stack<List<ImguiNode>>();
 

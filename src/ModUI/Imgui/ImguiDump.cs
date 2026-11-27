@@ -59,7 +59,7 @@ namespace WrathAccess.ModUI.Imgui
             sb.Append(' ', depth * 2).Append(n.Kind);
             if (n.Kind == ImguiKind.Scope)
                 sb.Append(' ').Append(n.ScopeKind).Append('=').Append(n.ScopeId).Append(' ').Append(Quote(n.ScopeLabel));
-            if (!string.IsNullOrEmpty(n.Text)) sb.Append(' ').Append(Quote(n.Text));
+            if (!string.IsNullOrEmpty(n.Text) && n.Kind != ImguiKind.Scope) sb.Append(' ').Append(Quote(n.Text));
             if (!string.IsNullOrEmpty(n.Style)) sb.Append(" style=").Append(n.Style);
             if (!string.IsNullOrEmpty(n.Image)) sb.Append(" image=").Append(n.Image);
             if (!string.IsNullOrEmpty(n.Tooltip)) sb.Append(" tip=").Append(Quote(n.Tooltip));

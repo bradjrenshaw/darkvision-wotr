@@ -9,9 +9,10 @@ namespace WrathAccess.ModUI
     /// <see cref="ImguiAdapter"/> subclass under <c>src/ModUI/Mods/</c> and one line in
     /// <see cref="Initialize"/>. A mod with no adapter gets <see cref="Generic"/>.
     ///
-    /// Probe PACKS are adapters that aren't about one mod but about a widget library several mods
-    /// bundle (ModKit): they only install probes, and whatever they report flows through the normal
-    /// capture into whichever adapter presents that region.
+    /// LIBRARY adapters aren't about one mod but about a widget library several mods bundle
+    /// (ModKit): they install probes on the library's own functions and claim the scopes those probes
+    /// record, so the library's widgets read properly inside any mod, adapter or not. A mod built on
+    /// the library derives its adapter from the library's.
     /// </summary>
     internal static class ModAdapters
     {
@@ -25,7 +26,7 @@ namespace WrathAccess.ModUI
         public static void Initialize()
         {
             Clear();
-            Register(new Mods.ModKitProbes()); // widget library bundled by ToyBox and others
+            Register(new Mods.ModKitAdapter()); // widget library bundled by ToyBox and others
             Register(new Mods.ToyBoxAdapter());
         }
 

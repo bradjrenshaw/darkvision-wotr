@@ -182,7 +182,7 @@ namespace WrathAccess.ModUI.Imgui
         private Dictionary<ImguiTarget, ImguiNode> _index;
         private ImguiNode _indexedRoot;
 
-        /// <summary>Re-find a control in the CURRENT tree by identity; null when it is gone.</summary>
+        /// <summary>Re-find a control (or a probe's scope) in the CURRENT tree by identity; null when it is gone.</summary>
         public ImguiNode Find(ImguiTarget target)
         {
             if (Root == null) return null;
@@ -204,6 +204,7 @@ namespace WrathAccess.ModUI.Imgui
                 _index[n.Target] = n;
                 return;
             }
+            if (n.Kind == ImguiKind.Scope) _index[n.Target] = n; // probes' regions are findable too
             for (int i = 0; i < n.Children.Count; i++) Index(n.Children[i]);
         }
     }
