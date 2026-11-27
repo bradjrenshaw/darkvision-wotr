@@ -2219,6 +2219,8 @@
   "modui.popup": "Pop-up",
   "modui.tabs": "Tabs",
   "modui.toybox_type": "Type",
+  "modui.toybox_price": "{amount} gold",
+  "modui.toybox_price_range": "{low} to {high} gold",
   "modui.toybox_item_type": "Item type",
   "modui.toybox_ench_type": "Enchantment type",
   "modui.toybox_item": "Item",

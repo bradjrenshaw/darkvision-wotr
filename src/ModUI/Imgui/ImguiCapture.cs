@@ -461,9 +461,11 @@ namespace WrathAccess.ModUI.Imgui
             p.Occ[probe] = occ + 1;
             p.Cur.Children.Add(n);
             p.Leaves++;
-            // Static text names the unlabelled controls that follow it — but a bare number is a
-            // value readout, not a name, and would change the identity every time it ticks.
-            if (hasText && kind <= ImguiKind.Drawn && HasLetter(n.Text)) p.LastText = n.Text;
+            // Static text identifies the unlabelled controls that follow it — but only text that
+            // stays put. Anything with a digit in it is a readout or a counter ("Matches: 10",
+            // "Blueprints loading: 57%") and would change those controls' identity every time it
+            // ticks or appears: a progress line showing up above a page threw focus off the page.
+            if (hasText && kind <= ImguiKind.Drawn && HasLetter(n.Text) && !HasDigit(n.Text)) p.LastText = n.Text;
             return n;
         }
 
@@ -565,6 +567,13 @@ namespace WrathAccess.ModUI.Imgui
             if (string.IsNullOrEmpty(name)) name = "";
             _imageNames[id] = name;
             return name;
+        }
+
+        private static bool HasDigit(string s)
+        {
+            for (int i = 0; i < s.Length; i++)
+                if (char.IsDigit(s[i])) return true;
+            return false;
         }
 
         private static bool HasLetter(string s)

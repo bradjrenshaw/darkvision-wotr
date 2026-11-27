@@ -98,6 +98,24 @@ namespace WrathAccess.ModUI.Mods
             _landing = StopTabs;
         }
 
+        // ToyBox writes prices with a coin glyph: "0⊙" is "costs nothing", "1k⊙ - 2k⊙" a
+        // price band (its item categories include one per band). A screen reader says nothing for
+        // the glyph, or "circled dot".
+        protected override string Clean(string text)
+        {
+            const char coin = '⊙';
+            int i = string.IsNullOrEmpty(text) ? -1 : text.IndexOf(coin);
+            if (i < 0) return base.Clean(text);
+            string low = text.Substring(0, i).Trim(), rest = text.Substring(i + 1);
+            if (rest.StartsWith(" - ", System.StringComparison.Ordinal))
+            {
+                int j = rest.IndexOf(coin);
+                if (j > 3)
+                    return base.Clean(Loc.T("modui.toybox_price_range", new { low, high = rest.Substring(3, j - 3).Trim() }) + rest.Substring(j + 1));
+            }
+            return base.Clean(Loc.T("modui.toybox_price", new { amount = low }) + rest);
+        }
+
         // A few pages open with selection grids that have no caption at all. Which is which is only
         // known from the page (matched on ToyBox's own English tab names; in another language the
         // grids simply stay nameless, announced by their pick).
