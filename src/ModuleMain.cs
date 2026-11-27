@@ -72,6 +72,7 @@ namespace WrathAccess
                 // Overlays.LogSystem (per-overlay, per-message-type toggles) fed by the LogFeed Harmony tap.
                 WarningReader.Initialize(); // speak the game's "can't do that" warnings (refusal reasons)
                 WrathAccess.Exploration.CombineMenu.Initialize(); // the game's combine radial (puzzle slab spaces) as a menu
+                WrathAccess.ModUI.ModUi.Initialize(); // other mods' windows (Unity Mod Manager etc.); hooks nothing until one opens
                 WrathAccess.Events.EventBusAdapter.Initialize(); // turn game damage/buff events into mod events
                 DialogVisibility.Initialize(); // track when the dialogue window is actually shown/clickable
                 // Per-area curated data (assets/descriptions) re-reads on the next tick. A hot reload of an
@@ -117,6 +118,7 @@ namespace WrathAccess
             try { WrathAccess.Speech.SpeechManager.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] speech: " + e); }
             try { WarningReader.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] warnings: " + e); }
             try { WrathAccess.Exploration.CombineMenu.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] combine: " + e); }
+            try { WrathAccess.ModUI.ModUi.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] modui: " + e); }
             try { WrathAccess.Events.EventBusAdapter.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] events: " + e); }
             try { DialogVisibility.Shutdown(); } catch (Exception e) { Log?.Error("[dispose] dialog: " + e); }
             try { _harmony?.UnpatchAll(_harmony.Id); } catch (Exception e) { Log?.Error("[dispose] harmony: " + e); }
@@ -184,6 +186,7 @@ namespace WrathAccess
                 _setupWizardPending = false;
                 WrathAccess.Screens.SetupWizardScreen.Open();
             }
+            WrathAccess.ModUI.ModUi.Tick(); // is another mod's window open? (before the stack resolves, so its screen lands this frame)
             ScreenManager.Tick();
             WrathAccess.UI.Navigation.TickTypeahead(); // typed letters → type-ahead search (after dispatch)
             ControlState.Tick(); // settle the debounced control state before its consumers below

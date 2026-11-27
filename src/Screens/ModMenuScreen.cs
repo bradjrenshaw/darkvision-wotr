@@ -49,23 +49,27 @@ namespace WrathAccess.Screens
         {
             // Settings / the wizard open ON TOP (higher layer) and return here when closed; the launcher
             // stays open beneath them. (We don't close it on pick — the layering is the back-stack.)
-            Item(b, 1, "menu.settings", BasicSettingsScreen.Open);
-            Item(b, 2, "menu.help", HelpScreen.Open);
-            Item(b, 3, "menu.setup_wizard", SetupWizardScreen.Open);
-            Link(b, 4, "menu.discord", DiscordUrl, "menu.opening_discord");
-            Link(b, 5, "menu.patreon", PatreonUrl, "menu.opening_patreon");
+            // Unity Mod Manager, when installed: its window (other mods' settings) opens on top,
+            // read by ModUiScreen. Its own hotkey (Ctrl+F10) works too; this is the discoverable way.
+            var umm = WrathAccess.ModUI.ModUi.Host("umm");
+            bool hasUmm = umm != null && umm.Present;
+            int count = hasUmm ? 6 : 5, i = 1;
+            Item(b, i++, count, "menu.settings", BasicSettingsScreen.Open);
+            Item(b, i++, count, "menu.help", HelpScreen.Open);
+            Item(b, i++, count, "menu.setup_wizard", SetupWizardScreen.Open);
+            if (hasUmm) Item(b, i++, count, "menu.mod_manager", umm.Open);
+            Link(b, i++, count, "menu.discord", DiscordUrl, "menu.opening_discord");
+            Link(b, i++, count, "menu.patreon", PatreonUrl, "menu.opening_patreon");
         }
 
-        private const int EntryCount = 5;
-
-        private static void Item(GraphBuilder b, int index, string labelKey, Action activate)
+        private static void Item(GraphBuilder b, int index, int count, string labelKey, Action activate)
             => b.AddItem(ControlId.Structural("modmenu:" + labelKey),
-                GraphNodes.Button(() => Loc.T(labelKey), activate, position: GraphNodes.Position(index, EntryCount)));
+                GraphNodes.Button(() => Loc.T(labelKey), activate, position: GraphNodes.Position(index, count)));
 
         // An external link: open it in the browser (detached — see ExternalUrl) and say so, since the
         // result is off-screen.
-        private static void Link(GraphBuilder b, int index, string labelKey, string url, string speakKey)
-            => Item(b, index, labelKey, () =>
+        private static void Link(GraphBuilder b, int index, int count, string labelKey, string url, string speakKey)
+            => Item(b, index, count, labelKey, () =>
             {
                 ExternalUrl.Open(url);
                 Tts.Speak(Loc.T(speakKey));

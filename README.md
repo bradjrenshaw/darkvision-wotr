@@ -29,6 +29,8 @@ the world around you, and review "buffers" for inspecting characters in detail.
 - **Vendors / trade**, looting, resting, party selection, and the group manager.
 - **Review buffers** (Alt+arrows) for reading a unit's details line by line - name, HP, AC, and
   every buff / debuff / condition.
+- **Other mods' windows** (early): the Unity Mod Manager window and the settings mods draw inside
+  it are readable and usable with the normal navigation keys.
 
 The mod follows the game's language setting; English is included.
 
@@ -178,6 +180,9 @@ Ambient lines that characters say (barks) and narrative log messages are spoken 
 
 ### Settings and the setup wizard
 Press control m anywhere to open the mod menu, which holds the mod's settings and lets you re-run the setup wizard. Settings are organised into tabs (speech, audio and overlays, the scanner, events, input, and more), and every key in the mod can be rebound, either by capturing a new combination (with a warning if it clashes) or by clearing one. Combat and world events such as damage, healing, and spellcasting can also be spoken aloud, with separate voices for enemies, allies, neutrals, and sourceless events, as positional speech or through your screen reader; you set this up in the wizard or under the events settings.
+
+### Other mods (Unity Mod Manager)
+If you use Unity Mod Manager, its window is readable: open it with its own hotkey (control F10 by default) or from the mod menu (control m, then Unity Mod Manager). Tab moves between the manager's tabs (Mods, Logs, Settings), the list of mods, the open mod's options, and the window's own buttons. In the mod list, Enter on a mod opens or closes its options and moves you into them; right arrow reaches its enabled switch and home page. Inside a mod's options, up and down move between lines, left and right between controls on the same line, Enter presses buttons and switches and opens text boxes for typing, left and right change sliders, and typing letters jumps to a matching control. Escape closes a drop-down list if one is open, otherwise the window. This reads whatever a mod draws, so mods with unusual custom controls may read as plain text until specific support is added for them; please report those.
 
 ## Notes and limitations
 

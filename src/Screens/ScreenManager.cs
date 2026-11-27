@@ -194,6 +194,7 @@ namespace WrathAccess.Screens
             Register(new LockpickScreen()); // lock/disable-device tool-choice window (skill/+5/+10/destroy), layer 30
             Register(new BookmarkScreen()); // bookmarks (Alt+B): pin a position / the reviewed object; layer 34
             Register(new ModMenuScreen()); // mod menu launcher (Ctrl+M): Settings, Help, Setup wizard, Discord, Patreon; layer 35
+            Register(new ModUiScreen()); // another mod's window (Unity Mod Manager, native mod window) read off its IMGUI; layer 45
             Register(new HelpScreen()); // Help submenu (Read documentation, Audio glossary); opens from the launcher, layer 38
             Register(new GlossaryScreen()); // audio glossary (play sounds to learn them); opens from Help, layer 41
             Register(new BasicSettingsScreen()); // the simple settings tree, opened from the launcher; layer 37

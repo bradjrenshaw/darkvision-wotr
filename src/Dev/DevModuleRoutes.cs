@@ -29,6 +29,18 @@ namespace WrathAccess.Dev
             // reload — the rooms-ritual loop deploys prose, not code. Main thread: the caches are
             // read by the frame loop.
             s.RegisterRoute("/assets", (method, body, query) => s.OnMain(RefreshAssets));
+            // Other mods' IMGUI as captured: GET dumps the trees; POST "on"/"off" keeps the recorder
+            // running with no mod window screen attached (to look at a window we have no host for).
+            s.RegisterRoute("/imgui", (method, body, query) => s.OnMain(() =>
+            {
+                string verb = (body ?? "").Trim();
+                if (verb == "on") { WrathAccess.ModUI.ModUi.DevHold = true; return "imgui capture held on" + System.Environment.NewLine; }
+                if (verb == "off") { WrathAccess.ModUI.ModUi.DevHold = false; return "imgui capture hold released" + System.Environment.NewLine; }
+                // "text:<value>" types into the first text field on screen (the in-game text entry
+                // reads the real keyboard, which the dev driver can't press).
+                if (verb.StartsWith("text:")) return WrathAccess.ModUI.Imgui.ImguiDump.TypeIntoFirstField(verb.Substring(5));
+                return WrathAccess.ModUI.Imgui.ImguiDump.All(verb);
+            }));
         }
 
         private static string RefreshAssets()
@@ -52,6 +64,7 @@ namespace WrathAccess.Dev
             s.UnregisterRoute("/input");
             s.UnregisterRoute("/loadsave");
             s.UnregisterRoute("/assets");
+            s.UnregisterRoute("/imgui");
         }
 
         // Fire one of our InputActions by key, exactly as InputManager.Tick routes a real press: a UI action
